@@ -17,3 +17,4 @@ Files in the repository include:
 
 "Dashboard.py": launches a Streamlit app which contains all UI functions, such as data viewing and path planning. Must be called from the terminal as "(directory)> streamlit run Dashboard.py".
 "Scraper.py": called by the Windows Task Scheduler to collect the last hourly reading from the profiler platform's IP address and add it as a new record in the appropriate table of the database. Note the the password for the existing database has been obscured for publication.
+"mission.csv" is a placeholder for a file containing an offline plan for the Otter USV. An external data structure (this file) is used as a workaround because of the difficulty of extracting data from the static Folium interface inside Streamlit. An interface exists in the app for downloading useable mission files.
