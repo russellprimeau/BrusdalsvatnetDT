@@ -181,15 +181,14 @@ def hourly():
         st.write("Please select at least one parameter to plot.")
     else:
         update_hourly(selected_variables)
-
-    # Set plot properties
-    p.title.text_font_size = "16pt"
-    p.xaxis.axis_label = "Time"
-    p.yaxis.axis_label = "Variable Value(s)"
-    p.legend.title = "Water Quality Parameters"
-    # Set the x-axis formatter to display dates in the desired format
-    p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
-    st.bokeh_chart(p, use_container_width=True)
+        # Set plot properties
+        p.title.text_font_size = "16pt"
+        p.xaxis.axis_label = "Time"
+        p.yaxis.axis_label = "Variable Value(s)"
+        p.legend.title = "Water Quality Parameters"
+        # Set the x-axis formatter to display dates in the desired format
+        p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+        st.bokeh_chart(p, use_container_width=True)
 
 
 def vertical():
