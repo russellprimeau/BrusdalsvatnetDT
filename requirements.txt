@@ -4,5 +4,5 @@ streamlit
 folium
 streamlit_folium
 geopandas
-bokeh
+bokeh<=2.4.3
 datetime
