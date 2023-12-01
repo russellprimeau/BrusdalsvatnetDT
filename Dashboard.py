@@ -519,6 +519,7 @@ def interactive():
     
     # Button to overwrite "mission.csv"
     if st.button("Begin new mission (clear previous waypoints)"):
+        st.write("You might need to click more than once and wait a moment...")
         empty_df = pd.DataFrame()
         empty_df.to_csv(csv_file_path, sep='\t', index=False)
 
