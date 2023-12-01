@@ -6,4 +6,3 @@ streamlit_folium
 geopandas
 bokeh
 datetime
-functools
