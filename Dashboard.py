@@ -177,7 +177,10 @@ def hourly():
             p.renderers.append(line_render)
 
     # Call the update_plot function with the selected variables for the first plot
-    update_hourly(selected_variables)
+    if not selected_variables:
+        st.write("Please select at least one parameter to plot.")
+    else:
+        update_hourly(selected_variables)
 
     # Set plot properties
     p.title.text_font_size = "16pt"
