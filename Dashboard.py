@@ -518,7 +518,7 @@ def interactive():
     offline_plan(csv_file_path, df_coord)
     
     # Button to overwrite "mission.csv"
-    if st.button("New mission (clear waypoints)"):
+    if st.button("Begin new mission from LAST click (clear previous waypoints)"):
         empty_df = pd.DataFrame()
         empty_df.to_csv(csv_file_path, sep='\t', index=False)
 
