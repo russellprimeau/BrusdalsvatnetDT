@@ -4,9 +4,6 @@ streamlit
 folium
 streamlit_folium
 geopandas
-bokeh.plotting
-bokeh.models
-bokeh.palettes
-bokeh.layouts
+bokeh
 datetime
 functools
