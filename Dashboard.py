@@ -147,7 +147,7 @@ def hourly():
     # Multi-select to select multiple Y variables, including "Select All"
     selected_variables = st.multiselect(
         "Select water quality parameters to plot",
-        ["Select All"] + list(df.columns[1:13]),
+        ["Select All"] + list(df.columns[1:12]),
     )
 
     # Check if "Select All" is chosen
