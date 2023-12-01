@@ -4,7 +4,6 @@
 # Launch by opening the terminal to the script's location and entering "streamlit run Dashboard.py".
 
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 import streamlit as st
 import folium
@@ -523,9 +522,7 @@ def offline_plan(csv_file_path, df_coord):
         return lat, lng
 
     m = folium.Map(location=[62.476994, 6.469730], zoom_start=13)
-
     m.add_child(folium.LatLngPopup())
-
     map = st_folium(m, use_container_width=True)
 
     data = None
