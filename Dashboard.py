@@ -451,17 +451,17 @@ def current():
 
     # Hardcoded GeoJSON file paths, colors, and map center
     geojson_paths_and_colors = {
-        "Surface": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\0m_grid_ps.geojson", "blue"),
-        "10m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\10m_grid_ps.geojson", "green"),
-        "20m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\20m_grid_ps.geojson", "red"),
-        "30m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\30m_grid_ps.geojson", "black"),
-        "40m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\40m_grid_ps.geojson", "yellow"),
-        "50m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\50m_grid_ps.geojson", "green"),
-        "60m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\60m_grid_ps.geojson", "green"),
-        "70m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\70m_grid_ps.geojson", "green"),
-        "80m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\80m_grid_ps.geojson", "green"),
-        "90m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\90m_grid_ps.geojson", "green"),
-        "100m": (r"C:\Users\Russell\Documents\NTNU\Thesis\Profiler Data\Github Version\100m_grid_ps.geojson", "green"),
+        "Surface": (r"0m_grid_ps.geojson", "blue"),
+        "10m": (r"10m_grid_ps.geojson", "green"),
+        "20m": (r"20m_grid_ps.geojson", "red"),
+        "30m": (r"30m_grid_ps.geojson", "black"),
+        "40m": (r"40m_grid_ps.geojson", "yellow"),
+        "50m": (r"50m_grid_ps.geojson", "green"),
+        "60m": (r"60m_grid_ps.geojson", "green"),
+        "70m": (r"70m_grid_ps.geojson", "green"),
+        "80m": (r"80m_grid_ps.geojson", "green"),
+        "90m": (r"90m_grid_ps.geojson", "green"),
+        "100m": (r"100m_grid_ps.geojson", "green"),
         # Add more file keys and paths as needed
     }
 
