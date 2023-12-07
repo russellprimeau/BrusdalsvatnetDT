@@ -89,6 +89,7 @@ def scrape_and_save_data():
             df[column] = df[column].apply(lambda x: 0 if x == 'NAN' else round(float(x), 3))
 
         # Open a connection to the Brusdalsvatnet database:
+        print("Server password has been obscured for public distribution")
         db_config = {
             'host': 'localhost',
             'user': 'root',
