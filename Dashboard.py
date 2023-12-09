@@ -34,13 +34,14 @@ def historic():
     st.title("Historic Sampling Data")
     st.markdown("### Choose a source and format to view past sampling data")
 
-    # Radio button for selecting the plot type
+    # Radio button for selecting the data source
     source = st.radio(
         "Select a data collection platform to display its past measurements",
         options=["Profiler Station", "USV (Maritime Robotics Otter)", "USV (OceanAlpha SL40)", "Weather Station"],
         horizontal=True)
 
     if source == "Profiler Station":
+        # Radio button for selecting the dataset
         profiler_data = st.radio(
             "Select a dataset to display",
             options=["Hourly Surface Data", "Vertical Profiles", "Current Cache"],
@@ -66,7 +67,7 @@ def historic():
         # Use st.components.iframe to embed the website
         st.components.v1.iframe(website_url, height=600)
     else:
-        st.write("Sorry, no data available in the dashboard at this time")
+        st.write("Sorry, no data available in the dashboard from the USVs at this time")
 
 
 # Function to show the upload CSV page
@@ -152,7 +153,7 @@ def hourly():
 
     # Check if "Select All" is chosen
     if "Select All" in selected_variables:
-        selected_variables = df.columns[1:12]
+        selected_variables = list(df.columns[1:12])
 
     # Create a ColumnDataSource
     source = ColumnDataSource(df)
