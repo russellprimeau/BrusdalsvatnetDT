@@ -497,7 +497,7 @@ def current():
         # Display Folium map using folium_static
         folium_static(folium_map, width=1300)
     else:
-        st.info("Please select at least one GeoJSON file and color.")
+        st.info("Please select at least one depth and model parameter to display.")
 
 
 def interactive():
