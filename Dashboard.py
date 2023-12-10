@@ -17,7 +17,6 @@ from datetime import date, datetime, timedelta
 
 
 def main():
-    st.title("Brusdalsvatnet Water Quality Dashboard")
     st.set_page_config(layout="wide")
     st.sidebar.title("Choose Mode")
     selected_page = st.sidebar.radio("", ["Historic", "Current Hydrologic Model", "Interactive (Path Planning)"])
