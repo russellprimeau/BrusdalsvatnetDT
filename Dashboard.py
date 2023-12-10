@@ -17,7 +17,7 @@ from datetime import date, datetime, timedelta
 
 
 def main():
-    st.set_page_config(layout="wide")
+    st.set_page_config("Brusdalsvatnet WQ Dashboard", layout="wide")
     st.sidebar.title("Choose Mode")
     selected_page = st.sidebar.radio("", ["Historic", "Current Hydrologic Model", "Interactive (Path Planning)"])
 
