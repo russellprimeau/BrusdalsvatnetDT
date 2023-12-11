@@ -71,6 +71,7 @@ def historic():
 
 
 # Function to show the upload CSV page
+@st.cache_data
 def upload_hourly_csv_page():
     csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
@@ -159,6 +160,7 @@ def hourly():
     source = ColumnDataSource(df)
     time_difference = timedelta(hours=12)
 
+
     def update_hourly(selected_variables):
         p.title.text = f'Water Quality Parameters vs. Time'
 
@@ -190,6 +192,7 @@ def hourly():
         # Set the x-axis formatter to display dates in the desired format
         p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
         st.bokeh_chart(p, use_container_width=True)
+        st.write("Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
 
 
 def vertical():
@@ -364,6 +367,7 @@ def vertical():
 
         # Display the Bokeh chart for the first plot using Streamlit
         st.bokeh_chart(p1, use_container_width=True)
+        st.write("Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
 
     ###################################################################################################################
     # Plot 2: Instantaneous Vertical Profile
@@ -430,6 +434,7 @@ def vertical():
 
         # Display the Bokeh chart for the second plot using Streamlit
         st.bokeh_chart(p2, use_container_width=True)
+        st.write("Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
 
 
 def current():
@@ -463,7 +468,6 @@ def current():
         "80m": (r"80m_grid_ps.geojson", "green"),
         "90m": (r"90m_grid_ps.geojson", "green"),
         "100m": (r"100m_grid_ps.geojson", "green"),
-        # Add more file keys and paths as needed
     }
 
     hardcoded_map_center = [62.476994, 6.469730]
@@ -548,6 +552,7 @@ def offline_plan(csv_file_path, df_coord):
         new_row.columns = df_coord.columns
         df_coord = pd.concat([df_coord, new_row], ignore_index=True)
         st.dataframe(df_coord)
+        st.write("Hover the cursor over the table for the option to export as a .CSV file.")  # Writes to the app
 
         # Add markers for each coordinate in the DataFrame
         for index, row in df_coord.iterrows():
