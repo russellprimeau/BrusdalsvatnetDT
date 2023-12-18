@@ -192,8 +192,8 @@ def hourly():
         # Set the x-axis formatter to display dates in the desired format
         p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
         st.bokeh_chart(p, use_container_width=True)
-        st.write("Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
-        st.markdown("###### Find a bug? Or have an idea for how to improve the app? Please log suggestions on [GitHub](https://github.com/russellprimeau/BrusdalsvatnetDT/issues)")
+        st.markdown("##### Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
+        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions at [GitHub](https://github.com/russellprimeau/BrusdalsvatnetDT/issues)")
 
 
 def vertical():
@@ -368,7 +368,7 @@ def vertical():
 
         # Display the Bokeh chart for the first plot using Streamlit
         st.bokeh_chart(p1, use_container_width=True)
-        st.write("Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
+        st.markdown("##### Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
 
     ###################################################################################################################
     # Plot 2: Instantaneous Vertical Profile
@@ -435,8 +435,8 @@ def vertical():
 
         # Display the Bokeh chart for the second plot using Streamlit
         st.bokeh_chart(p2, use_container_width=True)
-        st.write("Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
-
+        st.markdown("##### Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
+        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions at [GitHub](https://github.com/russellprimeau/BrusdalsvatnetDT/issues)")
 
 def current():
     # Function to create Folium map with customizable style
@@ -501,6 +501,7 @@ def current():
 
         # Display Folium map using folium_static
         folium_static(folium_map, width=1300)
+        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions at [GitHub](https://github.com/russellprimeau/BrusdalsvatnetDT/issues)")
     else:
         st.info("Please select at least one depth and model parameter to display.")
 
@@ -529,6 +530,7 @@ def interactive():
         empty_df = pd.DataFrame()
         empty_df.to_csv(csv_file_path, sep='\t', index=False)
 
+    st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions at [GitHub](https://github.com/russellprimeau/BrusdalsvatnetDT/issues)")
 
 def offline_plan(csv_file_path, df_coord):
     def get_pos(lat, lng):
