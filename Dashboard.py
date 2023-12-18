@@ -34,14 +34,14 @@ def historic():
     st.title("Historic Sampling Data")
     st.markdown("### Choose a source and format to view past sampling data")
 
-    # Radio button for selecting the data source
+    # Radio button for ing the data source
     source = st.radio(
-        "Select a data collection platform to display its past measurements",
+        " a data collection platform to display its past measurements",
         options=["Profiler Station", "USV (Maritime Robotics Otter)", "USV (OceanAlpha SL40)", "Weather Station"],
         horizontal=True)
 
     if source == "Profiler Station":
-        # Radio button for selecting the dataset
+        # Radio button for ing the dataset
         profiler_data = st.radio(
             "Select a dataset to display",
             options=["Hourly Surface Data", "Vertical Profiles", "Current Cache"],
@@ -304,13 +304,13 @@ def vertical():
     if "1m Intervals" in depth_options:
         selected_depths = list(df['Depth'].unique())
     elif "2m Intervals" in depth_options:
-        selected_depths.extend(list(range(0, 140, 2)))
+        selected_depths.extend(sorted([1] + list(range(0, 80, 2))))
     elif "5m Intervals" in depth_options:
-        selected_depths.extend(list(range(0, 140, 5)))
+        selected_depths.extend(sorted([1] + list(range(0, 80, 5))))
     elif "10m Intervals" in depth_options:
-        selected_depths.extend(list(range(0, 140, 10)))
+        selected_depths.extend(sorted([1] + list(range(0, 80, 10))))
     elif "20m Intervals" in depth_options:
-        selected_depths.extend(list(range(0, 140, 20)))
+        selected_depths.extend(sorted([1] + list(range(0, 80, 20))))
     else:
         selected_depths = depth_options
 
