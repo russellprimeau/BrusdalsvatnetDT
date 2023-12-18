@@ -193,7 +193,7 @@ def hourly():
         p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
         st.bokeh_chart(p, use_container_width=True)
         st.markdown("##### Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
-        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions at [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
 
 def vertical():
