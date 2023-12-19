@@ -50,7 +50,6 @@ end_date = '2020-07-23'
 df.reset_index(inplace=True)
 
 df_filtered = df[(df['Timestamp'] >= start_date) & (df['Timestamp'] <= end_date)]
-print('len', len(df_filtered))
 
 # Step 2: Check for gaps
 # Sort the DataFrame based on the timestamp
@@ -116,7 +115,7 @@ def compute_fft(data, sampling_rate):
 def identify_top_frequencies(frequencies, amplitudes, duration, top_n):
     sorted_indices = np.argsort(amplitudes)[::-1]  # Sort in descending order
     top_indices = sorted_indices[:top_n]
-    top_frequencies = frequencies[top_indices] / duration  # Convert to Hertz
+    top_frequencies = frequencies[top_indices] / 3600  # Convert to Hertz
     top_amplitudes = amplitudes[top_indices]
     for freq, amp in zip(top_frequencies, top_amplitudes):
         print(f'Frequency: {freq} Hz, Amplitude: {amp}')
@@ -264,9 +263,6 @@ df_merged = df_backup.copy()
 # However, lower-order (fewer tap) versions of the filter are less effective at removing undesired component frequencies, and closely resemble to unfiltered input.
 
 df_merged_butter = filter_tune('Butterworth Low-Pass Filter', df_merged, var, cutoffs, butter_lowpass_filter, filterparam=4, sample_freq=fs)
-print(df_merged_butter.columns)
-
-
 
 
 # By contrast, the phase shift associated with the Butterworth filter is dependent on the cutoff frequency, and is very pronounced at lower frequencies.
