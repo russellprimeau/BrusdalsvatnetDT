@@ -37,7 +37,7 @@ def historic():
     # Radio button for ing the data source
     source = st.radio(
         " a data collection platform to display its past measurements",
-        options=["Profiler Station", "USV (Maritime Robotics Otter)", "USV (OceanAlpha SL40)", "Weather Station"],
+        options=["Profiler Station", "USV (Maritime Robotics Otter)", "Weather Station"],
         horizontal=True)
 
     if source == "Profiler Station":
