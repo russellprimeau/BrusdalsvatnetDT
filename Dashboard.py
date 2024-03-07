@@ -19,11 +19,11 @@ from datetime import date, datetime, timedelta
 def main():
     st.set_page_config("Brusdalsvatnet WQ Dashboard", layout="wide")
     st.sidebar.title("Choose Mode")
-    selected_page = st.sidebar.radio("", ["Historic", "Current Hydrologic Model", "Interactive (Path Planning)"])
+    selected_page = st.sidebar.radio("", ["Historic", "Current Hydrodynamic Model", "Interactive (Path Planning)"])
 
     if selected_page == "Historic":
         historic()
-    elif selected_page == "Current Hydrologic Model":
+    elif selected_page == "Current Hydrodynamic Model":
         current()
     elif selected_page == "Interactive (Path Planning)":
         interactive()
@@ -441,7 +441,7 @@ def vertical():
 def current():
     # Function to create Folium map with customizable style
     st.header("Brusdalsvatnet Water Quality Dashboard")
-    st.title("Hydrological Model of Current Conditions")
+    st.title("Hydrodynamic Model of Current Conditions")
 
     def create_map(selected_files_and_colors, map_center, zoom_level=13):
         # Create a Folium map
