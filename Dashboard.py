@@ -3,23 +3,27 @@
 
 # Launch by opening the terminal to the script's location and entering "streamlit run Dashboard.py".
 
+import os
 import numpy as np
 import pandas as pd
+import geopandas as gpd
 import streamlit as st
 import folium
 from streamlit_folium import st_folium, folium_static
-import geopandas as gpd
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, DatetimeTickFormatter, DataRange1d, Legend
+from bokeh.models import ColumnDataSource, DatetimeTickFormatter, DataRange1d, Legend, HoverTool, Range1d
 from bokeh.palettes import Viridis256, Category20_20, Spectral11
 from bokeh.layouts import column
-from datetime import date, datetime, timedelta
+from datetime import date, time, datetime, timedelta
+from dateutil.relativedelta import relativedelta
+
 
 
 def main():
     st.set_page_config("Brusdalsvatnet WQ Dashboard", layout="wide")
     st.sidebar.title("Choose Mode")
     selected_page = st.sidebar.radio("", ["Historic", "Current Hydrodynamic Model", "Interactive (Path Planning)"])
+    absolute_path = os.path.dirname(__file__)
 
     if selected_page == "Historic":
         historic()
@@ -31,17 +35,17 @@ def main():
 
 def historic():
     st.header("Brusdalsvatnet Water Quality Dashboard")
-    st.title("Historic Sampling Data")
-    st.markdown("### Choose a source and format to view past sampling data")
+    st.title("Historic Instrument Data")
+    st.markdown("### Choose a source and format to view data from previous sampling missions")
 
-    # Radio button for ing the data source
+    # Radio button for selecting the data source
     source = st.radio(
-        " a data collection platform to display its past measurements",
-        options=["Profiler Station", "Weather Station", "USV (Maritime Robotics Otter)"],
+        "Select a data collection platform to display its past measurements",
+        options=["Profiler Station", "USV (Maritime Robotics Otter)", "USV (OceanAlpha SL40)", "Weather Station"],
         horizontal=True)
 
     if source == "Profiler Station":
-        # Radio button for ing the dataset
+        # Radio button for selecting the dataset
         profiler_data = st.radio(
             "Select a dataset to display",
             options=["Hourly Surface Data", "Vertical Profiles", "Current Cache"],
@@ -60,20 +64,20 @@ def historic():
         else:
             vertical()
     elif source == "Weather Station":
-        st.markdown("#### Access to weather station data currently requires a commercial license from Volue")
-        # URL of the Volue commercial platform which currently stores this data
-        website_url = "https://sensordata.no/vdv.php/historical/714"
-
-        # Use st.components.iframe to embed the website
-        st.components.v1.iframe(website_url, height=600)
+        weather()
+        # st.markdown("#### Access to weather station data currently requires a commercial license from Volue")
+        # # URL of the Volue commercial platform which currently stores this data
+        # website_url = "https://sensordata.no/vdv.php/historical/714"
+        #
+        # # Use st.components.iframe to embed the website
+        # st.components.v1.iframe(website_url, height=600)
     else:
         st.write("Sorry, no data available in the dashboard from the USVs at this time")
 
-
-# Function to show the upload CSV page
+# Function to the upload new profiler data from CSV
 @st.cache_data
-def upload_hourly_csv_page():
-    csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
+def upload_weather_csv_page():
+    csv_file2 = "data/Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
 
     # Add units to column names
@@ -93,9 +97,9 @@ def upload_hourly_csv_page():
                 "Turbidity_FNU": "Turbidity (FNU)",
                 "Position": "Depth (m)",
                 "fDOM_RFU": "fDOM (RFU)",
-                "fDOM_QSU": "fDOM (QSU)",
-                "lat": "latitude",
-                "lon": "longitude",
+                "fDOM_QSU": "fDOM (ppb QSU)",
+                "lat": "Latitude",
+                "lon": "Longitude",
             }
             df = df.rename(columns=column_names)  # Assign column names for profiler data
         elif df.columns[0] == "TIMESTAMP":
@@ -112,9 +116,9 @@ def upload_hourly_csv_page():
                 "sensorParms(8)": "Turbidity (FNU)",
                 "sensorParms(9)": "Vertical Position (m)",
                 "sensorParms(10)": "fDOM (RFU)",
-                "sensorParms(11)": "fDOM (QSU)",
-                "lat": "latitude",
-                "lon": "longitude",
+                "sensorParms(11)": "fDOM (ppb QSU)",
+                "lat": "Latitude",
+                "lon": "Longitude",
             }
             df = df.rename(columns=column_names)  # Assign column names for profiler data
 
@@ -131,6 +135,136 @@ def upload_hourly_csv_page():
         df = df.sort_values(by="Timestamp")
         df = df.drop(columns=['Record Number'])
 
+    # return dfs
+
+def weather():
+    st.title("Weather Station Data")
+    st.markdown("#### Sorry, the weather page is being updated at the moment.")
+    # pw = figure(title="Time Series Data at 2.9m Depth")
+    #
+    # file_paths = ['data/All_10min.csv', 'data/All_time.csv', 'data/All_Prec_int_hr.csv', 'data/All_min.csv']
+    # dfs = []  # List of uploaded dataframes
+    # variables = []  # List of column names
+    # for file_path in file_paths:
+    #     df = pd.read_csv(file_path, sep=';', decimal=',')
+    #     df['Time'] = pd.to_datetime(df['Time'])
+    #     # Check for error values
+    #     columns_to_check = df.columns[1:]
+    #     variables + list(df.columns[1:])
+    #     for col in columns_to_check:
+    #         df.replace({col: -99.9}, pd.NA, inplace=True)
+    #         # df[col].replace(999.9, pd.NA, inplace=True)
+    #     dfs.append(df)
+    #
+    # # Multi-select to select multiple Y variables, including "Select All"
+    # selected_wvariables = st.multiselect(
+    #     "Select water quality parameters to plot",
+    #     ["Select All"] + variables,
+    # )
+    #
+    # # Check if "Select All" is chosen
+    # if "Select All" in selected_wvariables:
+    #     selected_wvariables = variables
+    #
+    # # Create a ColumnDataSource
+    # source = ColumnDataSource(df)
+    # time_difference = timedelta(hours=12)
+    #
+    # def update_weather(selected_wvariables):
+    #     p.title.text = f'Weather Parameters vs. Time'
+    #
+    #     for variable, color in zip(selected_wvariables, Spectral11):
+    #         # Convert 'Date' to a pandas Series to use shift operation
+    #         date_series = pd.Series(source.data['Timestamp'])
+    #
+    #         # Add a new column 'Gap' indicating when a gap is detected within each 'Depth' group
+    #         source.data['Gap'] = (date_series - date_series.shift(1)) > time_difference
+    #
+    #         # Replace the 'Value' with NaN when a gap is detected
+    #         source.data[variable] = np.where(source.data['Gap'], np.nan, source.data[variable])
+    #
+    #         line_render = p.line(
+    #             x="Timestamp", y=variable, line_width=2, color=color, source=source, legend_label=variable
+    #         )
+    #         p.renderers.append(line_render)
+    #
+    # # Call the update_plot function with the selected variables for the first plot
+    # if not selected_wvariables:
+    #     st.write("Please select at least one parameter to plot.")
+    # else:
+    #     update_weather(selected_wvariables)
+    #     # Set plot properties
+    #     pw.title.text_font_size = "16pt"
+    #     pw.xaxis.axis_label = "Time"
+    #     pw.yaxis.axis_label = "Variable Value(s)"
+    #     pw.legend.title = "Weather Parameters"
+    #     pw.legend.click_policy = "hide"  # Hide lines on legend click
+    #     # Set the x-axis formatter to display dates in the desired format
+    #     pw.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%Y/%m/%d %H:%M")
+    #     st.bokeh_chart(pw, use_container_width=True)
+    #     st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+    #              "Click legend entries to toggle series on/off.")
+
+# Function to the upload new profiler data from CSV
+@st.cache_data
+def upload_hourly_csv_page():
+    csv_file2 = "data/Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
+    df = pd.read_csv(csv_file2, skiprows=[0, 2, 3], parse_dates=['TIMESTAMP'])
+
+    # Add units to column names
+    if df is not None:
+        if df.columns[0] == "Timestamp":
+            column_names = {
+                "id": "id",
+                "Timestamp": "Timestamp",
+                "Record_Number": "Record Number",
+                "Temperature": "Temperature (Celsius)",
+                "Conductivity": "Conductivity (microSiemens/centimeter)",
+                "Specific_Conductivity": "Specific Conductivity (microSiemens/centimeter)",
+                "Salinity": "Salinity (parts per thousand, ppt)",
+                "pH": "pH",
+                "DO": "Dissolved Oxygen (% saturation)",
+                "Turbidity_NTU": "Turbidity (NTU)",
+                "Turbidity_FNU": "Turbidity (FNU)",
+                "Position": "Depth (m)",
+                "fDOM_RFU": "fDOM (RFU)",
+                "fDOM_QSU": "fDOM (ppb QSU)",
+                "lat": "Latitude",
+                "lon": "Longitude",
+            }
+            df = df.rename(columns=column_names)  # Assign column names for profiler data
+        elif df.columns[0] == "TIMESTAMP":
+            column_names = {
+                "TIMESTAMP": "Timestamp",
+                "RECORD": "Record Number",
+                "sensorParms(1)": "Temperature (Celsius)",
+                "sensorParms(2)": "Conductivity (microSiemens/centimeter)",
+                "sensorParms(3)": "Specific Conductivity (microSiemens/centimeter)",
+                "sensorParms(4)": "Salinity (parts per thousand, ppt)",
+                "sensorParms(5)": "pH",
+                "sensorParms(6)": "Dissolved Oxygen (% saturation)",
+                "sensorParms(7)": "Turbidity (NTU)",
+                "sensorParms(8)": "Turbidity (FNU)",
+                "sensorParms(9)": "Vertical Position (m)",
+                "sensorParms(10)": "fDOM (RFU)",
+                "sensorParms(11)": "fDOM (ppb QSU)",
+                "lat": "Latitude",
+                "lon": "Longitude",
+            }
+            df = df.rename(columns=column_names)  # Assign column names for profiler data
+
+        # st.write("Uploaded DataFrame:")
+        # st.dataframe(df)
+
+        # Convert text as read-in to appropriate pandas formats
+        for column in df.columns:
+            df[column] = df[column].apply(lambda x: np.nan if x == 'NAN' else x)
+        df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce', downcast='float')
+
+        # Convert the time column to a datetime object (if not already)
+        # df['Timestamp'] = pd.to_datetime(df['Timestamp']).apply(lambda x: x.to_pydatetime())
+        df = df.sort_values(by="Timestamp")
+        df = df.drop(columns=['Record Number', 'Vertical Position (m)'])
     return df
 
 
@@ -147,18 +281,95 @@ def hourly():
         return None
 
     # Multi-select to select multiple Y variables, including "Select All"
-    selected_variables = st.multiselect(
+    mc1, mc2 = st.columns(2, gap="small")
+    with mc1:
+        selected_variables = st.multiselect(
         "Select water quality parameters to plot",
-        ["Select All"] + list(df.columns[1:12]),
+        ["Select All"] + list(df.columns[1:11]),
+        )
+
+    clean_setting = st.radio(
+        "Choose how to filter the dataset",
+        options=["Raw", "Remove Suspicious Values"],
+        horizontal=True
     )
+
+    def DefineRange(daterange):
+        if daterange == "Last Month":
+            st.session_state.ksd = date.today() - timedelta(days=31)
+            st.session_state.knd = date.today()
+        elif daterange == "Last Year":
+            st.session_state.ksd = datetime.now() - relativedelta(years=1)
+            st.session_state.knd = datetime.now()
+        elif daterange == "Maximum Extent":
+            st.session_state.ksd = first_date
+            st.session_state.knd = last_date
+
+
+    first_date = df.iloc[0, 0]
+    last_date = df.iloc[-1, 0]
+
+    set_begin_date = first_date
+    set_last_date = last_date
+    daterange = ""
+
+    dc1, dc2, dc3, dc4 = st.columns(4, gap="small")
+    dc1.date_input("Begin plot range:", value=set_begin_date, key="ksd")
+    dc2.date_input("End plot range:", value=set_last_date, key="knd")
+
+    b1, b2, b3, b4, b5, b6 = st.columns(6, gap="small")
+    b1.button("Maximum Extent", on_click=DefineRange, args=("Maximum Extent",))
+    b2.button("Last Year", on_click=DefineRange, args=("Last Year",))
+    b3.button("Last Month", on_click=DefineRange, args=("Last Month",))
+
+    set_begin_date = datetime.combine(st.session_state.ksd, time())
+    set_last_date = datetime.combine(st.session_state.knd, time())
+
+    if clean_setting == "Remove Suspicious Values":
+        # Define conditions for each parameter which indicate errors in the data
+        error_conditions = {
+            "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                        df['Timestamp'] > pd.to_datetime('2099-12-31')),
+            "Temperature (Celsius)": (df['Temperature (Celsius)'] < -5) | (df['Temperature (Celsius)'] > 25),
+            "Conductivity (microSiemens/centimeter)": (df['Conductivity (microSiemens/centimeter)'] < 0) |
+                                                      (df['Conductivity (microSiemens/centimeter)'] > 45),
+            "Specific Conductivity (microSiemens/centimeter)": (
+                        df['Specific Conductivity (microSiemens/centimeter)'] < 1),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "pH": (df['pH'] < 2) | (df['pH'] > 12),
+            "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
+                        df['Dissolved Oxygen (% saturation)'] > 120),
+            "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
+            "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
+            "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
+            "fDOM (ppb QSU)": (df['fDOM (ppb QSU)'] < 0) | (df['fDOM (ppb QSU)'] > 300),
+            "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
+            "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
+        }
+
+        # Replace values meeting the error conditions with np.nan using boolean indexing
+        for col, condition in error_conditions.items():
+            df.loc[condition, col] = np.nan
+
+        # Define start and end timestamps for the range to drop
+        start_removal = pd.to_datetime('2022-03-24 00:00')
+        end_removal = pd.to_datetime('2022-04-22 00:00')
+
+        # Create boolean mask for rows to keep (outside the time range)
+        mask = (df['Timestamp'] < start_removal) | (df['Timestamp'] > end_removal)
+
+        # Drop rows not satisfying the mask (within the time range)
+        df = df[mask]
+
+        st.write("Some suspicious values have been removed from the dataset, but errors may remain.")
 
     # Check if "Select All" is chosen
     if "Select All" in selected_variables:
-        selected_variables = list(df.columns[1:12])
+        selected_variables = list(df.columns[1:11])
 
     # Create a ColumnDataSource
     source = ColumnDataSource(df)
-    time_difference = timedelta(hours=12)
+    time_difference = timedelta(hours=2)
 
 
     def update_hourly(selected_variables):
@@ -177,6 +388,9 @@ def hourly():
             line_render = p.line(
                 x="Timestamp", y=variable, line_width=2, color=color, source=source, legend_label=variable
             )
+            p.add_tools(HoverTool(renderers=[line_render], tooltips=[("Time", "@Timestamp{%Y-%m-%d %H:%M}"),
+                                                                     (variable, f'@{{{variable}}}')],
+                                  formatters={ "@Timestamp":"datetime",}, mode="vline"))
             p.renderers.append(line_render)
 
     # Call the update_plot function with the selected variables for the first plot
@@ -187,13 +401,25 @@ def hourly():
         # Set plot properties
         p.title.text_font_size = "16pt"
         p.xaxis.axis_label = "Time"
-        p.yaxis.axis_label = "Variable Value(s)"
+        # p.xlim = (set_begin_date, set_last_date)
+        plotrange = set_last_date - set_begin_date
+        if plotrange > timedelta(days=62):
+            p.x_range = Range1d(set_begin_date - timedelta(days=3), set_last_date + timedelta(days=3))
+        else:
+            p.x_range = Range1d(set_begin_date, set_last_date)
+        p.yaxis.axis_label = "Parameter Value(s)"
         p.legend.title = "Water Quality Parameters"
+        p.legend.location = "top_left"
+        p.legend.click_policy = "hide"  # Hide lines on legend click
+        # p.add_layout(p.legend[0], 'below')  # Option to move the legend out of the plotspace
         # Set the x-axis formatter to display dates in the desired format
-        p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+        p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%Y/%m/%d %H:%M")
+        # show(p)
         st.bokeh_chart(p, use_container_width=True)
-        st.markdown("##### Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
-        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+        st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                 "Click legend entries to toggle series on/off.")
+        st.write(
+            "Find a bug? Or have an idea for how to improve the app? Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
 
 def vertical():
@@ -201,7 +427,7 @@ def vertical():
     # Import and pre-process data
 
     # Read data from a CSV file into a Pandas DataFrame, skipping metadata rows
-    csv_file2 = "Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
+    csv_file2 = "data/Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
 
     # Assign column names for profiler data
@@ -221,7 +447,7 @@ def vertical():
         "sensorParms(8)": "Turbidity (FNU)",
         "sensorParms(9)": "Vertical Position (m)",
         "sensorParms(10)": "fDOM (RFU)",
-        "sensorParms(11)": "fDOM (QSU)",
+        "sensorParms(11)": "fDOM (ppb QSU)",
         "lat": "Latitude",
         "lon": "Longitude",
     }
@@ -288,7 +514,7 @@ def vertical():
                             "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
                             "pH",
                             "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
-                            "fDOM (QSU)"]
+                            "fDOM (ppb QSU)"]
     selected_variables_p1 = st.multiselect('Select Water Quality Parameters',
                                            variables_to_plot_p1, default=[])
 
@@ -299,6 +525,80 @@ def vertical():
             df['Depth'].unique()),
         default=["10m Intervals"]  # Default is 0m, 10m, 20m...
     )
+
+    clean_setting = st.radio(
+        "Choose how to filter the dataset",
+        options=["Raw", "Remove Suspicious Values"],
+        horizontal=True
+    )
+
+    def DefineRange(daterange):
+        if daterange == "Last Month":
+            st.session_state.ksd = date.today() - timedelta(days=31)
+            st.session_state.knd = date.today()
+        elif daterange == "Last Year":
+            st.session_state.ksd = datetime.now() - relativedelta(years=1)
+            st.session_state.knd = datetime.now()
+        elif daterange == "Maximum Extent":
+            st.session_state.ksd = first_date
+            st.session_state.knd = last_date
+
+    first_date = df.iloc[0, 0]
+    last_date = df.iloc[-1, 0]
+
+    set_begin_date = first_date
+    set_last_date = last_date
+    daterange = ""
+
+    dc1, dc2, dc3, dc4 = st.columns(4, gap="small")
+    dc1.date_input("Begin plot range:", value=set_begin_date, key="ksd")
+    dc2.date_input("End plot range:", value=set_last_date, key="knd")
+
+    b1, b2, b3, b4, b5, b6 = st.columns(6, gap="small")
+    b1.button("Maximum Extent", on_click=DefineRange, args=("Maximum Extent",))
+    b2.button("Last Year", on_click=DefineRange, args=("Last Year",))
+    b3.button("Last Month", on_click=DefineRange, args=("Last Month",))
+
+    set_begin_date = datetime.combine(st.session_state.ksd, time())
+    set_last_date = datetime.combine(st.session_state.knd, time())
+
+    if clean_setting == "Remove Suspicious Values":
+        # Define conditions for each parameter which indicate errors in the data
+        error_conditions = {
+            "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                    df['Timestamp'] > pd.to_datetime('2099-12-31')),
+            "Temperature (Celsius)": (df['Temperature (Celsius)'] < -5) | (df['Temperature (Celsius)'] > 25),
+            "Conductivity (microSiemens/centimeter)": (df['Conductivity (microSiemens/centimeter)'] < 0) |
+                                                      (df['Conductivity (microSiemens/centimeter)'] > 45),
+            "Specific Conductivity (microSiemens/centimeter)": (
+                    df['Specific Conductivity (microSiemens/centimeter)'] < 1),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "pH": (df['pH'] < 1) | (df['pH'] > 13),
+            "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
+                    df['Dissolved Oxygen (% saturation)'] > 120),
+            "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
+            "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
+            "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
+            "fDOM (ppb QSU)": (df['fDOM (ppb QSU)'] < 0) | (df['fDOM (ppb QSU)'] > 300),
+            "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
+            "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
+        }
+
+        # Replace values meeting the error conditions with np.nan using boolean indexing
+        for col, condition in error_conditions.items():
+            df.loc[condition, col] = np.nan
+
+        # Define start and end timestamps for the range to drop
+        # start_removal = pd.to_datetime('2022-03-24 00:00')
+        # end_removal = pd.to_datetime('2022-04-22 00:00')
+        #
+        # # Create boolean mask for rows to keep (outside the time range)
+        # mask = (df['Timestamp'] < start_removal) | (df['Timestamp'] > end_removal)
+
+        # Drop rows not satisfying the mask (within the time range)
+        # df = df[mask]
+
+        st.write("Some suspicious values have been removed from the dataset, but errors may remain.")
 
     # Handle special options
     selected_depths = []
@@ -354,6 +654,7 @@ def vertical():
                     renderer = p1.line(x='Timestamp', y=var, source=depth_source, line_width=2,
                                        line_color=viridis_subset[num_colors - (1 + i + j * len(selected_variables_p1))],
                                        legend_label=f'{depth}m: {var}')
+                    p1.add_tools(HoverTool(renderers=[renderer], tooltips=[("Time", "@Timestamp{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'), (var, f'@{{{var}}}')], formatters={"@Timestamp": "datetime", }, mode="vline"))
                     p1.renderers.append(renderer)
 
         # Call the update_plot function with the selected variables for the first plot
@@ -362,13 +663,20 @@ def vertical():
         # Show legend for the first plot
         p1.legend.title = 'Depth'
         p1.legend.label_text_font_size = '10px'
+        p1.legend.click_policy = "hide"  # Hide lines on legend click
         p1.yaxis.axis_label = "Variable Value(s)"
         p1.xaxis.axis_label = "Time"
+        plotrange = set_last_date - set_begin_date
+        if plotrange > timedelta(days=62):
+            p1.x_range = Range1d(set_begin_date - timedelta(days=3), set_last_date + timedelta(days=3))
+        else:
+            p1.x_range = Range1d(set_begin_date, set_last_date)
         p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
 
         # Display the Bokeh chart for the first plot using Streamlit
         st.bokeh_chart(p1, use_container_width=True)
-        st.markdown("##### Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
+        st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                 "Click legend entries to toggle series on/off.")
 
     ###################################################################################################################
     # Plot 2: Instantaneous Vertical Profile
@@ -421,6 +729,7 @@ def vertical():
                     line_renderer = p2.line(x=var, y='Depth', source=source_plot2, line_width=1,
                                             line_color=Category20_20[i + j * len(selected_dates_p2)],
                                             legend_label=f'{var} : {date_val}')
+                    p2.add_tools(HoverTool(renderers=[line_renderer], tooltips=[("Depth", '@Depth'), (var, f'@{{{var}}}')], mode="vline"))
                     p2.renderers.append(line_renderer)
 
             # Reverse the direction of the Y-axis
@@ -432,11 +741,13 @@ def vertical():
         # Show legend for the second plot
         p2.legend.title = 'Parameters'
         p2.legend.label_text_font_size = '10px'
+        p2.legend.click_policy = "hide"  # Hide lines on legend click
 
         # Display the Bokeh chart for the second plot using Streamlit
         st.bokeh_chart(p2, use_container_width=True)
-        st.markdown("##### Use the pan, zoom, save and reset buttons on the right to interact with the chart.")
-        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+        st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                 "Click legend entries to toggle series on/off.")
+
 
 def current():
     # Function to create Folium map with customizable style
@@ -458,17 +769,17 @@ def current():
 
     # Hardcoded GeoJSON file paths, colors, and map center
     geojson_paths_and_colors = {
-        "Surface": (r"0m_grid_ps.geojson", "blue"),
-        "10m": (r"10m_grid_ps.geojson", "green"),
-        "20m": (r"20m_grid_ps.geojson", "red"),
-        "30m": (r"30m_grid_ps.geojson", "black"),
-        "40m": (r"40m_grid_ps.geojson", "yellow"),
-        "50m": (r"50m_grid_ps.geojson", "green"),
-        "60m": (r"60m_grid_ps.geojson", "green"),
-        "70m": (r"70m_grid_ps.geojson", "green"),
-        "80m": (r"80m_grid_ps.geojson", "green"),
-        "90m": (r"90m_grid_ps.geojson", "green"),
-        "100m": (r"100m_grid_ps.geojson", "green"),
+        "Surface": (r"model/0m_grid_ps.geojson", "blue"),
+        "10m": (r"model/10m_grid_ps.geojson", "green"),
+        "20m": (r"model/20m_grid_ps.geojson", "red"),
+        "30m": (r"model/30m_grid_ps.geojson", "black"),
+        "40m": (r"model/40m_grid_ps.geojson", "yellow"),
+        "50m": (r"model/50m_grid_ps.geojson", "green"),
+        "60m": (r"model/60m_grid_ps.geojson", "green"),
+        "70m": (r"model/70m_grid_ps.geojson", "green"),
+        "80m": (r"model/80m_grid_ps.geojson", "green"),
+        "90m": (r"model/90m_grid_ps.geojson", "green"),
+        "100m": (r"model/100m_grid_ps.geojson", "green"),
     }
 
     hardcoded_map_center = [62.476994, 6.469730]
@@ -487,7 +798,7 @@ def current():
                             "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
                             "pH",
                             "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
-                            "fDOM (QSU)"]
+                            "fDOM (ppb QSU)"]
 
     # Multiselect widget to choose GeoJSON files
     selected_param = st.multiselect("Select parameter by which to color-code", chloropleth_options)
@@ -513,7 +824,7 @@ def interactive():
     mission_columns = ["Latitude", "Longitude", "Type", "Velocity (m/s)", "Waypoint radius (m)", "Timeout (s)"]
 
     # CSV file path
-    csv_file_path = "mission.csv"
+    csv_file_path = "output/mission.csv"
 
     # Read an existing CSV file into a DataFrame
     try:
