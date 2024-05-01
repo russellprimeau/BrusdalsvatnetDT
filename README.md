@@ -20,12 +20,6 @@ Files in the repository include:
 
 "requirements.txt": a list of dependencies (Python packages, with compatibility/versioning specifications as needed) which is used by Streamlit for launching the Dashboard app.
 
-"Scraper.py": called by the Windows Task Scheduler to collect the last hourly reading from the profiler platform's IP address and add it as a new record in the appropriate table of the database. Note the the password for the existing database has been obscured for publication.
-
-"BrusdalsvatnetViewer.py": as a predecessor of the Streamlit app, this script implements several functions for locally pre-processing, analyzing, and viewing the data from the two numerical datasets provided by the profiler platform. Data is viewed using an offline UI implemented with matplotlib and tkinter.
-
-"SondePlotter.py": contains a function for plotting the time series data in a UI. Called by BrusdalsvatnetViewer.py.
-
 Data files:
 
 "XXm_grid_ps.geojson": each file contains GIS data representing the output of a numerical hydrologic modeling software such as Delft3D or GEMSS. Each file stores divides the lake into a 2-dimensional 100m x 100m grid at a particular depth based on public bathymetry data, which is essentially a coarse mesh of finite elements. Each grid square contains data representing the modeled water quality parameter values within that grid. At present each element contains a single node representing the average value within a 100m x 100m x 10m rectangular prism, but this could be extended depending on the chose hydrologic modeling program to include additional nodes (vertices, etc.). The geojson files are used to display this data in the dashboard interface in the "Current Hydrologic Model" window.
