@@ -10,12 +10,11 @@ import streamlit as st
 import folium
 from streamlit_folium import st_folium, folium_static
 from bokeh.plotting import figure
-from bokeh.models import ColumnDataSource, DatetimeTickFormatter, DataRange1d, Legend, HoverTool, Range1d
+from bokeh.models import ColumnDataSource, DatetimeTickFormatter, DataRange1d, HoverTool, Range1d
 from bokeh.palettes import Viridis256, Category20_20, Spectral11
 from bokeh.layouts import column
 from datetime import date, time, datetime, timedelta
 from dateutil.relativedelta import relativedelta
-
 
 
 def main():
@@ -46,7 +45,7 @@ def historic():
         # Radio button for selecting the dataset
         profiler_data = st.radio(
             "Select a dataset to display",
-            options=["Hourly Surface Data", "Vertical Profiles"],  # "Current Cache"],  # st.components.v1.iframe times out
+            options=["Hourly Surface Data", "Vertical Profiles"],  # "Current Cache"],  # Link times out
             horizontal=True)
 
         # Display the selected plot based on user choice
@@ -74,6 +73,7 @@ def historic():
     st.write(
         "Find a bug? Or have an idea for how to improve the app? "
         "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+
 
 # Function to the upload new profiler data from CSV
 @st.cache_data
@@ -127,8 +127,8 @@ def upload_weather_csv_page():
         # st.dataframe(df)
 
         # Data cleaning
-        for column in df.columns:
-            df[column] = df[column].apply(lambda x: np.nan if x == 'NAN' else x)
+        for parameter in df.columns:
+            df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
         df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce', downcast='float')
 
         # Convert the time column to a datetime object
@@ -136,7 +136,8 @@ def upload_weather_csv_page():
         df = df.sort_values(by="Timestamp")
         df = df.drop(columns=['Record Number'])
 
-    # return dfs
+    return df
+
 
 def weather():
     st.title("Weather Station Data")
@@ -206,6 +207,7 @@ def weather():
     #     st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
     #              "Click legend entries to toggle series on/off.")
 
+
 # Function to the upload new profiler data from CSV
 @st.cache_data
 def upload_hourly_csv_page():
@@ -258,8 +260,8 @@ def upload_hourly_csv_page():
         # st.dataframe(df)
 
         # Convert text as read-in to appropriate pandas formats
-        for column in df.columns:
-            df[column] = df[column].apply(lambda x: np.nan if x == 'NAN' else x)
+        for parameter in df.columns:
+            df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
         df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce', downcast='float')
 
         # Convert the time column to a datetime object (if not already)
@@ -285,8 +287,8 @@ def hourly():
     mc1, mc2 = st.columns(2, gap="small")
     with mc1:
         selected_variables = st.multiselect(
-        "Select water quality parameters to plot",
-        ["Select All"] + list(df.columns[1:11]),
+            "Select water quality parameters to plot",
+            ["Select All"] + list(df.columns[1:11]),
         )
 
     clean_setting = st.radio(
@@ -305,7 +307,6 @@ def hourly():
         elif daterange == "Maximum Extent":
             st.session_state.ksd = first_date
             st.session_state.knd = last_date
-
 
     first_date = df.iloc[0, 0]
     last_date = df.iloc[-1, 0]
@@ -330,16 +331,16 @@ def hourly():
         # Define conditions for each parameter which indicate errors in the data
         error_conditions = {
             "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
-                        df['Timestamp'] > pd.to_datetime('2099-12-31')),
+                    df['Timestamp'] > pd.to_datetime('2099-12-31')),
             "Temperature (Celsius)": (df['Temperature (Celsius)'] < -5) | (df['Temperature (Celsius)'] > 25),
             "Conductivity (microSiemens/centimeter)": (df['Conductivity (microSiemens/centimeter)'] < 0) |
                                                       (df['Conductivity (microSiemens/centimeter)'] > 45),
             "Specific Conductivity (microSiemens/centimeter)": (
-                        df['Specific Conductivity (microSiemens/centimeter)'] < 1),
+                    df['Specific Conductivity (microSiemens/centimeter)'] < 1),
             "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
             "pH": (df['pH'] < 2) | (df['pH'] > 12),
             "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
-                        df['Dissolved Oxygen (% saturation)'] > 120),
+                    df['Dissolved Oxygen (% saturation)'] > 120),
             "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
             "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
             "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
@@ -372,7 +373,6 @@ def hourly():
     source = ColumnDataSource(df)
     time_difference = timedelta(hours=2)
 
-
     def update_hourly(selected_variables):
         p.title.text = f'Water Quality Parameters vs. Time'
 
@@ -391,7 +391,7 @@ def hourly():
             )
             p.add_tools(HoverTool(renderers=[line_render], tooltips=[("Time", "@Timestamp{%Y-%m-%d %H:%M}"),
                                                                      (variable, f'@{{{variable}}}')],
-                                  formatters={ "@Timestamp":"datetime",}, mode="vline"))
+                                  formatters={"@Timestamp": "datetime", }, mode="vline"))
             p.renderers.append(line_render)
 
     # Call the update_plot function with the selected variables for the first plot
@@ -480,8 +480,8 @@ def vertical():
     df = df[[column_to_move] + [col for col in df.columns if col != column_to_move]]
 
     # Data cleaning
-    for column in df.columns:
-        df[column] = df[column].apply(lambda x: np.nan if x == 'NAN' else x)
+    for parameter in df.columns:
+        df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
     df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce', downcast='float')
 
     # Convert 'Date' to datetime objects, so it can be used to sort Vertical Profiles
@@ -514,16 +514,19 @@ def vertical():
                             "pH",
                             "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
                             "fDOM (ppb QSU)"]
-    selected_variables_p1 = st.multiselect('Select Water Quality Parameters',
-                                           variables_to_plot_p1, default=[])
+    mc1, mc2 = st.columns(2, gap="small")
+    with mc1:
+        selected_variables_p1 = st.multiselect('Select Water Quality Parameters', variables_to_plot_p1, default=[])
 
     # User input for depth selection
-    depth_options = st.multiselect(
-        "Select depths at which to plot parameters (in meters)",
-        options=["1m Intervals", "2m Intervals", "5m Intervals", "10m Intervals", "20m Intervals"] + list(
-            df['Depth'].unique()),
-        default=["10m Intervals"]  # Default is 0m, 10m, 20m...
-    )
+    dc1, dc2 = st.columns(2, gap="small")
+    with dc1:
+        depth_options = st.multiselect(
+            "Select depths at which to plot parameters (in meters)",
+            options=["1m Intervals", "2m Intervals", "5m Intervals", "10m Intervals", "20m Intervals"] + list(
+                df['Depth'].unique()),
+            default=["10m Intervals"]  # Default is 0m, 10m, 20m...
+        )
 
     clean_setting = st.radio(
         "Choose how to filter the dataset",
@@ -653,7 +656,10 @@ def vertical():
                     renderer = p1.line(x='Timestamp', y=var, source=depth_source, line_width=2,
                                        line_color=viridis_subset[num_colors - (1 + i + j * len(selected_variables_p1))],
                                        legend_label=f'{depth}m: {var}')
-                    p1.add_tools(HoverTool(renderers=[renderer], tooltips=[("Time", "@Timestamp{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'), (var, f'@{{{var}}}')], formatters={"@Timestamp": "datetime", }, mode="vline"))
+                    p1.add_tools(HoverTool(renderers=[renderer],
+                                           tooltips=[("Time", "@Timestamp{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
+                                                     (var, f'@{{{var}}}')], formatters={"@Timestamp": "datetime", },
+                                           mode="vline"))
                     p1.renderers.append(renderer)
 
         # Call the update_plot function with the selected variables for the first plot
@@ -683,17 +689,19 @@ def vertical():
     st.markdown("### Instantaneous Profile")
 
     # Add a multiselect box for parameters in the second plot
-    selected_variables_p2 = st.multiselect('Select Water Quality Parameters)', variables_to_plot_p1, default=[])
+    mc1, mc2 = st.columns(2, gap="small")
+    with mc1:
+        selected_variables_p2 = st.multiselect('Select Water Quality Parameters)', variables_to_plot_p1, default=[])
 
-    # Add a multiselect box for date for the second plot
-    selected_dates_p2 = st.multiselect('Select Date for Vertical Profile (search by typing YYYY-MM-DD)',
-                                       df['Date'].dt.strftime('%Y-%m-%d').unique())
+        # Add a multiselect box for date for the second plot
+        selected_dates_p2 = st.multiselect('Select Date for Vertical Profile (search by typing YYYY-MM-DD)',
+                                           df['Date'].dt.strftime('%Y-%m-%d').unique())
 
-    profile_times = ['00:00 AM (Night)', '12:00 PM (Day)']
+        profile_times = ['00:00 AM (Night)', '12:00 PM (Day)']
 
-    # Add a multiselect box for choosing between plotting the AM or PM profiling
-    nightman_dayman = st.radio("Select between night or day profile (profiles are usually collected twice per day)",
-                               profile_times)  # Assuming the first column is x
+        # Add a multiselect box for choosing between plotting the AM or PM profiling
+        nightman_dayman = st.radio("Select between night or day profile (profiles are usually collected twice per day)",
+                                   profile_times, horizontal=True)  # Assuming the first column is x
 
     # Create Bokeh figure for the second plot only if a date is selected
     if not selected_dates_p2 or not selected_variables_p2:
@@ -728,7 +736,9 @@ def vertical():
                     line_renderer = p2.line(x=var, y='Depth', source=source_plot2, line_width=1,
                                             line_color=Category20_20[i + j * len(selected_dates_p2)],
                                             legend_label=f'{var} : {date_val}')
-                    p2.add_tools(HoverTool(renderers=[line_renderer], tooltips=[("Depth", '@Depth'), (var, f'@{{{var}}}')], mode="vline"))
+                    p2.add_tools(
+                        HoverTool(renderers=[line_renderer], tooltips=[("Depth", '@Depth'), (var, f'@{{{var}}}')],
+                                  mode="vline"))
                     p2.renderers.append(line_renderer)
 
             # Reverse the direction of the Y-axis
@@ -753,12 +763,12 @@ def current():
     st.header("Brusdalsvatnet Water Quality Dashboard")
     st.title("Hydrodynamic Model of Current Conditions")
 
-    def create_map(selected_files_and_colors, map_center, zoom_level=13):
+    def create_map(selected_atrib, map_center, zoom_level=13):
         # Create a Folium map
         m = folium.Map(location=map_center, zoom_start=zoom_level)
 
         # Add GeoJSON layers to the map with customizable style
-        for file_key, color in selected_files_and_colors:
+        for file_key, color in selected_atrib:
             geojson_path = file_key_to_path[file_key]
             gdf = gpd.read_file(geojson_path)
             style_function = lambda x: {'fillColor': color, 'color': color}
@@ -791,16 +801,18 @@ def current():
     st.subheader("Displays water quality parameters on 100m x 100m grid for a given depth")
 
     # Multiselect widget to choose GeoJSON files
-    selected_files_and_colors = st.multiselect("Select depth at which to display parameters", multiselect_options)
+    mc1, mc2 = st.columns(2, gap="small")
+    with mc1:
+        selected_files_and_colors = st.multiselect("Select depth at which to display parameters", multiselect_options)
 
-    chloropleth_options = ["Temperature (Celsius)", "Conductivity (microSiemens/centimeter)",
-                            "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
-                            "pH",
-                            "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
-                            "fDOM (ppb QSU)"]
+        chloropleth_options = ["Temperature (Celsius)", "Conductivity (microSiemens/centimeter)",
+                               "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
+                               "pH",
+                               "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
+                               "fDOM (ppb QSU)"]
 
-    # Multiselect widget to choose GeoJSON files
-    selected_param = st.multiselect("Select parameter by which to color-code", chloropleth_options)
+        # Multiselect widget to choose GeoJSON files
+        selected_param = st.multiselect("Select parameter by which to color-code", chloropleth_options)
 
     # Display map if files are selected
     if selected_files_and_colors:
@@ -811,7 +823,8 @@ def current():
 
         # Display Folium map using folium_static
         folium_static(folium_map, width=1300)
-        st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+        st.write("Find a bug? Or have an idea for how to improve the app? "
+                 "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
     else:
         st.info("Please select at least one depth and model parameter to display.")
 
@@ -833,7 +846,7 @@ def interactive():
         df_coord = pd.DataFrame()
 
     offline_plan(csv_file_path, df_coord)
-    
+
     # Button to overwrite "mission.csv"
     if st.button("Begin new mission (clear previous waypoints)"):
         st.write("You might need to click more than once and wait a moment...")
@@ -844,17 +857,18 @@ def interactive():
         "Find a bug? Or have an idea for how to improve the app? "
         "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
+
 def offline_plan(csv_file_path, df_coord):
     def get_pos(lat, lng):
         return lat, lng
 
     m = folium.Map(location=[62.476994, 6.469730], zoom_start=13)
     m.add_child(folium.LatLngPopup())
-    map = st_folium(m, use_container_width=True)
+    map1 = st_folium(m, use_container_width=True)
 
     data = None
-    if map.get("last_clicked"):
-        data = get_pos(map["last_clicked"]["lat"], map["last_clicked"]["lng"])
+    if map1.get("last_clicked"):
+        data = get_pos(map1["last_clicked"]["lat"], map1["last_clicked"]["lng"])
 
         # Update the map with a marker for the clicked point
         folium.Marker(data, popup=str(data)).add_to(m)
@@ -875,9 +889,7 @@ def offline_plan(csv_file_path, df_coord):
 
         # Write the updated DataFrame back to the CSV file
         df_coord.to_csv(csv_file_path, sep='\t', index=False, header=False)
-    st.write(
-        "Find a bug? Or have an idea for how to improve the app? "
-        "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+
 
 if __name__ == "__main__":
     main()
