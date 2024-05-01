@@ -39,14 +39,14 @@ def historic():
     # Radio button for selecting the data source
     source = st.radio(
         "Select a data collection platform to display its past measurements",
-        options=["Profiler Station", "USV (Maritime Robotics Otter)", "USV (OceanAlpha SL40)", "Weather Station"],
+        options=["Profiler Station", "Weather Station", "USV (Maritime Robotics Otter)", "USV (OceanAlpha SL40)"],
         horizontal=True)
 
     if source == "Profiler Station":
         # Radio button for selecting the dataset
         profiler_data = st.radio(
             "Select a dataset to display",
-            options=["Hourly Surface Data", "Vertical Profiles", "Current Cache"],
+            options=["Hourly Surface Data", "Vertical Profiles"],  # "Current Cache"],  # st.components.v1.iframe times out
             horizontal=True)
 
         # Display the selected plot based on user choice
@@ -71,6 +71,9 @@ def historic():
         # st.components.v1.iframe(website_url, height=600)
     else:
         st.write("Sorry, no data available in the dashboard from the USVs at this time")
+    st.write(
+        "Find a bug? Or have an idea for how to improve the app? "
+        "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
 # Function to the upload new profiler data from CSV
 @st.cache_data
@@ -416,8 +419,6 @@ def hourly():
         st.bokeh_chart(p, use_container_width=True)
         st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                  "Click legend entries to toggle series on/off.")
-        st.write(
-            "Find a bug? Or have an idea for how to improve the app? Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
 
 def vertical():
@@ -839,7 +840,9 @@ def interactive():
         empty_df = pd.DataFrame()
         empty_df.to_csv(csv_file_path, sep='\t', index=False)
 
-    st.write("Find a bug? Or have an idea for how to improve the app? Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+    st.write(
+        "Find a bug? Or have an idea for how to improve the app? "
+        "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
 def offline_plan(csv_file_path, df_coord):
     def get_pos(lat, lng):
@@ -872,7 +875,9 @@ def offline_plan(csv_file_path, df_coord):
 
         # Write the updated DataFrame back to the CSV file
         df_coord.to_csv(csv_file_path, sep='\t', index=False, header=False)
-
+    st.write(
+        "Find a bug? Or have an idea for how to improve the app? "
+        "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
 if __name__ == "__main__":
     main()
