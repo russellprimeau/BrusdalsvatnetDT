@@ -3,7 +3,6 @@
 
 # Launch by opening the terminal to the script's location and entering "streamlit run Dashboard.py".
 
-import os
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -23,7 +22,6 @@ def main():
     st.set_page_config("Brusdalsvatnet WQ Dashboard", layout="wide")
     st.sidebar.title("Choose Mode")
     selected_page = st.sidebar.radio("", ["Historic", "Current Hydrodynamic Model", "Interactive (Path Planning)"])
-    absolute_path = os.path.dirname(__file__)
 
     if selected_page == "Historic":
         historic()
@@ -77,7 +75,7 @@ def historic():
 # Function to the upload new profiler data from CSV
 @st.cache_data
 def upload_weather_csv_page():
-    csv_file2 = "data/Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
+    csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
 
     # Add units to column names
@@ -142,7 +140,7 @@ def weather():
     st.markdown("#### Sorry, the weather page is being updated at the moment.")
     # pw = figure(title="Time Series Data at 2.9m Depth")
     #
-    # file_paths = ['data/All_10min.csv', 'data/All_time.csv', 'data/All_Prec_int_hr.csv', 'data/All_min.csv']
+    # file_paths = ['All_10min.csv', 'All_time.csv', 'All_Prec_int_hr.csv', 'All_min.csv']
     # dfs = []  # List of uploaded dataframes
     # variables = []  # List of column names
     # for file_path in file_paths:
@@ -208,7 +206,7 @@ def weather():
 # Function to the upload new profiler data from CSV
 @st.cache_data
 def upload_hourly_csv_page():
-    csv_file2 = "data/Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
+    csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, skiprows=[0, 2, 3], parse_dates=['TIMESTAMP'])
 
     # Add units to column names
@@ -427,7 +425,7 @@ def vertical():
     # Import and pre-process data
 
     # Read data from a CSV file into a Pandas DataFrame, skipping metadata rows
-    csv_file2 = "data/Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
+    csv_file2 = "Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
 
     # Assign column names for profiler data
@@ -769,17 +767,17 @@ def current():
 
     # Hardcoded GeoJSON file paths, colors, and map center
     geojson_paths_and_colors = {
-        "Surface": (r"model/0m_grid_ps.geojson", "blue"),
-        "10m": (r"model/10m_grid_ps.geojson", "green"),
-        "20m": (r"model/20m_grid_ps.geojson", "red"),
-        "30m": (r"model/30m_grid_ps.geojson", "black"),
-        "40m": (r"model/40m_grid_ps.geojson", "yellow"),
-        "50m": (r"model/50m_grid_ps.geojson", "green"),
-        "60m": (r"model/60m_grid_ps.geojson", "green"),
-        "70m": (r"model/70m_grid_ps.geojson", "green"),
-        "80m": (r"model/80m_grid_ps.geojson", "green"),
-        "90m": (r"model/90m_grid_ps.geojson", "green"),
-        "100m": (r"model/100m_grid_ps.geojson", "green"),
+        "Surface": (r"0m_grid_ps.geojson", "blue"),
+        "10m": (r"10m_grid_ps.geojson", "green"),
+        "20m": (r"20m_grid_ps.geojson", "red"),
+        "30m": (r"30m_grid_ps.geojson", "black"),
+        "40m": (r"40m_grid_ps.geojson", "yellow"),
+        "50m": (r"50m_grid_ps.geojson", "green"),
+        "60m": (r"60m_grid_ps.geojson", "green"),
+        "70m": (r"70m_grid_ps.geojson", "green"),
+        "80m": (r"80m_grid_ps.geojson", "green"),
+        "90m": (r"90m_grid_ps.geojson", "green"),
+        "100m": (r"100m_grid_ps.geojson", "green"),
     }
 
     hardcoded_map_center = [62.476994, 6.469730]
@@ -824,7 +822,7 @@ def interactive():
     mission_columns = ["Latitude", "Longitude", "Type", "Velocity (m/s)", "Waypoint radius (m)", "Timeout (s)"]
 
     # CSV file path
-    csv_file_path = "output/mission.csv"
+    csv_file_path = "mission.csv"
 
     # Read an existing CSV file into a DataFrame
     try:
