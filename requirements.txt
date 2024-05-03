@@ -7,4 +7,3 @@ geopandas
 bokeh<=2.4.3
 datetime
 dfm_tools
-python>=3.9
