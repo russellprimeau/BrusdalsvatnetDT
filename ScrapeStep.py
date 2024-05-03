@@ -187,4 +187,4 @@ if __name__ == "__main__":
     # Execute functions:
     new_lines = scrape_and_clean()
     write(new_lines, data_file)
-    push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)
+    push_to_remote(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT", data_file)
