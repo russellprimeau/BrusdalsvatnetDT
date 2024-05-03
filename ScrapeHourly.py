@@ -32,7 +32,7 @@ def scrape_and_clean():
             data.append(cols)
 
         # Create a DataFrame from the scraped data with transposition
-        df = pd.DataFrame(data[0:], columns=data[0])  #.transpose()
+        df = pd.DataFrame(data[0:], columns=data[0])
 
         # Set the first row as column headers
         df.columns = df.iloc[0]
@@ -41,29 +41,12 @@ def scrape_and_clean():
         # Drop the first row (which is now the header row)
         df = df[1:]
 
-        # current_record_tag = soup.find('b', string=lambda t: t and 'Current Record:' in t)
-        # record_date_tag = soup.find('b', string=lambda t: t and 'Record Date:' in t)
         latitude = 62.474464
         longitude = 6.461324
-
-        # try:
-        #     # Check if the tags are found before accessing their next siblings
-        #     if current_record_tag:
-        #         current_record = current_record_tag.next_sibling.strip()
-        #     else:
-        #         current_record = "Not Found"
-        #
-        #     if record_date_tag:
-        #         record_date = record_date_tag.next_sibling.strip()
-        #     else:
-        #         record_date = "Not Found"
 
         # Add latitude and longitude columns
         df.insert(13, 'Latitude', latitude)
         df.insert(14, 'Longitude', longitude)
-
-        # except AttributeError as e:
-        #     print(f"Error extracting data from the website: {e}")
 
         # Column names from metadata
         column_names = {
@@ -139,9 +122,6 @@ def push_to_remote(project_dir, filename, branch_name="main"):
     os.chdir(project_dir)
 
     # # Add specific file for commit
-    # subprocess.run(["git", "add", filename], check=True)
-
-    # Add all modified files for commit
     subprocess.run(["git", "add", filename], check=True)  # Raise error if fails
 
     # Get list of modified files using git diff
