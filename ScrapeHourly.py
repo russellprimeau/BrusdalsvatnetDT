@@ -11,7 +11,7 @@ from datetime import datetime
 
 def scrape_and_clean():
     # URL of the website
-    url = "http://89.9.10.123/?command=NewestRecord&table=SondeHourly"
+    url = "http://89.9.10.123/?command=TableDisplay&table=SondeHourly&records=24"
 
     # Send a GET request to the website
     response = requests.get(url)
@@ -32,44 +32,43 @@ def scrape_and_clean():
             data.append(cols)
 
         # Create a DataFrame from the scraped data with transposition
-        df = pd.DataFrame(data[0:], columns=data[0]).transpose()
+        df = pd.DataFrame(data[0:], columns=data[0])  #.transpose()
 
         # Set the first row as column headers
         df.columns = df.iloc[0]
+        print("df.columns", df.columns)
 
         # Drop the first row (which is now the header row)
         df = df[1:]
 
-        current_record_tag = soup.find('b', string=lambda t: t and 'Current Record:' in t)
-        record_date_tag = soup.find('b', string=lambda t: t and 'Record Date:' in t)
+        # current_record_tag = soup.find('b', string=lambda t: t and 'Current Record:' in t)
+        # record_date_tag = soup.find('b', string=lambda t: t and 'Record Date:' in t)
         latitude = 62.474464
         longitude = 6.461324
 
-        try:
-            # Check if the tags are found before accessing their next siblings
-            if current_record_tag:
-                current_record = current_record_tag.next_sibling.strip()
-            else:
-                current_record = "Not Found"
+        # try:
+        #     # Check if the tags are found before accessing their next siblings
+        #     if current_record_tag:
+        #         current_record = current_record_tag.next_sibling.strip()
+        #     else:
+        #         current_record = "Not Found"
+        #
+        #     if record_date_tag:
+        #         record_date = record_date_tag.next_sibling.strip()
+        #     else:
+        #         record_date = "Not Found"
 
-            if record_date_tag:
-                record_date = record_date_tag.next_sibling.strip()
-            else:
-                record_date = "Not Found"
+        # Add latitude and longitude columns
+        df.insert(13, 'Latitude', latitude)
+        df.insert(14, 'Longitude', longitude)
 
-            # Add Record date and Current record as the first two columns
-            df.insert(0, 'Record date', record_date)
-            df.insert(1, 'Current record', current_record)
-            df.insert(13, 'Latitude', latitude)
-            df.insert(14, 'Longitude', longitude)
-
-        except AttributeError as e:
-            print(f"Error extracting data from the website: {e}")
+        # except AttributeError as e:
+        #     print(f"Error extracting data from the website: {e}")
 
         # Column names from metadata
         column_names = {
-            "Record date": "Timestamp",
-            "Current record": "Record_Number",
+            "TimeStamp": "Timestamp",
+            "Record": "Record_Number",
             "sensorParms(1)": "Temperature",
             "sensorParms(2)": "Conductivity",
             "sensorParms(3)": "Specific_Conductivity",
@@ -97,6 +96,7 @@ def scrape_and_clean():
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
         logging.info(f"Unsuccessful attempt to connect at {current_time}. Request returned: {response.status_code}")
+        df = pd.DataFrame()
     return df
 
 
@@ -161,8 +161,6 @@ def push_to_remote(project_dir, filename, branch_name="main"):
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
     logging.info(f"Push output: {output.decode()}, with error code {error.decode()}")
-    # print("Output: ", output.decode())
-    # print("Error: ", error.decode())
 
 
 if __name__ == "__main__":
@@ -175,5 +173,5 @@ if __name__ == "__main__":
     new_lines = scrape_and_clean()
     print(new_lines)
     write(new_lines, data_file)
-    push_to_remote(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT", data_file)  # Remote Desktop
-    # push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)  # Local
+    # push_to_remote(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT", data_file)  # Remote Desktop
+    push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)  # Local
