@@ -3,11 +3,11 @@
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
-import pymysql
-from datetime import datetime
+import subprocess
+import os
 
 
-def scrape_and_save_data():
+def scrape_and_clean():
     # URL of the website
     url = "http://89.9.10.123/?command=NewestRecord&table=SondeHourly"
 
@@ -40,6 +40,8 @@ def scrape_and_save_data():
 
         current_record_tag = soup.find('b', string=lambda t: t and 'Current Record:' in t)
         record_date_tag = soup.find('b', string=lambda t: t and 'Record Date:' in t)
+        latitude = 62.474464
+        longitude = 6.461324
 
         try:
             # Check if the tags are found before accessing their next siblings
@@ -56,6 +58,8 @@ def scrape_and_save_data():
             # Add Record date and Current record as the first two columns
             df.insert(0, 'Record date', record_date)
             df.insert(1, 'Current record', current_record)
+            df.insert(13, 'Latitude', latitude)
+            df.insert(14, 'Longitude', longitude)
 
         except AttributeError as e:
             print(f"Error extracting data from the website: {e}")
@@ -79,15 +83,58 @@ def scrape_and_save_data():
         df = df.rename(columns=column_names)  # Assign column names for profiler data
         df['Record_Number'] = df['Record_Number'].astype(int)
         df["Timestamp"] = pd.to_datetime(df["Timestamp"])  # Convert the time column to a datetime object
-        df["Timestamp"] = df["Timestamp"].dt.strftime(
-            '%Y-%m-%d %H:%M:%S')  # Reformat Timestamp to MySQL datetime format
+        iso_format = '%Y-%m-%dT%H:%M:%S'
+        df['Timestamp'] = df['Timestamp'].dt.strftime(iso_format)  # Convert datetime objects to ISO 8601 format strings
 
         # Data cleaning
         for column in df.columns[0:2]:
             df[column] = df[column].apply(lambda x: 0 if x == 'NAN' else x)
-        for column in df.columns[2:]:  # Apply rounding to columns 2+
+        for column in df.columns[2:13]:  # Apply rounding to columns 2+
             df[column] = df[column].apply(lambda x: 0 if x == 'NAN' else round(float(x), 3))
+    return df
+
+
+def write(df, destination):
+    """
+    Append the new data to the end of the CSV
+    """
+    df.to_csv(destination, mode='a', index=False, header=False)
+
+
+def push_to_remote(project_dir, filename, branch_name="main"):
+    command = ["git", "push", "origin", branch_name]
+    # Change directory to project location
+    os.chdir(project_dir)
+
+    # # Add specific file for commit
+    # subprocess.run(["git", "add", filename], check=True)
+
+    # Add all modified files for commit
+    subprocess.run(["git", "add", filename], check=True)  # Raise error if fails
+
+    # Get list of modified files using git diff
+    modified_files = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True,
+                                    text=True).stdout.strip()
+
+    # Construct commit message (optional)
+    if modified_files:
+        commit_message = f"Changes to: {modified_files}"  # Replace with your preferred format
+    else:
+        commit_message = "No changes detected"  # Optional for clarity
+
+    # Commit all selected files
+    subprocess.run(["git", "commit", "-m", commit_message], check=True)  # Optional
+
+    # Push commits to remote repository (by default, main)
+    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    output, error = process.communicate()
+    print("Output: ", output.decode())
+    print("Error: ", error.decode())
 
 
 if __name__ == "__main__":
-    scrape_and_save_data()
+    data_file = "Profiler_modem_SondeHourly.csv"
+    new_lines = scrape_and_clean()
+    print(new_lines)
+    write(new_lines, data_file)
+    push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)
