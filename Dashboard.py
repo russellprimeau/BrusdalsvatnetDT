@@ -212,7 +212,7 @@ def weather():
 @st.cache_data
 def upload_hourly_csv_page():
     csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
-    df = pd.read_csv(csv_file2, skiprows=[0, 2, 3], parse_dates=['TIMESTAMP'])
+    df = pd.read_csv(csv_file2, parse_dates=['TIMESTAMP'])
 
     # Add units to column names
     if df is not None:
@@ -427,7 +427,7 @@ def vertical():
 
     # Read data from a CSV file into a Pandas DataFrame, skipping metadata rows
     csv_file2 = "Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
-    df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
+    df = pd.read_csv(csv_file2)
 
     # Assign column names for profiler data
     column_names = {
@@ -454,6 +454,8 @@ def vertical():
 
     # Convert the time column to a datetime object
     df['Timestamp'] = pd.to_datetime(df['Timestamp']).apply(lambda x: x.to_pydatetime())
+
+    print('columns', df.columns)
 
     # Drop extraneous variables
     df = df.drop(columns=['Record Number', 'Day', 'CntRS232', 'Vertical Position1 (m)'])
