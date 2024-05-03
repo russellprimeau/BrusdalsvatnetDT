@@ -8,7 +8,7 @@ rem - conda to be in the PATH
 rem - cmd.exe to be initialized with conda init
 
 rem Define here the path to your conda installation
-set CONDAPATH=C:\Users\Russell\anaconda3
+set CONDAPATH=C:\Users\russelbp\AppData\Local\anaconda3
 rem Define here the name of the environment
 set ENVNAME=dfm_tools_env
 
