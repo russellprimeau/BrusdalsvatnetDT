@@ -1,1 +1,3 @@
 # Patterns included here will not be tracked by git
+*.log
+/.idea
