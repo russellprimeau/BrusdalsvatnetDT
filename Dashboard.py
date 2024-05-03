@@ -15,6 +15,10 @@ from bokeh.palettes import Viridis256, Category20_20, Spectral11
 from bokeh.layouts import column
 from datetime import date, time, datetime, timedelta
 from dateutil.relativedelta import relativedelta
+import xarray as xr
+import matplotlib.pyplot as plt
+import contextily as ctx
+import dfm_tools as dfmt
 
 
 def main():
@@ -765,70 +769,181 @@ def current():
     st.header("Brusdalsvatnet Water Quality Dashboard")
     st.title("Hydrodynamic Model of Current Conditions")
 
-    def create_map(selected_atrib, map_center, zoom_level=13):
-        # Create a Folium map
-        m = folium.Map(location=map_center, zoom_start=zoom_level)
 
-        # Add GeoJSON layers to the map with customizable style
-        for file_key, color in selected_atrib:
-            geojson_path = file_key_to_path[file_key]
-            gdf = gpd.read_file(geojson_path)
-            style_function = lambda x: {'fillColor': color, 'color': color}
-            folium.GeoJson(gdf, style_function=style_function).add_to(m)
 
-        return m
+    st.write("Select depth layer to display:")
+    options_list = range(0, 20)
+    layer = st.selectbox("Select a number:", options_list)  # Create the dropdown menu
 
-    # Hardcoded GeoJSON file paths, colors, and map center
-    geojson_paths_and_colors = {
-        "Surface": (r"0m_grid_ps.geojson", "blue"),
-        "10m": (r"10m_grid_ps.geojson", "green"),
-        "20m": (r"20m_grid_ps.geojson", "red"),
-        "30m": (r"30m_grid_ps.geojson", "black"),
-        "40m": (r"40m_grid_ps.geojson", "yellow"),
-        "50m": (r"50m_grid_ps.geojson", "green"),
-        "60m": (r"60m_grid_ps.geojson", "green"),
-        "70m": (r"70m_grid_ps.geojson", "green"),
-        "80m": (r"80m_grid_ps.geojson", "green"),
-        "90m": (r"90m_grid_ps.geojson", "green"),
-        "100m": (r"100m_grid_ps.geojson", "green"),
-    }
+    file_nc_his = None
+    file_nc_map = r"C:\Users\Russell\Documents\Deltares\FM Projects\Automatic.dsproj_data\ForWAQ\dflowfm\output\ForWAQ_map.nc"
+    rename_mapvars = {}
+    sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
+    layer = 34
+    crs = 'EPSG:4326'
+    raster_res = 50
+    umag_clim = None
+    scale = 1.5
+    line_array = np.array([[53181.96942503, 424270.83361629],
+                           [55160.15232593, 416913.77136685]])
 
-    hardcoded_map_center = [62.476994, 6.469730]
+    # Open hisfile with xarray and print netcdf structure
+    if file_nc_his is not None:
+        ds_his = xr.open_mfdataset(file_nc_his, preprocess=dfmt.preprocess_hisnc)
 
-    # Convert the dictionary to a list for the multiselect widget
-    file_key_to_path = {key: path for key, (path, _) in geojson_paths_and_colors.items()}
-    multiselect_options = list(geojson_paths_and_colors.keys())
+    # Plot his data: waterlevel at stations
+    if file_nc_his is not None:
+        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        ds_his.waterlevel.plot.line(ax=ax, x='time')
+        ax.legend(ds_his.stations.to_series(), loc=1, fontsize=8)  # Optional, to change legend location
 
-    # Display map with selectable GeoJSON overlays
-    st.subheader("Displays water quality parameters on 100m x 100m grid for a given depth")
+    # Open and merge mapfile with xugrid(xarray) and print netcdf structure
+    uds_map = dfmt.open_partitioned_dataset(file_nc_map)
+    uds_map = uds_map.rename(rename_mapvars)
+    print('uds_map!', uds_map)
+    print('uds_map[mesh2d_tem1].isel(time=-1)', uds_map['mesh2d_tem1'].isel(time=-1))
 
-    # Multiselect widget to choose GeoJSON files
-    mc1, mc2 = st.columns(2, gap="small")
-    with mc1:
-        selected_files_and_colors = st.multiselect("Select depth at which to display parameters", multiselect_options)
 
-        chloropleth_options = ["Temperature (Celsius)", "Conductivity (microSiemens/centimeter)",
-                               "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
-                               "pH",
-                               "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
-                               "fDOM (ppb QSU)"]
 
-        # Multiselect widget to choose GeoJSON files
-        selected_param = st.multiselect("Select parameter by which to color-code", chloropleth_options)
 
-    # Display map if files are selected
-    if selected_files_and_colors:
-        # Create Folium map with selected GeoJSON files and colors
-        folium_map = create_map(
-            [(file_key, geojson_paths_and_colors[file_key][1]) for file_key in selected_files_and_colors],
-            map_center=hardcoded_map_center, zoom_level=13)
 
-        # Display Folium map using folium_static
-        folium_static(folium_map, width=1300)
-        st.write("Find a bug? Or have an idea for how to improve the app? "
-                 "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+    # Plot water level on map
+    fig1, ax = plt.subplots(figsize=(10, 4))
+    pc = uds_map['mesh2d_tem1'].isel(time=-1, mesh2d_nLayers=layer, nmesh2d_layer=layer,
+                                     missing_dims='ignore').ugrid.plot(cmap='jet')
+    if crs is None:
+        ax.set_aspect('equal')
     else:
-        st.info("Please select at least one depth and model parameter to display.")
+        ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+    fig1.suptitle("Temperature")
+    st.pyplot(fig1)
+
+    layer = 18
+    # Plot water level on map
+    fig2, ax = plt.subplots(figsize=(10, 4))
+    pc = uds_map['mesh2d_sa1'].isel(time=-1, mesh2d_nLayers=layer, nmesh2d_layer=layer,
+                                     missing_dims='ignore').ugrid.plot(cmap='jet')
+    if crs is None:
+        ax.set_aspect('equal')
+    else:
+        ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+    fig2.suptitle("Salinity")
+
+    st.pyplot(fig2)
+    #
+    pc2 = uds_map['mesh2d_tem1'].isel(time=3) + 5
+    if crs is None:
+        ax.set_aspect('equal')
+    else:
+        ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+
+    # Plot eastward velocities on map, on layer
+    fig3, ax = plt.subplots(figsize=(10, 4))
+    fig3.suptitle("Surface velocity")
+    pc = uds_map['mesh2d_ucx'].isel(time=3, mesh2d_nLayers=layer, nmesh2d_layer=layer,
+                                    missing_dims='ignore').ugrid.plot(cmap='jet')
+    if crs is None:
+        ax.set_aspect('equal')
+    else:
+        ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+    st.pyplot(fig3)
+    #
+    # # Plot eastward velocities on map, on depth from waterlevel/z0/bedlevel
+    # uds_map_atdepths = dfmt.get_Dataset_atdepths(data_xr=uds_map.isel(time=3), depths=-5, reference='waterlevel')
+    # figy, ax = plt.subplots(figsize=(10, 4))
+    # pc = uds_map_atdepths['mesh2d_ucx'].ugrid.plot(cmap='jet')
+    # if crs is None:
+    #     ax.set_aspect('equal')
+    # else:
+    #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+    #
+    # # velocity magnitude and quiver
+    # uds_quiv = uds_map.isel(time=-1, mesh2d_nLayers=-2, nmesh2d_layer=-2, missing_dims='ignore')
+    # varn_ucx, varn_ucy = 'mesh2d_ucx', 'mesh2d_ucy'
+    # magn_attrs = {'long_name': 'velocity magnitude', 'units': 'm/s'}
+    # uds_quiv['magn'] = np.sqrt(uds_quiv[varn_ucx] ** 2 + uds_quiv[varn_ucy] ** 2).assign_attrs(magn_attrs)
+    # raster_quiv = dfmt.rasterize_ugrid(uds_quiv[[varn_ucx, varn_ucy]], resolution=raster_res)
+    # st.pyplot(figy)
+    #
+    # # Plot
+    # figx, ax = plt.subplots(figsize=(10, 4))
+    # pc = uds_quiv['magn'].ugrid.plot(cmap='jet')
+    # raster_quiv.plot.quiver(x='mesh2d_face_x', y='mesh2d_face_y', u=varn_ucx, v=varn_ucy, color='w', scale=scale,
+    #                         add_guide=False)
+    # pc.set_clim(umag_clim)
+    # figx.tight_layout()
+    # if crs is None:
+    #     ax.set_aspect('equal')
+    # else:
+    #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+    # st.pyplot(figx)
+
+
+
+    # def create_map(selected_atrib, map_center, zoom_level=13):
+    #     # Create a Folium map
+    #     m = folium.Map(location=map_center, zoom_start=zoom_level)
+    #
+    #     # Add GeoJSON layers to the map with customizable style
+    #     for file_key, color in selected_atrib:
+    #         geojson_path = file_key_to_path[file_key]
+    #         gdf = gpd.read_file(geojson_path)
+    #         style_function = lambda x: {'fillColor': color, 'color': color}
+    #         folium.GeoJson(gdf, style_function=style_function).add_to(m)
+    #
+    #     return m
+    #
+    # # Hardcoded GeoJSON file paths, colors, and map center
+    # geojson_paths_and_colors = {
+    #     "Surface": (r"0m_grid_ps.geojson", "blue"),
+    #     "10m": (r"10m_grid_ps.geojson", "green"),
+    #     "20m": (r"20m_grid_ps.geojson", "red"),
+    #     "30m": (r"30m_grid_ps.geojson", "black"),
+    #     "40m": (r"40m_grid_ps.geojson", "yellow"),
+    #     "50m": (r"50m_grid_ps.geojson", "green"),
+    #     "60m": (r"60m_grid_ps.geojson", "green"),
+    #     "70m": (r"70m_grid_ps.geojson", "green"),
+    #     "80m": (r"80m_grid_ps.geojson", "green"),
+    #     "90m": (r"90m_grid_ps.geojson", "green"),
+    #     "100m": (r"100m_grid_ps.geojson", "green"),
+    # }
+    #
+    # hardcoded_map_center = [62.476994, 6.469730]
+    #
+    # # Convert the dictionary to a list for the multiselect widget
+    # file_key_to_path = {key: path for key, (path, _) in geojson_paths_and_colors.items()}
+    # multiselect_options = list(geojson_paths_and_colors.keys())
+    #
+    # # Display map with selectable GeoJSON overlays
+    # st.subheader("Displays water quality parameters on 100m x 100m grid for a given depth")
+    #
+    # # Multiselect widget to choose GeoJSON files
+    # mc1, mc2 = st.columns(2, gap="small")
+    # with mc1:
+    #     selected_files_and_colors = st.multiselect("Select depth at which to display parameters", multiselect_options)
+    #
+    #     chloropleth_options = ["Temperature (Celsius)", "Conductivity (microSiemens/centimeter)",
+    #                            "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
+    #                            "pH",
+    #                            "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
+    #                            "fDOM (ppb QSU)"]
+    #
+    #     # Multiselect widget to choose GeoJSON files
+    #     selected_param = st.multiselect("Select parameter by which to color-code", chloropleth_options)
+    #
+    # # Display map if files are selected
+    # if selected_files_and_colors:
+    #     # Create Folium map with selected GeoJSON files and colors
+    #     folium_map = create_map(
+    #         [(file_key, geojson_paths_and_colors[file_key][1]) for file_key in selected_files_and_colors],
+    #         map_center=hardcoded_map_center, zoom_level=13)
+    #
+    #     # Display Folium map using folium_static
+    #     folium_static(folium_map, width=1300)
+    #     st.write("Find a bug? Or have an idea for how to improve the app? "
+    #              "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
+    # else:
+    #     st.info("Please select at least one depth and model parameter to display.")
 
 
 def interactive():
