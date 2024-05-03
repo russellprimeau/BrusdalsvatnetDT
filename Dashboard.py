@@ -769,8 +769,6 @@ def current():
     st.header("Brusdalsvatnet Water Quality Dashboard")
     st.title("Hydrodynamic Model of Current Conditions")
 
-
-
     st.write("Select depth layer to display:")
     options_list = range(0, 20)
     layer = st.selectbox("Select a number:", options_list)  # Create the dropdown menu
