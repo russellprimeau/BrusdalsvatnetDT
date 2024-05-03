@@ -5,6 +5,8 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import subprocess
 import os
+import logging
+from datetime import datetime
 
 
 def scrape_and_clean():
@@ -91,14 +93,44 @@ def scrape_and_clean():
             df[column] = df[column].apply(lambda x: 0 if x == 'NAN' else x)
         for column in df.columns[2:13]:  # Apply rounding to columns 2+
             df[column] = df[column].apply(lambda x: 0 if x == 'NAN' else round(float(x), 3))
+    else:
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Unsuccessful attempt to connect at {current_time}. Request returned: {response.status_code}")
     return df
 
+
+def get_last_line(csv_file):
+    """
+    Reads the entire CSV file and returns the last line as a dataframe.
+
+    Args:
+        csv_file (str): Path to the CSV file.
+
+    Returns:
+        pandas.DataFrame: The last line of the CSV file as a dataframe.
+    """
+    # Read the CSV file into a dataframe
+    df = pd.read_csv(csv_file)
+
+    # Return the last row (using negative indexing) as a single-row dataframe
+    return df.iloc[-1:]
 
 def write(df, destination):
     """
     Append the new data to the end of the CSV
     """
-    df.to_csv(destination, mode='a', index=False, header=False)
+    try:
+        ref = get_last_line(destination)
+        filtered_df = df[df['Timestamp'] > ref.iloc[0, 0]]
+        filtered_df.to_csv(destination, mode='a', index=False, header=False)
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Successfully appended records to {destination} at {current_time}")
+    except:
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Failed to appended records to {destination} at {current_time}")
 
 
 def push_to_remote(project_dir, filename, branch_name="main"):
@@ -128,12 +160,18 @@ def push_to_remote(project_dir, filename, branch_name="main"):
     # Push commits to remote repository (by default, main)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
-    print("Output: ", output.decode())
-    print("Error: ", error.decode())
+    logging.info(f"Push output: {output.decode()}, with error code {error.decode()}")
+    # print("Output: ", output.decode())
+    # print("Error: ", error.decode())
 
 
 if __name__ == "__main__":
     data_file = "Profiler_modem_SondeHourly.csv"
+
+    # Create log for debugging automation
+    log_file = "Scheduled_ScrapeHourly.log"  # Define the log file path (optional, change filename if needed)
+    logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
+
     new_lines = scrape_and_clean()
     print(new_lines)
     write(new_lines, data_file)

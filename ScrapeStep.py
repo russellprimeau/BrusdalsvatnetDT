@@ -5,11 +5,14 @@ from bs4 import BeautifulSoup
 import pandas as pd
 import subprocess
 import os
+import csv
+from datetime import datetime
+import logging
 
 
 def scrape_and_clean():
     # URL of the website
-    url = "http://89.9.10.123/?command=NewestRecord&table=SondeHourly"
+    url = "http://89.9.10.123/?command=TableDisplay&table=PFL_Step&records=24"
 
     # Send a GET request to the website
     response = requests.get(url)
@@ -30,7 +33,7 @@ def scrape_and_clean():
             data.append(cols)
 
         # Create a DataFrame from the scraped data with transposition
-        df = pd.DataFrame(data[0:], columns=data[0]).transpose()
+        df = pd.DataFrame(data[0:], columns=data[0])
 
         # Set the first row as column headers
         df.columns = df.iloc[0]
@@ -38,36 +41,41 @@ def scrape_and_clean():
         # Drop the first row (which is now the header row)
         df = df[1:]
 
-        current_record_tag = soup.find('b', string=lambda t: t and 'Current Record:' in t)
-        record_date_tag = soup.find('b', string=lambda t: t and 'Record Date:' in t)
+        # print(df)
+
+        # current_record_tag = soup.find('b', string=lambda t: t and 'Current Record:' in t)
+        # record_date_tag = soup.find('b', string=lambda t: t and 'Record Date:' in t)
         latitude = 62.474464
         longitude = 6.461324
 
-        try:
-            # Check if the tags are found before accessing their next siblings
-            if current_record_tag:
-                current_record = current_record_tag.next_sibling.strip()
-            else:
-                current_record = "Not Found"
+        # try:
+        #     # Check if the tags are found before accessing their next siblings
+        #     if current_record_tag:
+        #         current_record = current_record_tag.next_sibling.strip()
+        #     else:
+        #         current_record = "Not Found"
+        #
+        #     if record_date_tag:
+        #         record_date = record_date_tag.next_sibling.strip()
+        #     else:
+        #         record_date = "Not Found"
 
-            if record_date_tag:
-                record_date = record_date_tag.next_sibling.strip()
-            else:
-                record_date = "Not Found"
+        # Add Record date and Current record as the first two columns
+        # df.insert(0, 'Record date', record_date)
+        # df.insert(1, 'Current record', current_record)
 
-            # Add Record date and Current record as the first two columns
-            df.insert(0, 'Record date', record_date)
-            df.insert(1, 'Current record', current_record)
-            df.insert(13, 'Latitude', latitude)
-            df.insert(14, 'Longitude', longitude)
 
-        except AttributeError as e:
-            print(f"Error extracting data from the website: {e}")
+        # except AttributeError as e:
+        #     print(f"Error extracting data from the website: {e}")
+
 
         # Column names from metadata
         column_names = {
-            "Record date": "Timestamp",
-            "Current record": "Record_Number",
+            "TimeStamp": "Timestamp",
+            "Record": "Record",
+            "PFL_Counter": "PFL_Counter",
+            "_CntRS232": "_CntRS232",
+            "_RS232Dpt": "_RS232Dpt",
             "sensorParms(1)": "Temperature",
             "sensorParms(2)": "Conductivity",
             "sensorParms(3)": "Specific_Conductivity",
@@ -81,25 +89,60 @@ def scrape_and_clean():
             "sensorParms(11)": "fDOM_QSU",
         }
         df = df.rename(columns=column_names)  # Assign column names for profiler data
-        df['Record_Number'] = df['Record_Number'].astype(int)
+        df['Record'] = df['Record'].astype(int)
+        df['PFL_Counter'] = df['PFL_Counter'].astype(int)
+        df['_CntRS232'] = df['_CntRS232'].astype(int)
         df["Timestamp"] = pd.to_datetime(df["Timestamp"])  # Convert the time column to a datetime object
         iso_format = '%Y-%m-%dT%H:%M:%S'
         df['Timestamp'] = df['Timestamp'].dt.strftime(iso_format)  # Convert datetime objects to ISO 8601 format strings
 
         # Data cleaning
-        for column in df.columns[0:2]:
+        for column in df.columns[0:4]:
             df[column] = df[column].apply(lambda x: 0 if x == 'NAN' else x)
-        for column in df.columns[2:13]:  # Apply rounding to columns 2+
+        for column in df.columns[4:]:  # Apply rounding to columns 2+
             df[column] = df[column].apply(lambda x: 0 if x == 'NAN' else round(float(x), 3))
+
+        df.insert(len(df.columns), 'Latitude', latitude)
+        df.insert(len(df.columns), 'Longitude', longitude)
+    else:
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Unsuccessful attempt to connect at {current_time}. Request returned: {response.status_code}")
     return df
+
+
+def get_last_line(csv_file):
+    """
+    Reads the entire CSV file and returns the last line as a dataframe.
+
+    Args:
+        csv_file (str): Path to the CSV file.
+
+    Returns:
+        pandas.DataFrame: The last line of the CSV file as a dataframe.
+    """
+    # Read the CSV file into a dataframe
+    df = pd.read_csv(csv_file)
+
+    # Return the last row (using negative indexing) as a single-row dataframe
+    return df.iloc[-1:]
 
 
 def write(df, destination):
     """
     Append the new data to the end of the CSV
     """
-    df.to_csv(destination, mode='a', index=False, header=False)
-
+    try:
+        ref = get_last_line(destination)
+        filtered_df = df[df['Timestamp'] > ref.iloc[0, 0]]
+        filtered_df.to_csv(destination, mode='a', index=False, header=False)
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Successfully appended records to {destination} at {current_time}")
+    except:
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Failed to appended records to {destination} at {current_time}")
 
 def push_to_remote(project_dir, filename, branch_name="main"):
     command = ["git", "push", "origin", branch_name]
@@ -128,13 +171,20 @@ def push_to_remote(project_dir, filename, branch_name="main"):
     # Push commits to remote repository (by default, main)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
-    print("Output: ", output.decode())
-    print("Error: ", error.decode())
+    logging.info(f"Push output: {output.decode()}, with error code {error.decode()}")
+    # print("Output: ", output.decode())
+    # print("Error: ", error.decode())
 
 
 if __name__ == "__main__":
-    data_file = "Profiler_modem_SondeHourly.csv"
+    # Set output file
+    data_file = "Profiler_modem_PFL_Step.csv"
+
+    # Create log for debugging automation
+    log_file = "Scheduled_ScrapeStep.log"  # Define the log file path (optional, change filename if needed)
+    logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
+
+    # Execute functions:
     new_lines = scrape_and_clean()
-    print(new_lines)
     write(new_lines, data_file)
     push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)
