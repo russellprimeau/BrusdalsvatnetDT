@@ -137,6 +137,9 @@ def push_to_remote(project_dir, filename, branch_name="main"):
     # Commit all selected files
     subprocess.run(["git", "commit", "-m", commit_message], check=True)  # Optional
 
+    # Pull changes from remote origin
+    subprocess.run(["git", "pull", "origin"], cwd=project_dir)
+
     # Push commits to remote repository (by default, main)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     output, error = process.communicate()
