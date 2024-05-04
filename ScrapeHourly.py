@@ -136,15 +136,15 @@ def push_to_remote(project_dir, filename, branch_name="main"):
     # Commit all selected files
     subprocess.run(["git", "commit", "-m", commit_message], check=True)  # Optional
 
-    # Pull changes from remote origin with capture
-    pull_process = subprocess.Popen(["git", "pull", "origin", "main", "--no-edit"], cwd=project_dir,
-                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    pull_output, pull_error = pull_process.communicate()
-
-    # Handle potential errors during pull
-    if pull_error:
-        logging.error(f"Error during pull: {pull_error.decode()}")
-        return
+    # # Pull changes from remote origin with capture
+    # pull_process = subprocess.Popen(["git", "pull", "origin", "main", "--no-edit"], cwd=project_dir,
+    #                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    # pull_output, pull_error = pull_process.communicate()
+    #
+    # # Handle potential errors during pull
+    # if pull_error:
+    #     logging.error(f"Error during pull: {pull_error.decode()}")
+    #     return
 
     # Push commits to remote repository (by default, main)
     process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
