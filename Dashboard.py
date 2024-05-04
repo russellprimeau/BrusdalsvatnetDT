@@ -770,8 +770,8 @@ def current():
     options_list = range(0, 20)
     layer = st.selectbox("Select depth layer to display:", options_list)  # Create the dropdown menu
 
-    file_nc_his = None
-    file_nc_map = r"C:\Users\Russell\Documents\Deltares\FM Projects\Automatic.dsproj_data\ForWAQ\dflowfm\output\ForWAQ_map.nc"
+    file_nc_his = r"ForWAQ_his.nc"
+    file_nc_map = r"ForWAQ_map.nc"
     rename_mapvars = {}
     sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
     layer = 34
@@ -797,10 +797,6 @@ def current():
     uds_map = uds_map.rename(rename_mapvars)
     print('uds_map!', uds_map)
     print('uds_map[mesh2d_tem1].isel(time=-1)', uds_map['mesh2d_tem1'].isel(time=-1))
-
-
-
-
 
     # Plot water level on map
     fig1, ax = plt.subplots(figsize=(10, 4))
