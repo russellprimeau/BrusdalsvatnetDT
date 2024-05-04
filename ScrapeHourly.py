@@ -137,8 +137,8 @@ def push_to_remote(project_dir, filename, branch_name="main"):
     subprocess.run(["git", "commit", "-m", commit_message], check=True)  # Optional
 
     # Pull changes from remote origin with capture
-    pull_process = subprocess.Popen(["git", "pull", "origin"], cwd=project_dir, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+    pull_process = subprocess.Popen(["git", "pull", "origin", "main", "--no-edit"], cwd=project_dir,
+                                    stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     pull_output, pull_error = pull_process.communicate()
 
     # Handle potential errors during pull
