@@ -36,7 +36,6 @@ def scrape_and_clean():
 
         # Set the first row as column headers
         df.columns = df.iloc[0]
-        print("df.columns", df.columns)
 
         # Drop the first row (which is now the header row)
         df = df[1:]
@@ -78,7 +77,7 @@ def scrape_and_clean():
     else:
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
-        logging.info(f"Unsuccessful attempt to connect at {current_time}. Request returned: {response.status_code}")
+        logging.error(f"Unsuccessful attempt to connect at {current_time}. Request returned: {response.status_code}")
         df = pd.DataFrame()
     return df
 
@@ -113,7 +112,7 @@ def write(df, destination):
     except:
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
-        logging.info(f"Failed to appended records to {destination} at {current_time}")
+        logging.error(f"Failed to appended records to {destination} at {current_time}")
 
 
 def push_to_remote(project_dir, filename, branch_name="main"):
@@ -144,7 +143,7 @@ def push_to_remote(project_dir, filename, branch_name="main"):
 
     # Handle potential errors during pull
     if pull_error:
-        print(f"Error during pull: {pull_error.decode()}")
+        logging.error(f"Error during pull: {pull_error.decode()}")
         return
 
     # Push commits to remote repository (by default, main)
@@ -161,7 +160,6 @@ if __name__ == "__main__":
     logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
 
     new_lines = scrape_and_clean()
-    print(new_lines)
     write(new_lines, data_file)
     push_to_remote(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT", data_file)  # Remote Desktop
     # push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)  # Local
