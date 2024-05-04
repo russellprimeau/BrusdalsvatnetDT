@@ -411,7 +411,7 @@ def hourly():
         if plotrange > timedelta(days=62):
             p.x_range = Range1d(set_begin_date - timedelta(days=3), set_last_date + timedelta(days=3))
         else:
-            p.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1))
+            p.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1, hours=3))
         p.yaxis.axis_label = "Parameter Value(s)"
         p.legend.title = "Water Quality Parameters"
         p.legend.location = "top_left"
@@ -681,7 +681,7 @@ def vertical():
         if plotrange > timedelta(days=62):
             p1.x_range = Range1d(set_begin_date - timedelta(days=3), set_last_date + timedelta(days=3))
         else:
-            p1.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1))
+            p1.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1, hours=3))
         p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
 
         # Display the Bokeh chart for the first plot using Streamlit
@@ -769,9 +769,8 @@ def current():
     st.header("Brusdalsvatnet Water Quality Dashboard")
     st.title("Hydrodynamic Model of Current Conditions")
 
-    st.write("Select depth layer to display:")
     options_list = range(0, 20)
-    layer = st.selectbox("Select a number:", options_list)  # Create the dropdown menu
+    layer = st.selectbox("Select depth layer to display:", options_list)  # Create the dropdown menu
 
     file_nc_his = None
     file_nc_map = r"C:\Users\Russell\Documents\Deltares\FM Projects\Automatic.dsproj_data\ForWAQ\dflowfm\output\ForWAQ_map.nc"
