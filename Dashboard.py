@@ -80,7 +80,6 @@ def historic():
 
 
 # Function to the upload new profiler data from CSV
-@st.cache_data
 def upload_weather_csv_page():
     csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
@@ -213,7 +212,6 @@ def weather():
 
 
 # Function to the upload new profiler data from CSV
-@st.cache_data
 def upload_hourly_csv_page():
     csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, parse_dates=['TIMESTAMP'])
