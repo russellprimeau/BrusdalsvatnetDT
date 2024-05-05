@@ -2,7 +2,6 @@
 Pulls Hourly and Step (profile) data from Profiler Station's IP, writes to CSV files, pushes updates to GitHub
 """
 
-
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
