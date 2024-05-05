@@ -1,5 +1,3 @@
-# Pulls data from Profiler IP and writes to local mySQL database
-
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
@@ -7,6 +5,37 @@ import subprocess
 import os
 import logging
 from datetime import datetime
+
+
+def run_command(command):
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(f"Command succeeded: {' '.join(command)}")
+        logging.info(f"Command succeeded: {' '.join(command)}")
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
+        logging.error(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
+
+
+def push():
+    # Add all changes to the staging area
+    run_command(['git', 'add', '.'])
+
+    # Get list of modified files using git diff
+    modified_files = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True,
+                                    text=True).stdout.strip()
+
+    # Construct commit message (optional)
+    if modified_files:
+        commit_message = f"Changes to: {modified_files}"  # Replace with your preferred format
+    else:
+        commit_message = "No changes detected"  # Optional for clarity
+
+    # Commit the changes
+    run_command(['git', 'commit', '-m', commit_message])
+
+    # Push the changes to the remote repository
+    run_command(['git', 'push', 'origin', 'main'])
 
 
 def scrape_and_clean():
@@ -98,6 +127,7 @@ def get_last_line(csv_file):
     # Return the last row (using negative indexing) as a single-row dataframe
     return df.iloc[-1:]
 
+
 def write(df, destination):
     """
     Append the new data to the end of the CSV
@@ -115,51 +145,20 @@ def write(df, destination):
         logging.error(f"Failed to appended records to {destination} at {current_time}")
 
 
-def push_to_remote(project_dir, filename, branch_name="main"):
-    command = ["git", "push", "origin", branch_name]
+if __name__ == '__main__':
     # Change directory to project location
-    os.chdir(project_dir)
+    os.chdir(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT")
 
-    # # Add specific file for commit
-    subprocess.run(["git", "add", filename], check=True)  # Raise error if fails
-
-    # Get list of modified files using git diff
-    modified_files = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True,
-                                    text=True).stdout.strip()
-
-    # Construct commit message (optional)
-    if modified_files:
-        commit_message = f"Changes to: {modified_files}"  # Replace with your preferred format
-    else:
-        commit_message = "No changes detected"  # Optional for clarity
-
-    # Commit all selected files
-    subprocess.run(["git", "commit", "-m", commit_message], check=True)  # Optional
-
-    # # Pull changes from remote origin with capture
-    # pull_process = subprocess.Popen(["git", "pull", "origin", "main", "--no-edit"], cwd=project_dir,
-    #                                 stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    # pull_output, pull_error = pull_process.communicate()
-    #
-    # # Handle potential errors during pull
-    # if pull_error:
-    #     logging.error(f"Error during pull: {pull_error.decode()}")
-    #     return
-
-    # Push commits to remote repository (by default, main)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, error = process.communicate()
-    logging.info(f"Push output: {output.decode()}, with error code {error.decode()}")
-
-
-if __name__ == "__main__":
     data_file = "Profiler_modem_SondeHourly.csv"
 
     # Create log for debugging automation
     log_file = "Scheduled_ScrapeHourly.log"  # Define the log file path (optional, change filename if needed)
     logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
 
+    # Pull changes from the remote repository
+    run_command(['git', 'pull', 'origin', 'main'])
+
     new_lines = scrape_and_clean()
     write(new_lines, data_file)
-    push_to_remote(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT", data_file)  # Remote Desktop
-    # push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)  # Local
+
+    push()
