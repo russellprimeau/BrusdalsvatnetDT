@@ -1,13 +1,46 @@
-# Pulls data from Profiler IP and writes to local mySQL database
+"""
+Pulls Hourly and Step (profile) data from Profiler Station's IP, writes to CSV files, pushes updates to GitHub
+"""
+
 
 import requests
 from bs4 import BeautifulSoup
 import pandas as pd
 import subprocess
 import os
-import csv
-from datetime import datetime
 import logging
+from datetime import datetime
+
+
+def run_command(command):
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(f"Command succeeded: {' '.join(command)}")
+        logging.info(f"Command succeeded: {' '.join(command)}")
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
+        logging.error(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
+
+
+def push():
+    # Add all changes to the staging area
+    run_command(['git', 'add', '.'])
+
+    # Get list of modified files using git diff
+    modified_files = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True,
+                                    text=True).stdout.strip()
+
+    # Construct commit message (optional)
+    if modified_files:
+        commit_message = f"Changes to: {modified_files}"  # Replace with your preferred format
+    else:
+        commit_message = "No changes detected"  # Optional for clarity
+
+    # Commit the changes
+    run_command(['git', 'commit', '-m', commit_message])
+
+    # Push the changes to the remote repository
+    run_command(['git', 'push', 'origin', 'main'])
 
 
 def scrape_and_clean():
@@ -41,32 +74,9 @@ def scrape_and_clean():
         # Drop the first row (which is now the header row)
         df = df[1:]
 
-        # print(df)
-
-        # current_record_tag = soup.find('b', string=lambda t: t and 'Current Record:' in t)
-        # record_date_tag = soup.find('b', string=lambda t: t and 'Record Date:' in t)
+        # Set the coordinates where the measurement was made
         latitude = 62.474464
         longitude = 6.461324
-
-        # try:
-        #     # Check if the tags are found before accessing their next siblings
-        #     if current_record_tag:
-        #         current_record = current_record_tag.next_sibling.strip()
-        #     else:
-        #         current_record = "Not Found"
-        #
-        #     if record_date_tag:
-        #         record_date = record_date_tag.next_sibling.strip()
-        #     else:
-        #         record_date = "Not Found"
-
-        # Add Record date and Current record as the first two columns
-        # df.insert(0, 'Record date', record_date)
-        # df.insert(1, 'Current record', current_record)
-
-
-        # except AttributeError as e:
-        #     print(f"Error extracting data from the website: {e}")
 
 
         # Column names from metadata
@@ -107,7 +117,8 @@ def scrape_and_clean():
     else:
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
-        logging.info(f"Unsuccessful attempt to connect at {current_time}. Request returned: {response.status_code}")
+        logging.error(f"Unsuccessful attempt to connect at {current_time}. Request returned: {response.status_code}")
+        df = pd.DataFrame()
     return df
 
 
@@ -142,50 +153,25 @@ def write(df, destination):
     except:
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
-        logging.info(f"Failed to appended records to {destination} at {current_time}")
+        logging.error(f"Failed to appended records to {destination} at {current_time}")
 
-def push_to_remote(project_dir, filename, branch_name="main"):
-    command = ["git", "push", "origin", branch_name]
+
+if __name__ == '__main__':
     # Change directory to project location
-    os.chdir(project_dir)
+    os.chdir(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT")
 
-    # # Add specific file for commit
-    # subprocess.run(["git", "add", filename], check=True)
-
-    # Add all modified files for commit
-    subprocess.run(["git", "add", filename], check=True)  # Raise error if fails
-
-    # Get list of modified files using git diff
-    modified_files = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True,
-                                    text=True).stdout.strip()
-
-    # Construct commit message (optional)
-    if modified_files:
-        commit_message = f"Changes to: {modified_files}"  # Replace with your preferred format
-    else:
-        commit_message = "No changes detected"  # Optional for clarity
-
-    # Commit all selected files
-    subprocess.run(["git", "commit", "-m", commit_message], check=True)  # Optional
-
-    # Push commits to remote repository (by default, main)
-    process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    output, error = process.communicate()
-    logging.info(f"Push output: {output.decode()}, with error code {error.decode()}")
-    # print("Output: ", output.decode())
-    # print("Error: ", error.decode())
-
-
-if __name__ == "__main__":
-    # Set output file
     data_file = "Profiler_modem_PFL_Step.csv"
 
     # Create log for debugging automation
     log_file = "Scheduled_ScrapeStep.log"  # Define the log file path (optional, change filename if needed)
     logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
 
-    # Execute functions:
+    # Pull changes from the remote repository
+    run_command(['git', 'pull', 'origin', 'main'])
+
+    # Scrape new data from url and write to local CSV
     new_lines = scrape_and_clean()
     write(new_lines, data_file)
-    push_to_remote(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT", data_file)  # Remote Desktop
-    # push_to_remote(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT", data_file)  # Local
+
+    # Push updated Step data to GitHub remote origin
+    push()
