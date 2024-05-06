@@ -789,6 +789,7 @@ def current():
         # Open hisfile with xarray and print netcdf structure
         if file_nc_his is not None:
             ds_his = xr.open_mfdataset(file_nc_his, preprocess=dfmt.preprocess_hisnc)
+            print('ds_his', ds_his)
         else:
             st.write("No time series data is available in this directory.")
 
@@ -802,6 +803,18 @@ def current():
             ds_his.waterlevel.plot.line(ax=ax, x='time')
             ax.legend(ds_his.stations.to_series(), loc=1, fontsize=8)  # Optional, to change legend location
             st.pyplot(fig_his_waterlevel)
+
+        # plot his data: temperature zt at one station
+        if file_nc_his is not None:
+            ds_his_sel = ds_his.isel(stations=0).isel(time=slice(0, 50))
+            fig_z, ax = plt.subplots(1, 1, figsize=(10, 5))
+            ds_his_sel.waterlevel.plot.line(ax=ax, color='r')  # waterlevel line
+            pc = dfmt.plot_ztdata(ds_his_sel, varname='salinity', ax=ax, cmap='jet')  # salinity pcolormesh
+            fig_z.colorbar(pc, ax=ax)
+            CS = dfmt.plot_ztdata(ds_his_sel, varname='salinity', ax=ax, only_contour=True, levels=6, colors='k',
+                                  linewidths=0.8)  # salinity contour
+            ax.clabel(CS, fontsize=10)
+            st.pyplot(fig_z)
     def display_map(o_file):
         file_nc_map = o_file
 
@@ -811,24 +824,16 @@ def current():
         raster_res = 50
         umag_clim = None
         scale = 1.5
-        line_array = np.array([[53181.96942503, 424270.83361629],
-                               [55160.15232593, 416913.77136685]])
+        line_array = np.array([[6.46124405, 62.48],
+                               [6.46124405, 62.4650]])
 
         # Open and merge mapfile with xugrid(xarray) and print netcdf structure
         uds_map = dfmt.open_partitioned_dataset(file_nc_map)
         uds_map = uds_map.rename(rename_mapvars)
-        print('uds_map!', uds_map)
-
-        # Extract and reformat a list of all time steps, and a dictionary for converting the calendar time to an index
-        times = uds_map.coords["time"]
-        formatted_times = times.dt.strftime("%Y-%m-%d %H:%M:%S")
-        formatted_times = formatted_times.values.tolist()
-        times_dict = {value: i for i, value in enumerate(formatted_times)}
-        # print('formatted_times', type(formatted_times), formatted_times)
-        # print('times[0]', type(times[0]), times[0])
+        # print('uds_map!', uds_map)
 
         # datavars = list(uds_map.data_vars)  # List of all data variables
-        # But instead, create a list of only parameters which have a mesh2d_nFaces coordinate suitable for plots
+        # But don't use that. Create a list of only parameters which have a mesh2d_nFaces coordinate suitable for plots:
         includes_coordinate = "mesh2d_nFaces"
         excludes_coordinates = ["mesh2d_nEdges", "mesh2d_nNodes", "mesh2d_nMax_face_nodes"]
         mesh2d_nFaces_list = []
@@ -861,11 +866,25 @@ def current():
             "Edge wind velocity, y-component (m/s)": "mesh2d_windyu",
         }
 
-        # mesh2d_nFaces_list = parameter_names.get(mesh2d_nFaces_list)
-        # mesh2d_nFaces_params = [parameter_names[key] for key in mesh2d_nFaces_list if key in parameter_names]
-        # value_list = [your_dict.get(key, None) for key in your_list_of_keys]
-        # mesh2d_nFaces_params = [parameter_names.get(key, None) for key in mesh2d_nFaces_list]
+        # Create a list of more descriptive parameter names for display in the UI
         mesh2d_nFaces_list = [key for key, value in parameter_names.items() if value in mesh2d_nFaces_list]
+
+        # Extract and reformat a list of all time steps, and a dictionary for converting the calendar time to an index
+        times = uds_map.coords["time"]
+        formatted_times = times.dt.strftime("%Y-%m-%d %H:%M:%S")
+        formatted_times = formatted_times.values.tolist()
+        times_dict = {value: i for i, value in enumerate(formatted_times)}
+        # print('formatted_times', type(formatted_times), formatted_times)
+        # print('times[0]', type(times[0]), times[0])
+
+        # Check for layers
+        try:
+            num_layers = uds_map.dims['mesh2d_nLayers']
+        except:
+            num_layers = 0
+
+        # Plot water level on map
+        fig_surface, ax = plt.subplots(figsize=(10, 4))
 
         cc1, cc2 = st.columns(2, gap="small")
         with cc1:
@@ -873,19 +892,33 @@ def current():
             parameter = parameter_names.get(parameter_key)
             selected_time_key = st.selectbox("Select the time to display", list(times_dict.keys()))
             selected_time_index = times_dict.get(selected_time_key)
-            layer_list = range(0, 20)
-            layer = st.selectbox("Select depth layer to display:", layer_list)  # Create the dropdown menu
 
-        # Plot water level on map
-        fig_map_waterlevel, ax = plt.subplots(figsize=(10, 4))
-        pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer, nmesh2d_layer=layer,
+            if num_layers > 1:
+                max_depth = -uds_map['mesh2d_flowelem_bl'].max().to_numpy()[()]
+                print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
+                layer_depths = np.linspace(0, max_depth - max_depth/num_layers, num_layers)
+                layer_depths = layer_depths.tolist()
+                layer_list = range(0, num_layers)
+                depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)  # Create the dropdown menu
+                layer = layer_list[layer_depths.index(depth_selected)]
+                print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
+                pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer, nmesh2d_layer=layer,
                                          missing_dims='ignore').ugrid.plot(cmap='jet')
+            else:
+                pc = uds_map[parameter].isel(time=selected_time_index,missing_dims='ignore').ugrid.plot(cmap='jet')
+
         if crs is None:
             ax.set_aspect('equal')
         # else:
         #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        fig_map_waterlevel.suptitle(parameter_key)
-        st.pyplot(fig_map_waterlevel)
+        fig_surface.suptitle(parameter_key)
+        st.pyplot(fig_surface)
+
+        if line_array is not None:
+            uds_crs = dfmt.polyline_mapslice(uds_map.isel(time=selected_time_index), line_array)
+            fig_cross, ax = plt.subplots()
+            uds_crs[parameter].ugrid.plot(cmap='jet')
+        st.pyplot(fig_cross)
 
         # # Plot water level on map
         # fig2, ax = plt.subplots(figsize=(10, 4))
@@ -926,26 +959,24 @@ def current():
         # #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
         # st.pyplot(figy)
 
-        # velocity magnitude and quiver
-        uds_quiv = uds_map.isel(time=selected_time_index, mesh2d_nLayers=layer, nmesh2d_layer=layer, missing_dims='ignore')
-        varn_ucx, varn_ucy = 'mesh2d_ucx', 'mesh2d_ucy'
-        magn_attrs = {'long_name': 'velocity magnitude', 'units': 'm/s'}
-        uds_quiv['magn'] = np.sqrt(uds_quiv[varn_ucx] ** 2 + uds_quiv[varn_ucy] ** 2).assign_attrs(magn_attrs)
-        raster_quiv = dfmt.rasterize_ugrid(uds_quiv[[varn_ucx, varn_ucy]], resolution=raster_res)
-
-
-        # Plot
-        figx, ax = plt.subplots(figsize=(10, 4))
-        pc = uds_quiv['magn'].ugrid.plot(cmap='jet')
-        raster_quiv.plot.quiver(x='mesh2d_face_x', y='mesh2d_face_y', u=varn_ucx, v=varn_ucy, color='w', scale=scale,
-                                add_guide=False)
-        pc.set_clim(umag_clim)
-        figx.tight_layout()
-        if crs is None:
-            ax.set_aspect('equal')
-        # else:
-        #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        st.pyplot(figx)
+        # # Velocity magnitude and quiver
+        # uds_quiv = uds_map.isel(time=selected_time_index, mesh2d_nLayers=layer, nmesh2d_layer=layer, missing_dims='ignore')
+        # varn_ucx, varn_ucy = 'mesh2d_ucx', 'mesh2d_ucy'
+        # magn_attrs = {'long_name': 'velocity magnitude', 'units': 'm/s'}
+        # uds_quiv['magn'] = np.sqrt(uds_quiv[varn_ucx] ** 2 + uds_quiv[varn_ucy] ** 2).assign_attrs(magn_attrs)
+        # raster_quiv = dfmt.rasterize_ugrid(uds_quiv[[varn_ucx, varn_ucy]], resolution=raster_res)
+        #
+        # figx, ax = plt.subplots(figsize=(10, 4))
+        # pc = uds_quiv['magn'].ugrid.plot(cmap='jet')
+        # raster_quiv.plot.quiver(x='mesh2d_face_x', y='mesh2d_face_y', u=varn_ucx, v=varn_ucy, color='w', scale=scale,
+        #                         add_guide=True)
+        # pc.set_clim(umag_clim)
+        # figx.tight_layout()
+        # if crs is None:
+        #     ax.set_aspect('equal')
+        # # else:
+        # #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+        # st.pyplot(figx)
 
     st.header("Brusdalsvatnet Water Quality Dashboard")
     st.title("Hydrodynamic Model of Current Conditions")
@@ -965,11 +996,6 @@ def current():
         filtered_files = [f for f in all_files if f.endswith('map.nc')]
         selected_file = st.selectbox(label="Select which model's output to display", options=filtered_files)
         display_map(selected_file)
-
-
-
-
-
 
 
     # def create_map(selected_atrib, map_center, zoom_level=13):
