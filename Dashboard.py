@@ -290,51 +290,21 @@ def hourly():
     with mc1:
         selected_variables = st.multiselect(
             "Select water quality parameters to plot",
-            ["Select All"] + list(df.columns[1:11]),
+            ["Select All"] + list(df.columns[1:11]), default=["Select All"]
         )
 
     clean_setting = st.radio(
         "Choose how to filter the dataset",
-        options=["Raw", "Remove Suspicious Values"],
+        options=["Remove Suspicious Values", "Raw"],
         horizontal=True
     )
-
-    def DefineRange(daterange):
-        if daterange == "Last Month":
-            st.session_state.ksd = date.today() - timedelta(days=31)
-            st.session_state.knd = date.today()
-        elif daterange == "Last Year":
-            st.session_state.ksd = datetime.now() - relativedelta(years=1)
-            st.session_state.knd = datetime.now()
-        elif daterange == "Maximum Extent":
-            st.session_state.ksd = first_date
-            st.session_state.knd = last_date
-
-    first_date = df.iloc[0, 0]
-    last_date = df.iloc[-1, 0]
-
-    set_begin_date = first_date
-    set_last_date = last_date
-    daterange = ""
-
-    dc1, dc2, dc3, dc4 = st.columns(4, gap="small")
-    dc1.date_input("Begin plot range:", value=set_begin_date, key="ksd")
-    dc2.date_input("End plot range:", value=set_last_date, key="knd")
-
-    b1, b2, b3, b4, b5, b6 = st.columns(6, gap="small")
-    b1.button("Maximum Extent", on_click=DefineRange, args=("Maximum Extent",))
-    b2.button("Last Year", on_click=DefineRange, args=("Last Year",))
-    b3.button("Last Month", on_click=DefineRange, args=("Last Month",))
-
-    set_begin_date = datetime.combine(st.session_state.ksd, time())
-    set_last_date = datetime.combine(st.session_state.knd, time())
 
     if clean_setting == "Remove Suspicious Values":
         # Define conditions for each parameter which indicate errors in the data
         error_conditions = {
             "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
                     df['Timestamp'] > pd.to_datetime('2099-12-31')),
-            "Temperature (Celsius)": (df['Temperature (Celsius)'] < -5) | (df['Temperature (Celsius)'] > 25),
+            "Temperature (Celsius)": (df['Temperature (Celsius)'] < 1) | (df['Temperature (Celsius)'] > 25),
             "Conductivity (microSiemens/centimeter)": (df['Conductivity (microSiemens/centimeter)'] < 0) |
                                                       (df['Conductivity (microSiemens/centimeter)'] > 45),
             "Specific Conductivity (microSiemens/centimeter)": (
@@ -366,6 +336,39 @@ def hourly():
         df = df[mask]
 
         st.write("Some suspicious values have been removed from the dataset, but errors may remain.")
+    else:
+        st.write("All logged values are displayed, which includes known errors such as uncalibrated measurements.")
+
+    def DefineRange(daterange):
+        if daterange == "Last Month":
+            st.session_state.ksd = date.today() - timedelta(days=31)
+            st.session_state.knd = date.today()
+        elif daterange == "Last Year":
+            st.session_state.ksd = datetime.now() - relativedelta(years=1)
+            st.session_state.knd = datetime.now()
+        elif daterange == "Maximum Extent":
+            st.session_state.ksd = first_date
+            st.session_state.knd = last_date
+
+    first_date = df.iloc[0, 0]
+    last_date = df.iloc[-1, 0]
+
+    set_begin_date = date.today() - timedelta(days=31)
+    set_last_date = date.today()
+    daterange = ""
+
+    dc1, dc2, dc3, dc4 = st.columns(4, gap="small")
+    dc1.date_input("Begin plot range:", value=set_begin_date, key="ksd")
+    dc2.date_input("End plot range:", value=set_last_date, key="knd")
+
+    b1, b2, b3, b4, b5, b6 = st.columns(6, gap="small")
+    b1.button("Maximum Extent", on_click=DefineRange, args=("Maximum Extent",))
+    b2.button("Last Year", on_click=DefineRange, args=("Last Year",))
+    b3.button("Last Month", on_click=DefineRange, args=("Last Month",))
+
+    set_begin_date = datetime.combine(st.session_state.ksd, time())
+    set_last_date = datetime.combine(st.session_state.knd, time())
+
 
     # Check if "Select All" is chosen
     if "Select All" in selected_variables:
@@ -457,8 +460,6 @@ def vertical():
     # Convert the time column to a datetime object
     df['Timestamp'] = pd.to_datetime(df['Timestamp']).apply(lambda x: x.to_pydatetime())
 
-    print('columns', df.columns)
-
     # Drop extraneous variables
     df = df.drop(columns=['Record Number', 'Day', 'CntRS232', 'Vertical Position1 (m)'])
 
@@ -497,7 +498,7 @@ def vertical():
     # Create Bokeh figure for the first plot
     p1 = figure(x_axis_label='Date', title='Water Quality Parameters vs. Date by Depth')
 
-    st.title("Vertical Profiler Data")
+    st.title("Vertical Profile Data")
     st.markdown("### Time Series Data By Depth Contour")
 
     # # Option to include an image of the profiler alongside the title (commented because of image rights)
@@ -520,7 +521,7 @@ def vertical():
                             "fDOM (ppb QSU)"]
     mc1, mc2 = st.columns(2, gap="small")
     with mc1:
-        selected_variables_p1 = st.multiselect('Select Water Quality Parameters', variables_to_plot_p1, default=[])
+        selected_variables_p1 = st.multiselect('Select Water Quality Parameters', variables_to_plot_p1, default=["Temperature (Celsius)"])
 
     # User input for depth selection
     dc1, dc2 = st.columns(2, gap="small")
@@ -534,46 +535,16 @@ def vertical():
 
     clean_setting = st.radio(
         "Choose how to filter the dataset",
-        options=["Raw", "Remove Suspicious Values"],
+        options=["Remove Suspicious Values", "Raw"],
         horizontal=True
     )
-
-    def DefineRange(daterange):
-        if daterange == "Last Month":
-            st.session_state.ksd = date.today() - timedelta(days=31)
-            st.session_state.knd = date.today()
-        elif daterange == "Last Year":
-            st.session_state.ksd = datetime.now() - relativedelta(years=1)
-            st.session_state.knd = datetime.now()
-        elif daterange == "Maximum Extent":
-            st.session_state.ksd = first_date
-            st.session_state.knd = last_date
-
-    first_date = df.iloc[0, 0]
-    last_date = df.iloc[-1, 0]
-
-    set_begin_date = first_date
-    set_last_date = last_date
-    daterange = ""
-
-    dc1, dc2, dc3, dc4 = st.columns(4, gap="small")
-    dc1.date_input("Begin plot range:", value=set_begin_date, key="ksd")
-    dc2.date_input("End plot range:", value=set_last_date, key="knd")
-
-    b1, b2, b3, b4, b5, b6 = st.columns(6, gap="small")
-    b1.button("Maximum Extent", on_click=DefineRange, args=("Maximum Extent",))
-    b2.button("Last Year", on_click=DefineRange, args=("Last Year",))
-    b3.button("Last Month", on_click=DefineRange, args=("Last Month",))
-
-    set_begin_date = datetime.combine(st.session_state.ksd, time())
-    set_last_date = datetime.combine(st.session_state.knd, time())
 
     if clean_setting == "Remove Suspicious Values":
         # Define conditions for each parameter which indicate errors in the data
         error_conditions = {
             "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
                     df['Timestamp'] > pd.to_datetime('2099-12-31')),
-            "Temperature (Celsius)": (df['Temperature (Celsius)'] < -5) | (df['Temperature (Celsius)'] > 25),
+            "Temperature (Celsius)": (df['Temperature (Celsius)'] < 1) | (df['Temperature (Celsius)'] > 25),
             "Conductivity (microSiemens/centimeter)": (df['Conductivity (microSiemens/centimeter)'] < 0) |
                                                       (df['Conductivity (microSiemens/centimeter)'] > 45),
             "Specific Conductivity (microSiemens/centimeter)": (
@@ -605,6 +576,38 @@ def vertical():
         # df = df[mask]
 
         st.write("Some suspicious values have been removed from the dataset, but errors may remain.")
+    else:
+        st.write("All logged values are displayed, which includes known errors such as uncalibrated measurements.")
+
+    def DefineRange(daterange):
+        if daterange == "Last Month":
+            st.session_state.ksd2 = date.today() - timedelta(days=31)
+            st.session_state.knd2 = date.today()
+        elif daterange == "Last Year":
+            st.session_state.ksd2 = datetime.now() - relativedelta(years=1)
+            st.session_state.knd2 = datetime.now()
+        elif daterange == "Maximum Extent":
+            st.session_state.ksd2 = first_date
+            st.session_state.knd2 = last_date
+
+    first_date = df.iloc[0, 0]
+    last_date = df.iloc[-1, 0]
+
+    set_begin_date = date.today() - timedelta(days=31)
+    set_last_date = date.today()
+    daterange = ""
+
+    dc1, dc2, dc3, dc4 = st.columns(4, gap="small")
+    dc1.date_input("Begin plot range:", value=set_begin_date, key="ksd2")
+    dc2.date_input("End plot range:", value=set_last_date, key="knd2")
+
+    b1, b2, b3, b4, b5, b6 = st.columns(6, gap="small")
+    b1.button("Maximum Extent", on_click=DefineRange, args=("Maximum Extent",))
+    b2.button("Last Year", on_click=DefineRange, args=("Last Year",))
+    b3.button("Last Month", on_click=DefineRange, args=("Last Month",))
+
+    set_begin_date = datetime.combine(st.session_state.ksd2, time())
+    set_last_date = datetime.combine(st.session_state.knd2, time())
 
     # Handle special options
     selected_depths = []
@@ -671,6 +674,7 @@ def vertical():
 
         # Show legend for the first plot
         p1.legend.title = 'Depth'
+        p1.legend.location = "top_left"
         p1.legend.label_text_font_size = '10px'
         p1.legend.click_policy = "hide"  # Hide lines on legend click
         p1.yaxis.axis_label = "Variable Value(s)"
@@ -695,11 +699,13 @@ def vertical():
     # Add a multiselect box for parameters in the second plot
     mc1, mc2 = st.columns(2, gap="small")
     with mc1:
-        selected_variables_p2 = st.multiselect('Select Water Quality Parameters)', variables_to_plot_p1, default=[])
+        selected_variables_p2 = st.multiselect('Select water quality parameters', variables_to_plot_p1,
+                                               default=["Temperature (Celsius)"])
 
         # Add a multiselect box for date for the second plot
-        selected_dates_p2 = st.multiselect('Select Date for Vertical Profile (search by typing YYYY-MM-DD)',
-                                           df['Date'].dt.strftime('%Y-%m-%d').unique())
+        selected_dates_p2 = st.multiselect('Select dates for vertical profiles by typing or scrolling',
+                                           df['Date'].dt.strftime('%Y-%m-%d').unique(),
+                                           default=df['Date'].iloc[-1:].dt.strftime('%Y-%m-%d'))
 
         profile_times = ['00:00 AM (Night)', '12:00 PM (Day)']
 
@@ -725,7 +731,7 @@ def vertical():
             for j, date_val in enumerate(selected_dates_p2):
                 # Filter data based on selected date for the second plot
                 filtered_data_p2 = df[df['Date'] == pd.to_datetime(date_val)]
-                if nightman_dayman == 'Night/AM/00:00':
+                if nightman_dayman == '00:00 AM (Night)':
                     filtered_data_p2 = filtered_data_p2[filtered_data_p2['Time'] < pd.to_datetime('12:00:00').time()]
                 else:
                     filtered_data_p2 = filtered_data_p2[filtered_data_p2['Time'] >= pd.to_datetime('12:00:00').time()]
@@ -753,6 +759,7 @@ def vertical():
 
         # Show legend for the second plot
         p2.legend.title = 'Parameters'
+        p2.legend.location = "top_left"
         p2.legend.label_text_font_size = '10px'
         p2.legend.click_policy = "hide"  # Hide lines on legend click
 
@@ -768,13 +775,16 @@ def current():
     st.title("Hydrodynamic Model of Current Conditions")
 
     options_list = range(0, 20)
-    layer = st.selectbox("Select depth layer to display:", options_list)  # Create the dropdown menu
+    cc1, cc2 = st.columns(2, gap="small")
+    with cc1:
+        # parameter = st.multiselect()
+        # time = st.multiselect()
+        layer = st.selectbox("Select depth layer to display:", options_list)  # Create the dropdown menu
 
     file_nc_his = r"ForWAQ_his.nc"
-    file_nc_map = r"ForWAQ_map.nc"
+    file_nc_map = r"FlowFM_map.nc"
     rename_mapvars = {}
     sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
-    layer = 34
     crs = 'EPSG:4326'
     raster_res = 50
     umag_clim = None
@@ -788,9 +798,10 @@ def current():
 
     # Plot his data: waterlevel at stations
     if file_nc_his is not None:
-        fig, ax = plt.subplots(1, 1, figsize=(10, 5))
+        fig_his_waterlevel, ax = plt.subplots(1, 1, figsize=(10, 5))
         ds_his.waterlevel.plot.line(ax=ax, x='time')
         ax.legend(ds_his.stations.to_series(), loc=1, fontsize=8)  # Optional, to change legend location
+        st.pyplot(fig_his_waterlevel)
 
     # Open and merge mapfile with xugrid(xarray) and print netcdf structure
     uds_map = dfmt.open_partitioned_dataset(file_nc_map)
@@ -799,17 +810,16 @@ def current():
     print('uds_map[mesh2d_tem1].isel(time=-1)', uds_map['mesh2d_tem1'].isel(time=-1))
 
     # Plot water level on map
-    fig1, ax = plt.subplots(figsize=(10, 4))
+    fig_map_waterlevel, ax = plt.subplots(figsize=(10, 4))
     pc = uds_map['mesh2d_tem1'].isel(time=-1, mesh2d_nLayers=layer, nmesh2d_layer=layer,
                                      missing_dims='ignore').ugrid.plot(cmap='jet')
     if crs is None:
         ax.set_aspect('equal')
-    else:
-        ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-    fig1.suptitle("Temperature")
-    st.pyplot(fig1)
+    # else:
+    #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+    fig_map_waterlevel.suptitle("Temperature")
+    st.pyplot(fig_map_waterlevel)
 
-    layer = 18
     # Plot water level on map
     fig2, ax = plt.subplots(figsize=(10, 4))
     pc = uds_map['mesh2d_sa1'].isel(time=-1, mesh2d_nLayers=layer, nmesh2d_layer=layer,
