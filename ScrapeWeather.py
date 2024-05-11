@@ -80,6 +80,7 @@ def write(df, destination):
     try:
         ref = get_last_line(destination)
         filtered_df = df[df['Time'] > ref.iloc[0, 0]]
+        print('filtered_df\n', filtered_df.shape, filtered_df)
 
         # Convert datetime objects to ISO 8601 format strings
         iso_format = '%Y-%m-%dT%H:%M:%S'
