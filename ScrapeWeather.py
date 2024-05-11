@@ -265,7 +265,7 @@ def scrape_and_clean():
                 scraped_df[col] = remove_comma(scraped_df[col])
 
             scraped_df[cols_to_convert] = scraped_df[cols_to_convert].apply(pd.to_numeric)
-            scraped_df['Time'] = scraped_df['Time'].astype('datetime64[s]')
+            scraped_df['Time'] = scraped_df['Time'].astype('datetime64[ns]')
             print(f'Type of each column:', scraped_df.dtypes)
         else:
             print("Scraping failed.")
