@@ -1,0 +1,273 @@
+# Logs in to the Brusdalen weather station (1818) and scrapes data using Selenium and Firefox,
+# then writes data to CSV and pushes updates to GitHub. Can be called from a batch script.
+#
+# Update the following lines before running:
+# os.chdir(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT")  # Path to Git project directory
+# my_username = ''  # Login credentials for data logger's http site
+# my_password = ''  # Login credentials for data logger's http site
+
+
+import time
+import pandas as pd
+import subprocess
+import os
+import logging
+from datetime import datetime
+from selenium import webdriver  # Probably not sufficient for login features; try selenium-wire instead
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+
+
+def run_command(command):
+    try:
+        subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print(f"Command succeeded: {' '.join(command)}")
+        logging.info(f"Command succeeded: {' '.join(command)}")
+    except subprocess.CalledProcessError as e:
+        print(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
+        logging.error(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
+
+
+def push():
+    # Add all changes to the staging area
+    run_command(['git', 'add', '.'])
+
+    # Get list of modified files using git diff
+    modified_files = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True,
+                                    text=True).stdout.strip()
+
+    # Construct commit message (optional)
+    if modified_files:
+        commit_message = f"Changes to: {modified_files}"  # Replace with your preferred format
+    else:
+        commit_message = "No changes detected"  # Optional for clarity
+
+    # Commit the changes
+    run_command(['git', 'commit', '-m', commit_message])
+
+    # Push the changes to the remote repository
+    run_command(['git', 'push', 'origin', 'main'])
+
+
+def get_last_line(csv_file):
+    """
+  Reads the entire CSV file and returns the last line as a dataframe.
+
+  Args:
+      csv_file (str): Path to the CSV file.
+
+  Returns:
+      pandas.DataFrame: The last line of the CSV file as a dataframe.
+  """
+    # Read the CSV file into a dataframe
+    df = pd.read_csv(csv_file, sep=";", decimal=",", parse_dates=['Time'], date_format='%Y-%m-%dT%H:%M:%S')
+
+    # Return the last row (using negative indexing) as a single-row dataframe
+    return df.iloc[-1:]
+
+
+def write(df, destination):
+    """
+  Append the new data to the end of the CSV
+  """
+    try:
+        ref = get_last_line(destination)
+        filtered_df = df[df['Time'] > ref.iloc[0, 0]]
+
+        # Convert datetime objects to ISO 8601 format strings
+        iso_format = '%Y-%m-%dT%H:%M:%S'
+        filtered_df['Time'] = filtered_df['Time'].dt.strftime(iso_format)
+
+        try:
+            filtered_df.to_csv(destination, mode='a', index=False, header=False, sep=";", decimal=",")
+        except Exception as e:
+            print(f"Couldn't write to file, with error {e}")
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Successfully appended records to {destination} at {current_time}")
+    except Exception as e:
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.error(f"Failed to appended records to {destination} at {current_time} with error {e}")
+
+
+def scrape_and_clean():
+
+    def click(driver, element_xpath):
+        try:
+            element = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, element_xpath)))
+            element.click()
+        except Exception as e:
+            print(f"Couldn't find button: {element_xpath}, with error {e}")
+
+    def scrape_table_with_xpath(driver, head_row_xpath, body_xpath, columns):
+        try:
+            head_data = []
+            time.sleep(10)  # This hack seems to be much more effective that WebDriverWait to ensure table is loaded
+            # 'while' loop is to prevent script from reading the default table, by checking for the correct # of columns
+            while len(head_data) != columns:
+                head_row = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, head_row_xpath)))
+                head_cells = head_row.find_elements(By.TAG_NAME, "th")
+                head_data = [cell.text for cell in head_cells]
+                # print('head_data', len(head_data), head_data)
+                if len(head_data) == columns:
+                    break
+
+            counter = 0
+            restart = 0
+            table_data = []
+            while True:
+                try:
+                    # On each new iteration in the "while" condition, reload the table to replace stale elements
+                    body = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, body_xpath)))
+                    rows = body.find_elements(By.TAG_NAME, "tr")  # Find the rows within the table body
+
+                    # rows = wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, 'tr')))
+                    # print(f'table returns: {table}, table body {tbody}')
+                    # print(f'{len(rows)} rows')
+
+                    # Loop through the rows in the body (should be 25 for "Time" table)
+                    for index, _ in enumerate(rows):
+                        # in_rows = table.find_elements(By.TAG_NAME, 'tr')  # Find rows in the table body
+                        # in_rows = wait.until(EC.presence_of_all_elements_located((By.TAG_NAME, 'tr')))
+
+                        row = rows[index+restart]
+                        # print(f'In attempt {counter} at index {index}, combined {index + restart}, '
+                        #       f'with {len(table_data)} rows written to table_data')
+                        cells = row.find_elements(By.TAG_NAME, 'td')
+                        row_data = [cell.text for cell in cells]
+                        if row_data:
+                            table_data.append(row_data)
+                        # print(f"table_data row {index + restart}: {row_data}")
+                        if (index+restart) == len(rows)-1:
+                            break
+                    break  # Exit the loop if all rows are processed successfully
+                except StaleElementReferenceException:
+                    # If a stale element is encountered, continue the loop to retry, starting from the previous row
+                    restart = len(table_data)
+                    counter += 1
+                    continue
+            # print('head_data in:', len(head_data), head_data)
+            # print('table_data in:', len(table_data), table_data)
+
+            return head_data, table_data
+        except (TimeoutException, NoSuchElementException) as e:
+            print(f"<While> ended with Error: {e}")
+            return None
+
+    # Pass Authentication in URL:
+    # Method is deprecated in most browsers, but still works in Firefox as of 125.03, although it may
+    # require additional manual inputs the first time.
+    # Credentials:
+    my_username = 'admin'
+    my_password = 'hLirsp62v7kLsHf'
+    full_url = 'http://89.9.0.217/tables.html'
+    target_url = '89.9.0.217/tables.html'
+    simple_url = f'http://{my_username}:{my_password}@{target_url}'
+
+    # Characteristics of the table to be scraped, including full XPATHs
+    time_xpath_out =        '/html/body/div[1]/div[2]/ul/li[10]/a'  # XPATH of the button for opening the dataset
+    table_view_xpath_out =  '/html/body/div[1]/div[3]/ul/li[2]/a'  # XPATH of button for table (not record) view
+    table_xpath_out =       '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table'  # XPATH of the table
+    head_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/thead'
+    head_row_xpath_out =    '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/thead/tr'
+    body_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/tbody'
+    columns_out = 25
+
+    driver_out = webdriver.Firefox()
+
+    try:
+        driver_out.get(simple_url)
+        print(f"Successfully opened {full_url} using GeckoDriver")
+
+        click(driver_out, time_xpath_out)
+        click(driver_out, table_view_xpath_out)
+        head_data_out, table_data_out = scrape_table_with_xpath(driver_out, head_row_xpath_out, body_xpath_out, columns_out)
+
+        if table_data_out:  # Check if data was retrieved successfully
+            scraped_df = pd.DataFrame(table_data_out)
+            scraped_df.columns = head_data_out
+            scraped_df = scraped_df.drop(['Timestamp', 'St_info', 'Par_60_min'], axis=1)
+
+            # Convert timestamps to ISO 8601 time format
+            original_format = '%Y%m%d%H%M%S'
+
+            # Convert time column to datetime objects (assuming it's named 'date_time') and sort accordingly
+            scraped_df['Tid_str'] = pd.to_datetime(scraped_df['Tid_str'], format=original_format)
+            scraped_df.sort_values(by='Tid_str', inplace=True)  # Sort by time
+
+            # Rename columns to match the sensordata.no output
+            column_mapping = {"Tid_str": "Time", "AA": "1818_time: AA[mBar]", "Batt_V": "1818_time: Batt_V[V]",
+                              "DD_l": "1818_time: DD Retning[°]", "DX_l": "1818_time: DX_l[°]",
+                              "FF_l": "1818_time: FF Hastighet[m/s]", "FG_l": "1818_time: FG_l[m/s]",
+                              "FG_tid_l": "1818_time: FG_tid_l[N/A]", "FX_l": "1818_time: FX Kast[m/s]",
+                              "FX_tid_l": "1818_time: FX_tid_l[N/A]", "PO": "1818_time: PO Trykk stasjonshøyde[mBar]",
+                              "PP": "1818_time: PP[mBar]", "PR": "1818_time: PR Trykk redusert til havnivå[mBar]",
+                              "QLI_Avg": "1818_time: QLI Langbølget[W/m2]", "QNH": "1818_time: QNH[mBar]",
+                              "QSI_Avg": "1818_time: QSI Kortbølget[W/m2]", "RR_1": "1818_time: RR_1[mm]",
+                              "TA_a": "1818_time: TA Middel[°C]", "TA_a_Max": "1818_time: TA_a_Max[°C]",
+                              "TA_a_Min": "1818_time: TA_a_Min[°C]", "UU": "1818_time: UU Luftfuktighet[%RH]"}
+            scraped_df.rename(columns=column_mapping, inplace=True)
+
+            # Reorder columns to match the sensordata.no output
+            column_order = ["Time", "1818_time: AA[mBar]", "1818_time: Batt_V[V]", "1818_time: DD Retning[°]",
+                     "1818_time: DX_l[°]", "1818_time: FF Hastighet[m/s]", "1818_time: FG_l[m/s]",
+                     "1818_time: FG_tid_l[N/A]", "1818_time: FX Kast[m/s]", "1818_time: FX_tid_l[N/A]",
+                     "1818_time: PO Trykk stasjonshøyde[mBar]", "1818_time: PP[mBar]",
+                     "1818_time: PR Trykk redusert til havnivå[mBar]", "1818_time: QLI Langbølget[W/m2]",
+                     "1818_time: QNH[mBar]", "1818_time: QSI Kortbølget[W/m2]", "1818_time: RR_1[mm]",
+                     "1818_time: TA Middel[°C]", "1818_time: TA_a_Max[°C]", "1818_time: TA_a_Min[°C]",
+                     "1818_time: UU Luftfuktighet[%RH]"]
+            scraped_df = scraped_df[column_order]
+            scraped_df.reset_index(drop=True, inplace=True)
+            scraped_df = scraped_df.drop(columns=["1818_time: Batt_V[V]"], axis=1)
+
+            # Convert data from strings to numeric data types
+            cols_to_convert = ["1818_time: AA[mBar]", "1818_time: DD Retning[°]",
+                     "1818_time: DX_l[°]", "1818_time: FF Hastighet[m/s]", "1818_time: FG_l[m/s]",
+                     "1818_time: FG_tid_l[N/A]", "1818_time: FX Kast[m/s]", "1818_time: FX_tid_l[N/A]",
+                     "1818_time: PO Trykk stasjonshøyde[mBar]", "1818_time: PP[mBar]",
+                     "1818_time: PR Trykk redusert til havnivå[mBar]", "1818_time: QLI Langbølget[W/m2]",
+                     "1818_time: QNH[mBar]", "1818_time: QSI Kortbølget[W/m2]", "1818_time: RR_1[mm]",
+                     "1818_time: TA Middel[°C]", "1818_time: TA_a_Max[°C]", "1818_time: TA_a_Min[°C]",
+                     "1818_time: UU Luftfuktighet[%RH]"]
+
+            def remove_comma(col):
+                """Removes commas from a Pandas Series."""
+                return col.str.replace(',', '')
+
+            # Iterate over columns and apply the function
+            for col in cols_to_convert:
+                scraped_df[col] = remove_comma(scraped_df[col])
+
+            scraped_df[cols_to_convert] = scraped_df[cols_to_convert].apply(pd.to_numeric)
+        else:
+            print("Scraping failed.")
+            scraped_df = pd.DataFrame()
+    finally:
+        # Close the browser window
+        driver_out.quit()
+    return scraped_df
+
+
+if __name__ == '__main__':
+    # Change directory to project location
+    # os.chdir(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT")  # Remote desktop
+    os.chdir(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT")  # Local
+
+    data_file = "All_Time.csv"
+
+    # Create log for debugging automation
+    log_file = "Scheduled_ScrapeWeather.log"  # Define the log file path (optional, change filename if needed)
+    logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
+
+    # Pull changes from the remote repository
+    run_command(['git', 'pull', 'origin', 'main'])
+
+    new_lines = scrape_and_clean()
+    # print('Scraped dataframe:\n', new_lines)
+    write(new_lines, data_file)
+
+    push()
