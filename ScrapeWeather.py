@@ -89,12 +89,12 @@ def write(df, destination):
         iso_format = '%Y-%m-%dT%H:%M:%S'
         filtered_df['Time_str'] = filtered_df['Time'].dt.strftime(iso_format)
         print('filtered_df with string time\n', filtered_df.shape, '\ntime type\n', filtered_df["Time"].dtype, '\nFull DF\n', filtered_df)
-        filtered_df = filtered_df.drop('Time', axis=1)
-        print('filtered_df after dropping Time\n', filtered_df.shape, '\ntime type\n', filtered_df["Time"].dtype,
+        filtered_df.drop('Time', axis=1, inplace=True)
+        print('filtered_df after dropping Time\n', filtered_df.shape, '\ntime type\n', filtered_df["Time_str"].dtype,
               '\nFull DF\n', filtered_df)
         cols = ['Time_str'] + [col for col in df.columns if col != 'Time_str']
         filtered_df = filtered_df[cols]
-        print('filtered_df after re-order\n', filtered_df.shape, '\ntime type\n', filtered_df["Time"].dtype,
+        print('filtered_df after re-order\n', filtered_df.shape, '\ntime type\n', filtered_df["Time_str"].dtype,
               '\nFull DF\n', filtered_df)
 
         # filtered_df = filtered_df[['Time_format'] + list(filtered_df.filter(like='Time'))]
