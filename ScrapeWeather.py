@@ -30,10 +30,10 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 def run_command(command):
     try:
         subprocess.run(command, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print(f"Command succeeded: {' '.join(command)}")
+        # print(f"Command succeeded: {' '.join(command)}")
         logging.info(f"Command succeeded: {' '.join(command)}")
     except subprocess.CalledProcessError as e:
-        print(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
+        # print(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
         logging.error(f"Command failed: {' '.join(command)}. Error message: {e.stderr}")
 
 
@@ -111,7 +111,7 @@ def scrape_and_clean():
             element = WebDriverWait(driver, 60).until(EC.element_to_be_clickable((By.XPATH, element_xpath)))
             element.click()
         except Exception as e:
-            print(f"Couldn't find button: {element_xpath}, with error {e}")
+            logging.error(f"Couldn't find button: {element_xpath}, with error {e}")
 
     def scrape_table_with_xpath(driver, head_row_xpath, body_xpath, columns):
         try:
@@ -129,7 +129,7 @@ def scrape_and_clean():
                         break
                 except StaleElementReferenceException as e:
                     # If a stale element is encountered, continue the loop to retry
-                    print(f"Stale element in header: {e}")
+                    logging.error(f"Stale element in header: {e}")
                     continue
 
 
@@ -172,15 +172,15 @@ def scrape_and_clean():
 
             return head_data, table_data
         except (TimeoutException, NoSuchElementException) as e:
-            print(f"<While> ended with Error: {e}")
+            logging.error(f"Attempt to scrape table ended with Error: {e}")
             return None
 
     # Pass Authentication in URL:
     # Method is deprecated in most browsers, but still works in Firefox as of 125.03, although it may
     # require additional manual inputs the first time.
     # Credentials:
-    my_username = 'admin'
-    my_password = 'hLirsp62v7kLsHf'
+    my_username = '*'
+    my_password = '*'
     full_url = 'http://89.9.0.217/tables.html'
     target_url = '89.9.0.217/tables.html'
     simple_url = f'http://{my_username}:{my_password}@{target_url}'
@@ -188,8 +188,6 @@ def scrape_and_clean():
     # Characteristics of the table to be scraped, including full XPATHs
     time_xpath_out =        '/html/body/div[1]/div[2]/ul/li[10]/a'  # XPATH of the button for opening the dataset
     table_view_xpath_out =  '/html/body/div[1]/div[3]/ul/li[2]/a'  # XPATH of button for table (not record) view
-    # table_xpath_out =       '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table'  # XPATH of the table
-    # head_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/thead'
     head_row_xpath_out =    '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/thead/tr'
     body_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/tbody'
     columns_out: int = 25
@@ -200,7 +198,7 @@ def scrape_and_clean():
 
     try:
         driver_out.get(simple_url)
-        print(f"Successfully opened {full_url} using GeckoDriver")
+        logging.info(f"Successfully opened {full_url} using GeckoDriver")
 
         click(driver_out, time_xpath_out)
         click(driver_out, table_view_xpath_out)
@@ -266,7 +264,7 @@ def scrape_and_clean():
             scraped_df[cols_to_convert] = scraped_df[cols_to_convert].apply(pd.to_numeric)
             scraped_df['Time'] = scraped_df['Time'].astype('datetime64[ns]')
         else:
-            print("Scraping failed.")
+            logging.error("Scraping failed.")
             scraped_df = pd.DataFrame()
     finally:
         # Close the browser window
