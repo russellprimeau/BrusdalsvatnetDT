@@ -5,3 +5,4 @@
 *.geojson
 *.nc
 /venv
+credentials.txt

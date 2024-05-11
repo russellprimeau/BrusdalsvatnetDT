@@ -1,5 +1,10 @@
 # Logs in to the Brusdalen weather station (1818) and scrapes data using Selenium and Firefox,
 # then writes data to CSV and pushes updates to GitHub. Can be called from a batch script.
+# Since the script is not executed by Streamlit, requirements are not included in the project "requirements.txt" file.
+# In addition to python environment requirements, additional (free, open-source) software and configurations is
+# required on the machine where it is executed:
+# 1. Firefox browser, in a version which accepts basic authentication credentials through the URL (125 works)
+# 2. GeckoDriver, added to the system's environment variable so selenium can call it
 #
 # Update the following lines before running:
 # os.chdir(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT")  # Path to Git project directory
@@ -164,8 +169,8 @@ def scrape_and_clean():
     # Method is deprecated in most browsers, but still works in Firefox as of 125.03, although it may
     # require additional manual inputs the first time.
     # Credentials:
-    my_username = 'admin'
-    my_password = 'hLirsp62v7kLsHf'
+    my_username = '*'
+    my_password = '*'
     full_url = 'http://89.9.0.217/tables.html'
     target_url = '89.9.0.217/tables.html'
     simple_url = f'http://{my_username}:{my_password}@{target_url}'
@@ -179,7 +184,8 @@ def scrape_and_clean():
     body_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/tbody'
     columns_out = 25
 
-    driver_out = webdriver.Firefox()
+    driverpath = "C:\\Users\\russelbp\\geckodriver.exe"
+    driver_out = webdriver.Firefox(driverpath)
 
     try:
         driver_out.get(simple_url)
@@ -257,8 +263,8 @@ def scrape_and_clean():
 
 if __name__ == '__main__':
     # Change directory to project location
-    # os.chdir(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT")  # Remote desktop
-    os.chdir(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT")  # Local
+    os.chdir(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT")  # Remote desktop
+    # os.chdir(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT")  # Local
 
     data_file = "All_Time.csv"
 
