@@ -164,8 +164,8 @@ def scrape_and_clean():
                     restart = len(table_data)
                     counter += 1
                     continue
-            # print('head_data in:', len(head_data), head_data)
-            # print('table_data in:', len(table_data), table_data)
+            print('head_data in:', len(head_data), head_data)
+            print('table_data in:', len(table_data), table_data)
 
             return head_data, table_data
         except (TimeoutException, NoSuchElementException) as e:
@@ -283,7 +283,7 @@ if __name__ == '__main__':
     run_command(['git', 'pull', 'origin', 'main'])
 
     new_lines = scrape_and_clean()
-    # print('Scraped dataframe:\n', new_lines)
+    print('Scraped dataframe:\n', new_lines)
     write(new_lines, data_file)
 
     push()
