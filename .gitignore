@@ -3,5 +3,7 @@
 /.idea
 *.html
 *.geojson
-*.nc
 /venv
+ScrapeHourly.py
+ScrapeStep.py
+ScrapeWeather.py
