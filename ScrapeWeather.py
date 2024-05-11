@@ -115,13 +115,20 @@ def scrape_and_clean():
             head_data = []
             time.sleep(10)  # This hack seems to be much more effective that WebDriverWait to ensure table is loaded
             # 'while' loop is to prevent script from reading the default table, by checking for the correct # of columns
+
             while len(head_data) != columns:
-                head_row = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, head_row_xpath)))
-                head_cells = head_row.find_elements(By.TAG_NAME, "th")
-                head_data = [cell.text for cell in head_cells]
-                # print('head_data', len(head_data), head_data)
-                if len(head_data) == columns:
-                    break
+                try:
+                    head_row = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, head_row_xpath)))
+                    head_cells = head_row.find_elements(By.TAG_NAME, "th")
+                    head_data = [cell.text for cell in head_cells]
+                    # print('head_data', len(head_data), head_data)
+                    if len(head_data) == columns:
+                        break
+                except StaleElementReferenceException as e:
+                    # If a stale element is encountered, continue the loop to retry
+                    print(f"Stale element in header: {e}")
+                    continue
+
 
             counter = 0
             restart = 0
@@ -169,8 +176,8 @@ def scrape_and_clean():
     # Method is deprecated in most browsers, but still works in Firefox as of 125.03, although it may
     # require additional manual inputs the first time.
     # Credentials:
-    my_username = '*'
-    my_password = '*'
+    my_username = 'admin'
+    my_password = 'hLirsp62v7kLsHf'
     full_url = 'http://89.9.0.217/tables.html'
     target_url = '89.9.0.217/tables.html'
     simple_url = f'http://{my_username}:{my_password}@{target_url}'
@@ -178,11 +185,11 @@ def scrape_and_clean():
     # Characteristics of the table to be scraped, including full XPATHs
     time_xpath_out =        '/html/body/div[1]/div[2]/ul/li[10]/a'  # XPATH of the button for opening the dataset
     table_view_xpath_out =  '/html/body/div[1]/div[3]/ul/li[2]/a'  # XPATH of button for table (not record) view
-    table_xpath_out =       '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table'  # XPATH of the table
-    head_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/thead'
+    # table_xpath_out =       '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table'  # XPATH of the table
+    # head_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/thead'
     head_row_xpath_out =    '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/thead/tr'
     body_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/tbody'
-    columns_out = 25
+    columns_out: int = 25
 
     driver_out = webdriver.Firefox()
 
@@ -192,7 +199,8 @@ def scrape_and_clean():
 
         click(driver_out, time_xpath_out)
         click(driver_out, table_view_xpath_out)
-        head_data_out, table_data_out = scrape_table_with_xpath(driver_out, head_row_xpath_out, body_xpath_out, columns_out)
+        head_data_out, table_data_out = scrape_table_with_xpath(driver_out, head_row_xpath_out, body_xpath_out,
+                                                                columns_out)
 
         if table_data_out:  # Check if data was retrieved successfully
             scraped_df = pd.DataFrame(table_data_out)
