@@ -17,6 +17,7 @@ import pandas as pd
 import subprocess
 import os
 import logging
+import datetime
 from datetime import datetime
 from selenium import webdriver  # Probably not sufficient for login features; try selenium-wire instead
 from selenium.webdriver.common.by import By
@@ -67,10 +68,10 @@ def get_last_line(csv_file):
       pandas.DataFrame: The last line of the CSV file as a dataframe.
   """
     # Read the CSV file into a dataframe
-    df = pd.read_csv(csv_file, sep=";", decimal=",", parse_dates=['Time'], date_format='%Y-%m-%dT%H:%M:%S')
+    last_df = pd.read_csv(csv_file, sep=";", decimal=",", parse_dates=['Time'], date_format='%Y-%m-%dT%H:%M:%S')
 
     # Return the last row (using negative indexing) as a single-row dataframe
-    return df.iloc[-1:]
+    return last_df.iloc[-1:]
 
 
 def write(df, destination):
@@ -79,13 +80,14 @@ def write(df, destination):
   """
     try:
         ref = get_last_line(destination)
-        df['Time'] = df['Time'].astype('datetime64[s]')
+        print(f'Type of each column in last line of CSV:', ref.dtypes)
+        print(f'Type of each column in scraped data in write:', df.dtypes)
         filtered_df = df[df['Time'] > ref.iloc[0, 0]]
         print('filtered_df\n', filtered_df.shape, 'time type\n', filtered_df["Time"].dtype, 'Full DF\n', filtered_df)
 
         # Convert datetime objects to ISO 8601 format strings
         iso_format = '%Y-%m-%dT%H:%M:%S'
-        filtered_df['Time_format'] = filtered_df['Time'].dt.strftime(iso_format)
+        filtered_df.loc[:, 'Time_format'] = filtered_df['Time'].dt.strftime(iso_format)
 
         # filtered_df = filtered_df[['Time_format'] + list(filtered_df.filter(like='Time'))]
         print('filtered_df 2\n', filtered_df.shape, filtered_df)
@@ -263,6 +265,7 @@ def scrape_and_clean():
                 scraped_df[col] = remove_comma(scraped_df[col])
 
             scraped_df[cols_to_convert] = scraped_df[cols_to_convert].apply(pd.to_numeric)
+            scraped_df['Time'] = scraped_df['Time'].astype('datetime64[s]')
             print(f'Type of each column:', scraped_df.dtypes)
         else:
             print("Scraping failed.")
