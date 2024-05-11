@@ -83,7 +83,7 @@ def write(df, destination):
 
         # Convert datetime objects to ISO 8601 format strings
         iso_format = '%Y-%m-%dT%H:%M:%S'
-        filtered_df.loc[:, 'Time_format'] = filtered_df['Time'].dt.strftime(iso_format)
+        filtered_df.loc['Time_format'] = filtered_df.loc[:, 'Time'].dt.strftime(iso_format)
         filtered_df = filtered_df[['Time_format'] + list(filtered_df.filter(like='Time'))]
         # Drop the old Time column
         filtered_df = filtered_df.drop('Time', axis=1)
@@ -121,7 +121,7 @@ def scrape_and_clean():
                     head_row = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, head_row_xpath)))
                     head_cells = head_row.find_elements(By.TAG_NAME, "th")
                     head_data = [cell.text for cell in head_cells]
-                    # print('head_data', len(head_data), head_data)
+                    print('head_data', len(head_data), head_data)
                     if len(head_data) == columns:
                         break
                 except StaleElementReferenceException as e:
