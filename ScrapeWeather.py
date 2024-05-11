@@ -80,13 +80,14 @@ def write(df, destination):
     try:
         ref = get_last_line(destination)
         filtered_df = df[df['Time'] > ref.iloc[0, 0]]
-        print('filtered_df\n', filtered_df.shape, filtered_df)
+        print('filtered_df\n', filtered_df.shape, 'time type\n', filtered_df["Time"].dtype, 'Full DF\n', filtered_df)
 
         # Convert datetime objects to ISO 8601 format strings
         iso_format = '%Y-%m-%dT%H:%M:%S'
         filtered_df['Time_format'] = filtered_df['Time'].dt.strftime(iso_format)
-        filtered_df = filtered_df[['Time_format'] + list(filtered_df.filter(like='Time'))]
-        print('filtered_df\n', filtered_df.shape, filtered_df)
+
+        # filtered_df = filtered_df[['Time_format'] + list(filtered_df.filter(like='Time'))]
+        print('filtered_df 2\n', filtered_df.shape, filtered_df)
         # Drop the old Time column
         filtered_df = filtered_df.drop('Time', axis=1)
 
