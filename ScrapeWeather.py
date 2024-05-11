@@ -124,7 +124,7 @@ def scrape_and_clean():
                     head_row = WebDriverWait(driver, 60).until(EC.presence_of_element_located((By.XPATH, head_row_xpath)))
                     head_cells = head_row.find_elements(By.TAG_NAME, "th")
                     head_data = [cell.text for cell in head_cells]
-                    print('head_data', len(head_data), head_data)
+                    # print('head_data', len(head_data), head_data)
                     if len(head_data) == columns:
                         break
                 except StaleElementReferenceException as e:
@@ -167,8 +167,8 @@ def scrape_and_clean():
                     restart = len(table_data)
                     counter += 1
                     continue
-            print('head_data in:', len(head_data), head_data)
-            print('table_data in:', len(table_data), table_data)
+            # print('head_data in:', len(head_data), '\n', head_data)
+            # print('table_data in:', len(table_data), '\n', table_data)
 
             return head_data, table_data
         except (TimeoutException, NoSuchElementException) as e:
@@ -262,6 +262,7 @@ def scrape_and_clean():
                 scraped_df[col] = remove_comma(scraped_df[col])
 
             scraped_df[cols_to_convert] = scraped_df[cols_to_convert].apply(pd.to_numeric)
+            print(f'Type of each column:', scraped_df.dtypes)
         else:
             print("Scraping failed.")
             scraped_df = pd.DataFrame()
