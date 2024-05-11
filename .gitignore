@@ -5,5 +5,5 @@
 *.geojson
 *.nc
 /venv
-credentials.txt
+ScrapeWeather.py
 ScrapeWeather.py
