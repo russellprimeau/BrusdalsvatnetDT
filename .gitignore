@@ -6,3 +6,4 @@
 *.nc
 /venv
 credentials.txt
+ScrapeWeather.py
