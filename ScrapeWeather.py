@@ -79,6 +79,7 @@ def write(df, destination):
   """
     try:
         ref = get_last_line(destination)
+        df['Time'] = df['Time'].astype('datetime64[s]')
         filtered_df = df[df['Time'] > ref.iloc[0, 0]]
         print('filtered_df\n', filtered_df.shape, 'time type\n', filtered_df["Time"].dtype, 'Full DF\n', filtered_df)
 
