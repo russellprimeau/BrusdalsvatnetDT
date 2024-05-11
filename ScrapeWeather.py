@@ -22,6 +22,7 @@ from datetime import datetime
 from selenium import webdriver  # Probably not sufficient for login features; try selenium-wire instead
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
@@ -193,7 +194,9 @@ def scrape_and_clean():
     body_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/tbody'
     columns_out: int = 25
 
-    driver_out = webdriver.Firefox()
+    options = Options()
+    options.headless = True
+    driver_out = webdriver.Firefox(options=options)
 
     try:
         driver_out.get(simple_url)
