@@ -6,8 +6,3 @@
 ScrapeHourly.py  # Configured for use on a particular computer
 ScrapeStep.py  # Configured for use on a particular computer
 ScrapeWeather.py  # Configured for use on a particular computer
-.idea/csv-editor.xml
-.idea/.name
-Scheduled_ScrapeHourly.log
-Scheduled_ScrapeStep.log
-Scheduled_ScrapeWeather.log
