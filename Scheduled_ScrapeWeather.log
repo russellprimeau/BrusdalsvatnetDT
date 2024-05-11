@@ -1,0 +1,149 @@
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 09:50:59
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 09:58:05 with error "['Time_format'] not in index"
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 10:01:43 with error "['Time_format'] not in index"
+INFO:root:Command succeeded: git add .
+ERROR:root:Command failed: git commit -m No changes detected. Error message: 
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 10:04:53 with error "['Time_format'] not in index"
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 10:10:29 with error "['Time_format'] not in index"
+INFO:root:Command succeeded: git add .
+ERROR:root:Command failed: git commit -m No changes detected. Error message: 
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 10:12:43 with error "['Time_format'] not in index"
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 10:21:15
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 10:33:08
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 10:39:23
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 10:44:39
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 10:47:27
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 10:55:13 with error Invalid comparison between dtype=datetime64[s] and str
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 11:02:01
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 13:43:49 with error Error tokenizing data. C error: Expected 20 fields in line 34385, saw 21
+
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 13:48:43
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 13:54:29
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 14:02:10 with error "['Time_str', 'Time'] not in index"
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 14:10:50 with error "['Time_str', 'Time'] not in index"
+INFO:root:Command succeeded: git add .
+ERROR:root:Command failed: git commit -m No changes detected. Error message: 
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 14:12:48 with error "['Time'] not in index"
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 14:17:21 with error 'Time'
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+ERROR:root:Failed to appended records to All_Time.csv at 2024-05-11 14:21:23 with error "['Time'] not in index"
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 14:24:53
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 15:05:04
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+ScrapeWeatherBatch.bat
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 15:21:58
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 15:27:09
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: ScrapeWeather.py
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-11 15:28:37
+INFO:root:Command succeeded: git add .
+ERROR:root:Command failed: git commit -m No changes detected. Error message: 
+INFO:root:Command succeeded: git push origin main
