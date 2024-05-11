@@ -79,31 +79,21 @@ def write(df, destination):
   Append the new data to the end of the CSV
   """
     try:
+        # Filter out times already in the CSV
         ref = get_last_line(destination)
-        print(f'Type of each column in last line of CSV:\n', ref.dtypes)
-        print(f'Type of each column in scraped data in write:\n', df.dtypes)
         filtered_df = df[df['Time'] > ref.iloc[0, 0]].copy()
-        print('filtered_df\n', filtered_df.shape, '\ntime type\n', filtered_df["Time"].dtype, '\nFull DF\n', filtered_df)
 
-        # Convert datetime objects to ISO 8601 format strings
+        # Convert the 'Time' column to ISO 8601 format strings (a long method to avoid some strange Python errors)
         iso_format = '%Y-%m-%dT%H:%M:%S'
         filtered_df['Time_str'] = filtered_df['Time'].dt.strftime(iso_format)
-        print('filtered_df with string time\n', filtered_df.shape, '\ntime type\n', filtered_df["Time"].dtype, '\nFull DF\n', filtered_df)
         filtered_df.drop('Time', axis=1, inplace=True)
-        print('filtered_df after dropping Time\n', filtered_df.shape, '\ntime type\n', filtered_df["Time_str"].dtype,
-              '\nFull DF\n', filtered_df)
         cols = ['Time_str'] + [col for col in filtered_df.columns if col != 'Time_str']
         filtered_df = filtered_df[cols]
-        print('filtered_df after re-order\n', filtered_df.shape, '\ntime type\n', filtered_df["Time_str"].dtype,
-              '\nFull DF\n', filtered_df)
-
-        # filtered_df = filtered_df[['Time_format'] + list(filtered_df.filter(like='Time'))]
-        print('filtered_df after\n', filtered_df.shape, '\n', filtered_df)
 
         try:
             filtered_df.to_csv(destination, mode='a', index=False, header=False, sep=";", decimal=",")
         except Exception as e:
-            print(f"Couldn't write to file, with error {e}")
+            logging.error(f"Couldn't write to file, with error {e}")
         now = datetime.now()
         current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
         logging.info(f"Successfully appended records to {destination} at {current_time}")
@@ -296,8 +286,9 @@ if __name__ == '__main__':
     # Pull changes from the remote repository
     run_command(['git', 'pull', 'origin', 'main'])
 
+    # Scrape data from online, reformat, and write to CSV file
     new_lines = scrape_and_clean()
-    print('Scraped dataframe:\n', new_lines)
     write(new_lines, data_file)
 
+    # Push changes to remote origin
     push()
