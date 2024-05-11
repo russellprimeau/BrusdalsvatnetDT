@@ -184,8 +184,7 @@ def scrape_and_clean():
     body_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/tbody'
     columns_out = 25
 
-    driverpath = "C:\\Users\\russelbp\\geckodriver.exe"
-    driver_out = webdriver.Firefox(driverpath)
+    driver_out = webdriver.Firefox()
 
     try:
         driver_out.get(simple_url)
