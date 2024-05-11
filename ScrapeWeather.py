@@ -83,7 +83,7 @@ def write(df, destination):
 
         # Convert datetime objects to ISO 8601 format strings
         iso_format = '%Y-%m-%dT%H:%M:%S'
-        filtered_df.loc['Time_format'] = filtered_df.loc[:, 'Time'].dt.strftime(iso_format)
+        filtered_df.loc['Time_format'] = filtered_df['Time'].dt.strftime(iso_format)
         filtered_df = filtered_df[['Time_format'] + list(filtered_df.filter(like='Time'))]
         # Drop the old Time column
         filtered_df = filtered_df.drop('Time', axis=1)
