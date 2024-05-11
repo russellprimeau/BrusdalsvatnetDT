@@ -92,7 +92,7 @@ def write(df, destination):
         filtered_df.drop('Time', axis=1, inplace=True)
         print('filtered_df after dropping Time\n', filtered_df.shape, '\ntime type\n', filtered_df["Time_str"].dtype,
               '\nFull DF\n', filtered_df)
-        cols = ['Time_str'] + [col for col in df.columns if col != 'Time_str']
+        cols = ['Time_str'] + [col for col in filtered_df.columns if col != 'Time_str']
         filtered_df = filtered_df[cols]
         print('filtered_df after re-order\n', filtered_df.shape, '\ntime type\n', filtered_df["Time_str"].dtype,
               '\nFull DF\n', filtered_df)
