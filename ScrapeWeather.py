@@ -22,7 +22,7 @@ from datetime import datetime
 from selenium import webdriver  # Probably not sufficient for login features; try selenium-wire instead
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.firefox.options import Options
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
 
@@ -194,8 +194,8 @@ def scrape_and_clean():
     body_xpath_out =        '/html/body/div[1]/div[3]/div[2]/div[2]/div[2]/table/tbody'
     columns_out: int = 25
 
-    options = Options()
-    options.headless = True
+    options = FirefoxOptions()
+    options.add_argument("--headless")
     driver_out = webdriver.Firefox(options=options)
 
     try:
@@ -255,17 +255,16 @@ def scrape_and_clean():
                      "1818_time: TA Middel[°C]", "1818_time: TA_a_Max[°C]", "1818_time: TA_a_Min[°C]",
                      "1818_time: UU Luftfuktighet[%RH]"]
 
+            # Remove ',' used as thousands separators
             def remove_comma(col):
                 """Removes commas from a Pandas Series."""
                 return col.str.replace(',', '')
-
-            # Iterate over columns and apply the function
             for col in cols_to_convert:
                 scraped_df[col] = remove_comma(scraped_df[col])
 
+            # Convert data from strings to datetime and numeric types for manipulation
             scraped_df[cols_to_convert] = scraped_df[cols_to_convert].apply(pd.to_numeric)
             scraped_df['Time'] = scraped_df['Time'].astype('datetime64[ns]')
-            print(f'Type of each column:', scraped_df.dtypes)
         else:
             print("Scraping failed.")
             scraped_df = pd.DataFrame()
