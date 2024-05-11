@@ -82,7 +82,7 @@ def write(df, destination):
         ref = get_last_line(destination)
         print(f'Type of each column in last line of CSV:\n', ref.dtypes)
         print(f'Type of each column in scraped data in write:\n', df.dtypes)
-        filtered_df = df[df['Time'] > ref.iloc[0, 0]]
+        filtered_df = df[df['Time'] > ref.iloc[0, 0]].copy()
         print('filtered_df\n', filtered_df.shape, '\ntime type\n', filtered_df["Time"].dtype, '\nFull DF\n', filtered_df)
 
         # Convert datetime objects to ISO 8601 format strings
