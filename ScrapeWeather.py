@@ -68,7 +68,7 @@ def get_last_line(csv_file):
       pandas.DataFrame: The last line of the CSV file as a dataframe.
   """
     # Read the CSV file into a dataframe
-    last_df = pd.read_csv(csv_file, sep=";", decimal=",", parse_dates=['Time'], date_format='%Y-%m-%dT%H:%M:%S')
+    last_df = pd.read_csv(csv_file, sep=";", decimal=",", parse_dates=['Time'], date_format='%Y-%m-%dT%H:%M:%S', header=0)
 
     # Return the last row (using negative indexing) as a single-row dataframe
     return last_df.iloc[-1:]
@@ -80,8 +80,8 @@ def write(df, destination):
   """
     try:
         ref = get_last_line(destination)
-        print(f'Type of each column in last line of CSV:', ref.dtypes)
-        print(f'Type of each column in scraped data in write:', df.dtypes)
+        print(f'Type of each column in last line of CSV:\n', ref.dtypes)
+        print(f'Type of each column in scraped data in write:\n', df.dtypes)
         filtered_df = df[df['Time'] > ref.iloc[0, 0]]
         print('filtered_df\n', filtered_df.shape, 'time type\n', filtered_df["Time"].dtype, 'Full DF\n', filtered_df)
 
