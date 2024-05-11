@@ -78,7 +78,7 @@ def write(df, destination):
 
         # Convert datetime objects to ISO 8601 format strings
         iso_format = '%Y-%m-%dT%H:%M:%S'
-        filtered_df['Time'] = filtered_df['Time'].dt.strftime(iso_format)
+        filtered_df.loc[:, 'Time'] = filtered_df['Time'].dt.strftime(iso_format)
 
         try:
             filtered_df.to_csv(destination, mode='a', index=False, header=False, sep=";", decimal=",")
