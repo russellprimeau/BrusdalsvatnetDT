@@ -81,49 +81,33 @@ def historic():
 
 
 # Function to the upload new profiler data from CSV
-def upload_weather_csv_page():
-    csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
-    df = pd.read_csv(csv_file2, skiprows=[0, 2, 3])
+def upload_weather_csv():
+    csv_file2 = "All_time.csv"  # Replace with the actual file path
+    df = pd.read_csv(csv_file2, sep=';', decimal=',', parse_dates=['Time'], date_format='%Y-%m-%dT%H:%M:%S', header=0)
 
     # Add units to column names
     if df is not None:
-        if df.columns[0] == "Timestamp":
-            column_names = {
-                "id": "id",
-                "Timestamp": "Timestamp",
-                "Record_Number": "Record Number",
-                "Temperature": "Temperature (Celsius)",
-                "Conductivity": "Conductivity (microSiemens/centimeter)",
-                "Specific_Conductivity": "Specific Conductivity (microSiemens/centimeter)",
-                "Salinity": "Salinity (parts per thousand, ppt)",
-                "pH": "pH",
-                "DO": "Dissolved Oxygen (% saturation)",
-                "Turbidity_NTU": "Turbidity (NTU)",
-                "Turbidity_FNU": "Turbidity (FNU)",
-                "Position": "Depth (m)",
-                "fDOM_RFU": "fDOM (RFU)",
-                "fDOM_QSU": "fDOM (ppb QSU)",
-                "lat": "Latitude",
-                "lon": "Longitude",
-            }
-            df = df.rename(columns=column_names)  # Assign column names for profiler data
-        elif df.columns[0] == "TIMESTAMP":
-            column_names = {
-                "TIMESTAMP": "Timestamp",
-                "RECORD": "Record Number",
-                "sensorParms(1)": "Temperature (Celsius)",
-                "sensorParms(2)": "Conductivity (microSiemens/centimeter)",
-                "sensorParms(3)": "Specific Conductivity (microSiemens/centimeter)",
-                "sensorParms(4)": "Salinity (parts per thousand, ppt)",
-                "sensorParms(5)": "pH",
-                "sensorParms(6)": "Dissolved Oxygen (% saturation)",
-                "sensorParms(7)": "Turbidity (NTU)",
-                "sensorParms(8)": "Turbidity (FNU)",
-                "sensorParms(9)": "Vertical Position (m)",
-                "sensorParms(10)": "fDOM (RFU)",
-                "sensorParms(11)": "fDOM (ppb QSU)",
-                "lat": "Latitude",
-                "lon": "Longitude",
+        if df.columns[0] == "Time":
+            column_names = {"Time": "Timestamp",
+                            "1818_time: AA[mBar]": "Instantaneous atmospheric pressure (mBar)",
+                            "1818_time: DD Retning[°]": "Wind direction 10minRollingAvg (°)",
+                            "1818_time: DX_l[°]": "Hourly average wind direction (°)",
+                            "1818_time: FF Hastighet[m/s]": "Average wind speed (m/s)",
+                            "1818_time: FG_l[m/s]": "Maximum sustained wind speed, 3-second span (m/s)",
+                            "1818_time: FG_tid_l[N/A]": "Time of maximum 3s Gust",
+                            "1818_time: FX Kast[m/s]": "Maximum sustained wind speed, 10-minute span (m/s)",
+                            "1818_time: FX_tid_l[N/A]": "Time of maximum 10 minute gust",
+                            "1818_time: PO Trykk stasjonshøyde[mBar]": "Hourly average atmospheric pressure at station (mBar)",
+                            "1818_time: PP[mBar]": "Maximum pressure differential, 3-hour span (mBar)",
+                            "1818_time: PR Trykk redusert til havnivå[mBar]": "Instantaneous atmospheric pressure compensated for temperature, humidity and station elevation (mBar)",
+                            "1818_time: QLI Langbølget[W/m2]": "Longwave (IR) radiation (W/m2)",
+                            "1818_time: QNH[mBar]": "Instantaneous sea-level atmospheric pressure (mBar)",
+                            "1818_time: QSI Kortbølget[W/m2]": "Shortwave (solar) radiation (W/m2)",
+                            "1818_time: RR_1[mm]": "Hourly precipitation (mm/hr)",
+                            "1818_time: TA Middel[°C]": "Instantaneous temperature (°C)",
+                            "1818_time: TA_a_Max[°C]": "Hourly maximum temperature (°C)",
+                            "1818_time: TA_a_Min[°C]": "Hourly minimum temperature (°C)",
+                            "1818_time: UU Luftfuktighet[%RH]": "Average humidity (% relative humidity)"
             }
             df = df.rename(columns=column_names)  # Assign column names for profiler data
 
@@ -133,84 +117,177 @@ def upload_weather_csv_page():
         # Data cleaning
         for parameter in df.columns:
             df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
-        df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce', downcast='float')
+        df.iloc[:, 1:] = df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce', downcast='float')
 
         # Convert the time column to a datetime object
         df['Timestamp'] = pd.to_datetime(df['Timestamp']).apply(lambda x: x.to_pydatetime())
         df = df.sort_values(by="Timestamp")
-        df = df.drop(columns=['Record Number'])
-
+        df = df.drop(columns=["Instantaneous atmospheric pressure (mBar)", "Wind direction 10minRollingAvg (°)",
+                              "Time of maximum 3s Gust", "Time of maximum 10 minute gust",
+                              "Instantaneous atmospheric pressure compensated for temperature, humidity and station elevation (mBar)",
+                              "Instantaneous sea-level atmospheric pressure (mBar)","Instantaneous temperature (°C)"])
     return df
 
 
 def weather():
-    st.title("Weather Station Data")
-    st.markdown("#### Sorry, the weather page is being updated at the moment.")
-    # pw = figure(title="Time Series Data at 2.9m Depth")
-    #
-    # file_paths = ['All_10min.csv', 'All_time.csv', 'All_Prec_int_hr.csv', 'All_min.csv']
-    # dfs = []  # List of uploaded dataframes
-    # variables = []  # List of column names
-    # for file_path in file_paths:
-    #     df = pd.read_csv(file_path, sep=';', decimal=',')
-    #     df['Time'] = pd.to_datetime(df['Time'])
-    #     # Check for error values
-    #     columns_to_check = df.columns[1:]
-    #     variables + list(df.columns[1:])
-    #     for col in columns_to_check:
-    #         df.replace({col: -99.9}, pd.NA, inplace=True)
-    #         # df[col].replace(999.9, pd.NA, inplace=True)
-    #     dfs.append(df)
-    #
-    # # Multi-select to select multiple Y variables, including "Select All"
-    # selected_wvariables = st.multiselect(
-    #     "Select water quality parameters to plot",
-    #     ["Select All"] + variables,
-    # )
-    #
-    # # Check if "Select All" is chosen
-    # if "Select All" in selected_wvariables:
-    #     selected_wvariables = variables
-    #
-    # # Create a ColumnDataSource
-    # source = ColumnDataSource(df)
-    # time_difference = timedelta(hours=12)
-    #
-    # def update_weather(selected_wvariables):
-    #     p.title.text = f'Weather Parameters vs. Time'
-    #
-    #     for variable, color in zip(selected_wvariables, Spectral11):
-    #         # Convert 'Date' to a pandas Series to use shift operation
-    #         date_series = pd.Series(source.data['Timestamp'])
-    #
-    #         # Add a new column 'Gap' indicating when a gap is detected within each 'Depth' group
-    #         source.data['Gap'] = (date_series - date_series.shift(1)) > time_difference
-    #
-    #         # Replace the 'Value' with NaN when a gap is detected
-    #         source.data[variable] = np.where(source.data['Gap'], np.nan, source.data[variable])
-    #
-    #         line_render = p.line(
-    #             x="Timestamp", y=variable, line_width=2, color=color, source=source, legend_label=variable
-    #         )
-    #         p.renderers.append(line_render)
-    #
-    # # Call the update_plot function with the selected variables for the first plot
-    # if not selected_wvariables:
-    #     st.write("Please select at least one parameter to plot.")
-    # else:
-    #     update_weather(selected_wvariables)
-    #     # Set plot properties
-    #     pw.title.text_font_size = "16pt"
-    #     pw.xaxis.axis_label = "Time"
-    #     pw.yaxis.axis_label = "Variable Value(s)"
-    #     pw.legend.title = "Weather Parameters"
-    #     pw.legend.click_policy = "hide"  # Hide lines on legend click
-    #     # Set the x-axis formatter to display dates in the desired format
-    #     pw.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%Y/%m/%d %H:%M")
-    #     st.bokeh_chart(pw, use_container_width=True)
-    #     st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
-    #              "Click legend entries to toggle series on/off.")
+    st.title("Brusdalen Weather Station: ")
+    st.markdown("##### Location: 62.484778°N 6.479667°E, 69 MASL")
 
+    p = figure(title="Weather Time Series Data for ")
+
+    df = upload_weather_csv()
+
+    # Check if there are at least two columns in the DataFrame
+    if len(df.columns) < 2:
+        st.warning("DataFrame must have at least two columns for X and Y variables.")
+        return None
+
+    # Multi-select to select multiple Y variables, including "Select All"
+    mc1, mc2 = st.columns(2, gap="small")
+    with mc1:
+        selected_variables = st.multiselect(
+            "Select weather parameters to plot",
+            ["Select All"] + list(df.columns[1:]), default=["Select All"]
+        )
+
+    clean_setting = st.radio(
+        "Choose how to filter the dataset",
+        options=["Remove Suspicious Values", "Raw"],
+        horizontal=True
+    )
+
+    if clean_setting == "Remove Suspicious Values":
+
+        # Set negative shortwave values to 0 (this is very common and appears to represent a calibration issue)
+        df['Shortwave (solar) radiation (W/m2)'] = (
+            np.where(df['Shortwave (solar) radiation (W/m2)'] < 0, 0, df['Shortwave (solar) radiation (W/m2)']))
+
+        # Define conditions for each parameter which indicate errors in the data
+        error_conditions = {
+            "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                    df['Timestamp'] > pd.to_datetime('2099-12-31')),
+            'Hourly average wind direction (°)': (df['Hourly average wind direction (°)'] < 0) | (df['Hourly average wind direction (°)'] > 360),
+            "Average wind speed (m/s)": (df["Average wind speed (m/s)"] < 0) | (
+                        df["Average wind speed (m/s)"] > 100),
+            'Maximum sustained wind speed, 3-second span (m/s)': (df['Maximum sustained wind speed, 3-second span (m/s)'] < 0) |
+                                                      (df['Maximum sustained wind speed, 3-second span (m/s)'] > 100),
+            'Maximum sustained wind speed, 10-minute span (m/s)': (
+                    df['Maximum sustained wind speed, 10-minute span (m/s)'] < 0) |
+                                                      (df['Maximum sustained wind speed, 10-minute span (m/s)'] > 100),
+            'Hourly average atmospheric pressure at station (mBar)': (df['Hourly average atmospheric pressure at station (mBar)'] < 860) | (df['Hourly average atmospheric pressure at station (mBar)'] > 1080),
+            'Maximum pressure differential, 3-hour span (mBar)': (df['Maximum pressure differential, 3-hour span (mBar)'] < 0) | (df['Maximum pressure differential, 3-hour span (mBar)'] > 50),
+            'Longwave (IR) radiation (W/m2)': (df['Longwave (IR) radiation (W/m2)'] < 0) | (
+                    df['Longwave (IR) radiation (W/m2)'] > 750),
+            'Shortwave (solar) radiation (W/m2)': (df['Shortwave (solar) radiation (W/m2)'] < 0) | (
+                    df['Shortwave (solar) radiation (W/m2)'] > 900),
+            'Hourly precipitation (mm/hr)': (df['Hourly precipitation (mm/hr)'] < 0) | (
+                    df['Hourly precipitation (mm/hr)'] > 50),
+            'Hourly maximum temperature (°C)': (df['Hourly maximum temperature (°C)'] < -40) | (df['Hourly maximum temperature (°C)'] > 40),
+            'Hourly minimum temperature (°C)': (df['Hourly minimum temperature (°C)'] < -40) | (df['Hourly minimum temperature (°C)'] > 40),
+            'Average humidity (% relative humidity)': (df['Average humidity (% relative humidity)'] < 0) | (df['Average humidity (% relative humidity)'] > 100)
+        }
+
+        # Replace values meeting the error conditions with np.nan using boolean indexing
+        for col, condition in error_conditions.items():
+            df.loc[condition, col] = np.nan
+
+        # Define start and end timestamps for a range to drop (if any periods are obviously unreliable
+        # start_removal = pd.to_datetime('2022-03-24 00:00')
+        # end_removal = pd.to_datetime('2022-04-22 00:00')
+        # Create boolean mask for rows to keep (outside the time range)
+        # mask = (df['Timestamp'] < start_removal) | (df['Timestamp'] > end_removal)
+        # # Drop rows not satisfying the mask (within the time range)
+        # df = df[mask]
+
+        st.write("Some suspicious values have been removed from the dataset, but errors may remain.")
+    else:
+        st.write("All logged values are displayed, which includes known errors such as uncalibrated measurements.")
+
+    def DefineRange(daterange):
+        if daterange == "Last Month":
+            st.session_state.ksd = date.today() - timedelta(days=31)
+            st.session_state.knd = date.today()
+        elif daterange == "Last Year":
+            st.session_state.ksd = datetime.now() - relativedelta(years=1)
+            st.session_state.knd = datetime.now()
+        elif daterange == "Maximum Extent":
+            st.session_state.ksd = first_date
+            st.session_state.knd = last_date
+
+    first_date = df.iloc[0, 0]
+    last_date = df.iloc[-1, 0]
+
+    set_begin_date = date.today() - timedelta(days=31)
+    set_last_date = date.today()
+    daterange = ""
+
+    dc1, dc2, dc3, dc4 = st.columns(4, gap="small")
+    dc1.date_input("Begin plot range:", value=set_begin_date, key="ksd")
+    dc2.date_input("End plot range:", value=set_last_date, key="knd")
+
+    b1, b2, b3, b4, b5, b6 = st.columns(6, gap="small")
+    b1.button("Maximum Extent", on_click=DefineRange, args=("Maximum Extent",))
+    b2.button("Last Year", on_click=DefineRange, args=("Last Year",))
+    b3.button("Last Month", on_click=DefineRange, args=("Last Month",))
+
+    set_begin_date = datetime.combine(st.session_state.ksd, time())
+    set_last_date = datetime.combine(st.session_state.knd, time())
+
+
+    # Check if "Select All" is chosen
+    if "Select All" in selected_variables:
+        selected_variables = list(df.columns[1:])
+
+    # Create a ColumnDataSource
+    source = ColumnDataSource(df)
+    time_difference = timedelta(hours=2)
+
+    def update_w_hourly(selected_variables):
+        p.title.text = f'Weather Parameters vs. Time'
+
+        for variable, color in zip(selected_variables, Spectral11):
+            # Convert 'Date' to a pandas Series to use shift operation
+            date_series = pd.Series(source.data['Timestamp'])
+
+            # Add a new column 'Gap' indicating when a gap is detected within each 'Depth' group
+            source.data['Gap'] = (date_series - date_series.shift(1)) > time_difference
+
+            # Replace the 'Value' with NaN when a gap is detected
+            source.data[variable] = np.where(source.data['Gap'], np.nan, source.data[variable])
+
+            line_render = p.line(
+                x="Timestamp", y=variable, line_width=2, color=color, source=source, legend_label=variable
+            )
+            p.add_tools(HoverTool(renderers=[line_render], tooltips=[("Time", "@Timestamp{%Y-%m-%d %H:%M}"),
+                                                                     (variable, f'@{{{variable}}}')],
+                                  formatters={"@Timestamp": "datetime", }, mode="vline"))
+            p.renderers.append(line_render)
+
+    # Call the update_plot function with the selected variables for the first plot
+    if not selected_variables:
+        st.write("Please select at least one parameter to plot.")
+    else:
+        update_w_hourly(selected_variables)
+        # Set plot properties
+        p.title.text_font_size = "16pt"
+        p.xaxis.axis_label = "Time"
+        # p.xlim = (set_begin_date, set_last_date)
+        plotrange = set_last_date - set_begin_date
+        if plotrange > timedelta(days=62):
+            p.x_range = Range1d(set_begin_date - timedelta(days=3), set_last_date + timedelta(days=3))
+        else:
+            p.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1, hours=3))
+        p.yaxis.axis_label = "Parameter Value(s)"
+        p.legend.title = "Weather Parameters"
+        p.legend.location = "top_left"
+        p.legend.click_policy = "hide"  # Hide lines on legend click
+        # p.add_layout(p.legend[0], 'below')  # Option to move the legend out of the plotspace
+        # Set the x-axis formatter to display dates in the desired format
+        p.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%Y/%m/%d %H:%M")
+        # show(p)
+        st.bokeh_chart(p, use_container_width=True)
+        st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                 "Click legend entries to toggle series on/off.")
 
 # Function to the upload new profiler data from CSV
 def upload_hourly_csv_page():
@@ -234,7 +311,7 @@ def upload_hourly_csv_page():
                 "Turbidity_FNU": "Turbidity (FNU)",
                 "Position": "Depth (m)",
                 "fDOM_RFU": "fDOM (RFU)",
-                "fDOM_QSU": "fDOM (ppb QSU)",
+                "fDOM_QSU": "fDOM (parts per billion QSU)",
                 "lat": "Latitude",
                 "lon": "Longitude",
             }
@@ -253,7 +330,7 @@ def upload_hourly_csv_page():
                 "sensorParms(8)": "Turbidity (FNU)",
                 "sensorParms(9)": "Vertical Position (m)",
                 "sensorParms(10)": "fDOM (RFU)",
-                "sensorParms(11)": "fDOM (ppb QSU)",
+                "sensorParms(11)": "fDOM (parts per billion QSU)",
                 "lat": "Latitude",
                 "lon": "Longitude",
             }
@@ -317,7 +394,7 @@ def hourly():
             "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
             "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
             "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
-            "fDOM (ppb QSU)": (df['fDOM (ppb QSU)'] < 0) | (df['fDOM (ppb QSU)'] > 300),
+            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (df['fDOM (parts per billion QSU)'] > 300),
             "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
             "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
         }
@@ -452,7 +529,7 @@ def vertical():
         "sensorParms(8)": "Turbidity (FNU)",
         "sensorParms(9)": "Vertical Position (m)",
         "sensorParms(10)": "fDOM (RFU)",
-        "sensorParms(11)": "fDOM (ppb QSU)",
+        "sensorParms(11)": "fDOM (parts per billion QSU)",
         "lat": "Latitude",
         "lon": "Longitude",
     }
@@ -519,7 +596,7 @@ def vertical():
                             "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
                             "pH",
                             "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
-                            "fDOM (ppb QSU)"]
+                            "fDOM (parts per billion QSU)"]
     mc1, mc2 = st.columns(2, gap="small")
     with mc1:
         selected_variables_p1 = st.multiselect('Select Water Quality Parameters', variables_to_plot_p1, default=["Temperature (Celsius)"])
@@ -557,7 +634,7 @@ def vertical():
             "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
             "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
             "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
-            "fDOM (ppb QSU)": (df['fDOM (ppb QSU)'] < 0) | (df['fDOM (ppb QSU)'] > 300),
+            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (df['fDOM (parts per billion QSU)'] > 300),
             "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
             "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
         }
@@ -1044,7 +1121,7 @@ def current():
     #                            "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
     #                            "pH",
     #                            "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
-    #                            "fDOM (ppb QSU)"]
+    #                            "fDOM (parts per billion QSU)"]
     #
     #     # Multiselect widget to choose GeoJSON files
     #     selected_param = st.multiselect("Select parameter by which to color-code", chloropleth_options)
