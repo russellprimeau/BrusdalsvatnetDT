@@ -130,8 +130,8 @@ def upload_weather_csv():
 
 
 def weather():
-    st.title("Brusdalen Weather Station: ")
-    st.markdown("##### Location: 62.484778°N 6.479667°E, 69 MASL")
+    st.title("Brusdalen Weather Station")
+    st.markdown("##### 62.484778°N 6.479667°E, 69 MASL")
 
     p = figure(title="Weather Time Series Data for ")
 
@@ -244,8 +244,7 @@ def weather():
 
     def update_w_hourly(selected_variables):
         p.title.text = f'Weather Parameters vs. Time'
-
-        for variable, color in zip(selected_variables, Spectral11):
+        for variable, color in zip(selected_variables, Category20_20):
             # Convert 'Date' to a pandas Series to use shift operation
             date_series = pd.Series(source.data['Timestamp'])
 
@@ -459,7 +458,7 @@ def hourly():
     def update_hourly(selected_variables):
         p.title.text = f'Water Quality Parameters vs. Time'
 
-        for variable, color in zip(selected_variables, Spectral11):
+        for variable, color in zip(selected_variables, Category20_20):
             # Convert 'Date' to a pandas Series to use shift operation
             date_series = pd.Series(source.data['Timestamp'])
 
