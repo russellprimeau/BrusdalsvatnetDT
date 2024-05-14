@@ -26,11 +26,11 @@ import dfm_tools as dfmt
 def main():
     st.set_page_config("Brusdalsvatnet WQ Dashboard", layout="wide")
     st.sidebar.title("Choose Mode")
-    selected_page = st.sidebar.radio("", ["Historic", "Current Hydrodynamic Model", "Interactive (Path Planning)"])
+    selected_page = st.sidebar.radio("", ["Historic", "Hydrodynamic Model", "Interactive (Path Planning)"])
 
     if selected_page == "Historic":
         historic()
-    elif selected_page == "Current Hydrodynamic Model":
+    elif selected_page == "Hydrodynamic Model":
         current()
     elif selected_page == "Interactive (Path Planning)":
         interactive()
@@ -76,6 +76,7 @@ def historic():
         # st.components.v1.iframe(website_url, height=600)
     else:
         st.write("Sorry, no data available in the dashboard from the USVs at this time")
+        usv_plot()
     st.write(
         "Find a bug? Or have an idea for how to improve the app? "
         "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
@@ -847,6 +848,17 @@ def vertical():
                  "Click legend entries to toggle series on/off.")
 
 
+def usv_plot():
+    uploaded_log = st.file_uploader("Upload a valid mission log file")
+    if uploaded_log is not None:
+        if uploaded_log.name.endswith(''):
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_file.write(uploaded_log.read())
+                file_path = temp_file.name
+        else:
+            st.markdown("#### File:", uploaded_log.name)
+
+
 def current():
     """
     Display and explore Delft3D output files
@@ -1069,7 +1081,7 @@ def current():
         filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
         selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
         if selected_file == "Upload your own":
-            uploaded = st.file_uploader(label='Upload your own Delft3D history output file (his.nc), maximum size 200MB)', type='nc')
+            uploaded = st.file_uploader(label='Upload your own Delft3D history output file (his.nc), maximum size 200MB', type='nc')
             # Create a temp filepath to use to access the uploaded file
             if uploaded is not None:
                 if uploaded.name.endswith('his.nc'):
@@ -1088,7 +1100,7 @@ def current():
         #     filtered_files.append(uploaded.name)
         selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
         if selected_file == "Upload your own":
-            uploaded = st.file_uploader(label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB)', type='nc')
+            uploaded = st.file_uploader(label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB', type='nc')
             # Create a temp filepath to use to access the uploaded file
             if uploaded is not None:
                 if uploaded.name.endswith('map.nc'):
