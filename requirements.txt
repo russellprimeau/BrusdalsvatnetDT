@@ -8,3 +8,4 @@ bokeh<=2.4.3
 datetime
 dfm_tools
 tempfile2
+plotly.express
