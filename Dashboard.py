@@ -9,6 +9,7 @@ import pandas as pd
 import geopandas as gpd
 import streamlit as st
 import folium
+import tempfile2 as tempfile
 from streamlit_folium import st_folium, folium_static
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, DatetimeTickFormatter, DataRange1d, HoverTool, Range1d
@@ -1065,13 +1066,40 @@ def current():
 
     # Filter files based on extension
     if d3d_output == "Time series (history file)":
-        filtered_files = [f for f in all_files if f.endswith('his.nc')]
-        selected_file = st.selectbox(label="Select which model's output to display", options=filtered_files)
-        display_his(selected_file)
+        filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
+        selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+        if selected_file == "Upload your own":
+            uploaded = st.file_uploader(label='Upload your own Delft3D history output file (his.nc), maximum size 200MB)', type='nc')
+            # Create a temp filepath to use to access the uploaded file
+            if uploaded is not None:
+                if uploaded.name.endswith('his.nc'):
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                        temp_file.write(uploaded.read())
+                        file_path = temp_file.name
+                    display_his(file_path)
+                else:
+                    st.markdown("### File uploaded is not a valid history file")
+        else:
+            display_his(selected_file)
+
     else:
-        filtered_files = [f for f in all_files if f.endswith('map.nc')]
-        selected_file = st.selectbox(label="Select which model's output to display", options=filtered_files)
-        display_map(selected_file)
+        filtered_files = [f for f in all_files if f.endswith('map.nc')] + ["Upload your own"]
+        # if uploaded is not None:
+        #     filtered_files.append(uploaded.name)
+        selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+        if selected_file == "Upload your own":
+            uploaded = st.file_uploader(label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB)', type='nc')
+            # Create a temp filepath to use to access the uploaded file
+            if uploaded is not None:
+                if uploaded.name.endswith('map.nc'):
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                        temp_file.write(uploaded.read())
+                        file_path = temp_file.name
+                    display_map(file_path)
+                else:
+                    st.markdown("### File uploaded is not a valid map file")
+        else:
+            display_map(selected_file)
 
 
     # def create_map(selected_atrib, map_center, zoom_level=13):
