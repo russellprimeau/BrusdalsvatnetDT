@@ -58,25 +58,11 @@ def historic():
         # Display the selected plot based on user choice
         if profiler_data == "Hourly Surface Data":
             hourly()
-        elif profiler_data == "Current Cache":
-            st.markdown("#### During the monitoring season the profiler station normally publicly broadcasts recent "
-                        "measurements")
-            # IP of the station
-            website_url = "https://89.9.10.123/"
-            # Use st.components.iframe to embed the website
-            st.components.v1.iframe(website_url, height=600)
         else:
             vertical()
     elif source == "Weather Station":
         weather()
-        # st.markdown("#### Access to weather station data currently requires a commercial license from Volue")
-        # # URL of the Volue commercial platform which currently stores this data
-        # website_url = "https://sensordata.no/vdv.php/historical/714"
-        #
-        # # Use st.components.iframe to embed the website
-        # st.components.v1.iframe(website_url, height=600)
     else:
-        st.write("Sorry, no data available in the dashboard from the USVs at this time")
         usv_plot()
     st.write(
         "Find a bug? Or have an idea for how to improve the app? "
@@ -852,22 +838,25 @@ def vertical():
 def usv_plot():
     def display_mis(filename):
         track = pd.read_csv(filename)
-        column_names = ['Time, ms', 'Mode', 'Status', 'Lat', 'Lon', 'Speed, m/s', 'Heading', 'var2', 'var3', 'var4',
-                        'var5', 'var6', 'var7', 'Battery', 'var9', 'var10', 'var11', 'Mission', 'Waypoint']
+        column_names = ['Time, ms', 'Mode', 'Status', 'Lat', 'Lon', 'Speed, m/s', 'Heading 1', 'Heading 2', 'var3',
+                        'var4', 'var5', 'var6', 'var7', 'Battery', 'var9', 'var10', 'var11', 'Mission', 'Waypoint']
         track.columns = column_names
         track['Time, ms'] = pd.to_datetime(track['Time, ms'], unit='ms')
         track['Time'] = track['Time, ms'].dt.floor('s')
 
         exclude_cols = ['Time, ms', 'Time', 'Lat', 'Lon']
         included_cols = [col for col in track.columns if col not in exclude_cols]
-        hover_labels = st.multiselect(label="Choose log parameters to display", options=included_cols)
+        hover_labels = st.multiselect(label="Choose log parameters to display",
+                                      options=["Select All"] + included_cols)
+
+        if "Select All" in hover_labels:
+            hover_labels = included_cols
 
         center_lat = (track['Lat'].max() + track['Lat'].min())/2
         center_lon = (track['Lon'].max() + track['Lon'].min())/2
 
 
-        fig = px.line_mapbox(track, lat="Lat", lon="Lon",
-                             hover_data=['Time'] + hover_labels)
+        fig = px.line_mapbox(track, lat="Lat", lon="Lon", hover_data=['Time'] + hover_labels)
 
         fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12, mapbox_center_lat=center_lat,
                           mapbox_center_lon=center_lon, margin={"r": 0, "t": 0, "l": 0, "b": 0}, width=1600,
