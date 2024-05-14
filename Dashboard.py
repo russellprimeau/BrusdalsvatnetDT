@@ -21,6 +21,7 @@ import xarray as xr
 import matplotlib.pyplot as plt
 import contextily as ctx
 import dfm_tools as dfmt
+import plotly.express as px
 
 
 def main():
@@ -849,14 +850,47 @@ def vertical():
 
 
 def usv_plot():
-    uploaded_log = st.file_uploader("Upload a valid mission log file")
-    if uploaded_log is not None:
-        if uploaded_log.name.endswith(''):
+    def display_mis(filename):
+        track = pd.read_csv(filename)
+        column_names = ['Time, ms', 'Mode', 'Status', 'Lat', 'Lon', 'Speed, m/s', 'Heading', 'var2', 'var3', 'var4',
+                        'var5', 'var6', 'var7', 'Battery', 'var9', 'var10', 'var11', 'Mission', 'Waypoint']
+        track.columns = column_names
+        track['Time, ms'] = pd.to_datetime(track['Time, ms'], unit='ms')
+        track['Time'] = track['Time, ms'].dt.floor('s')
+
+        exclude_cols = ['Time, ms', 'Time', 'Lat', 'Lon']
+        included_cols = [col for col in track.columns if col not in exclude_cols]
+        hover_labels = st.multiselect(label="Choose log parameters to display", options=included_cols)
+
+        center_lat = (track['Lat'].max() + track['Lat'].min())/2
+        center_lon = (track['Lon'].max() + track['Lon'].min())/2
+
+
+        fig = px.line_mapbox(track, lat="Lat", lon="Lon",
+                             hover_data=['Time'] + hover_labels)
+
+        fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12, mapbox_center_lat=center_lat,
+                          mapbox_center_lon=center_lon, margin={"r": 0, "t": 0, "l": 0, "b": 0}, width=1600,
+                          height=800)
+
+        st.plotly_chart(fig, use_container_width=True)
+
+    # Get all files in the current directory
+    all_files = os.listdir()
+
+    filtered_files = [f for f in all_files if f.endswith('.mis')] + ["Upload your own"]
+    selected_file = st.selectbox(label="Select which mission log to display", options=filtered_files)
+
+    if selected_file == "Upload your own":
+        uploaded = st.file_uploader(label='Upload a mission log file')
+        # Create a temp filepath to use to access the uploaded file
+        if uploaded is not None:
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                temp_file.write(uploaded_log.read())
+                temp_file.write(uploaded.read())
                 file_path = temp_file.name
-        else:
-            st.markdown("#### File:", uploaded_log.name)
+            display_mis(file_path)
+    else:
+        display_mis(selected_file)
 
 
 def current():
