@@ -942,7 +942,7 @@ def current():
         # Open and merge mapfile with xugrid(xarray) and print netcdf structure
         uds_map = dfmt.open_partitioned_dataset(file_nc_map)
         uds_map = uds_map.rename(rename_mapvars)
-        # print('uds_map!', uds_map)
+        print('uds_map contains:\n', uds_map)
 
         # datavars = list(uds_map.data_vars)  # List of all data variables
         # But don't use that. Create a list of only parameters which have a mesh2d_nFaces coordinate suitable for plots:
@@ -964,7 +964,7 @@ def current():
             "Flow element center bedlevel (m)": "mesh2d_flowelem_bl",
             "Latest computational timestep size in each output interval (s)": "timestep",
             "Water level (m)": "mesh2d_s1",
-            "Water depth at pressure points (m)": "mesh2d_waterdepth",
+            "Water depth (m)": "mesh2d_waterdepth",
             "Velocity at velocity point, n-component (m/s)": "mesh2d_u1",
             "Flow element center velocity vector, x-component (m/s)": "mesh2d_ucx",
             "Flow element center velocity vector, y-component (m/s)": "mesh2d_ucy",
@@ -992,11 +992,11 @@ def current():
         # Check for layers
         try:
             num_layers = uds_map.dims['mesh2d_nLayers']
-        except:
+        except Exception as e:
             num_layers = 0
 
         # Plot water level on map
-        fig_surface, ax = plt.subplots(figsize=(10, 4))
+        fig_surface, ax = plt.subplots(figsize=(22, 2))
 
         cc1, cc2 = st.columns(2, gap="small")
         with cc1:
@@ -1006,16 +1006,16 @@ def current():
             selected_time_index = times_dict.get(selected_time_key)
 
             if num_layers > 1:
-                max_depth = -uds_map['mesh2d_flowelem_bl'].max().to_numpy()[()]
+                max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
                 print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
                 layer_depths = np.linspace(0, max_depth - max_depth/num_layers, num_layers)
                 layer_depths = layer_depths.tolist()
-                layer_list = range(0, num_layers)
+                layer_list = list(reversed(range(0, num_layers)))
                 depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)  # Create the dropdown menu
                 layer = layer_list[layer_depths.index(depth_selected)]
                 print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
                 pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer, nmesh2d_layer=layer,
-                                         missing_dims='ignore').ugrid.plot(cmap='jet')
+                                         missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
             else:
                 pc = uds_map[parameter].isel(time=selected_time_index,missing_dims='ignore').ugrid.plot(cmap='jet')
 
@@ -1023,7 +1023,21 @@ def current():
             ax.set_aspect('equal')
         # else:
         #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        fig_surface.suptitle(parameter_key)
+        # fig_surface.suptitle(parameter_key)
+        colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.01, pad=0.001)
+        # Set colorbar label
+        colorbar.set_label(parameter_key)
+        ax.set_aspect('equal')
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
+        xmin = 6.385
+        xmax = 6.57
+        ymin = 62.46
+        ymax = 62.49
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        ax.set_title("")
+        st.markdown(f"### {parameter_key} at  at {selected_time_key}")
         st.pyplot(fig_surface)
 
         if line_array is not None:
