@@ -5,8 +5,10 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/FlowFM_map.nc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Create_forcing.py" beforeDir="false" afterPath="$PROJECT_DIR$/Create_forcing.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/Dashboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windxy.tim" beforeDir="false" afterPath="$PROJECT_DIR$/windxy.tim" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -48,6 +50,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_MARK_IGNORED_FILES_AS_EXCLUDED": "true",
+    "Python.Create_forcing.executor": "Run",
     "Python.GitImprovement.executor": "Run",
     "Python.Map.executor": "Run",
     "Python.ScrapeHourly.executor": "Run",
@@ -56,6 +59,7 @@
     "Python.drafting.executor": "Run",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/Russell/Documents/GitHub/Thesis-Related/dfm_project",
     "settings.editor.selected.configurable": "terminal"
   }
 }]]></component>
