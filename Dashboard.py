@@ -907,7 +907,7 @@ def current():
 
         num_layers = ds_his.dims['laydim']
         max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
-        print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
+        # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
         layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
         layer_depths = layer_depths.tolist()
         layer_list = list(reversed(range(0, num_layers)))
@@ -920,7 +920,7 @@ def current():
         for name, var in ds_his.data_vars.items():
             if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
                 station_var_list.append(name)
-        print("station_var_list", station_var_list)
+        # print("station_var_list", station_var_list)
 
         includes_coordinate = "source_sink"
         excludes_coordinates = ["station_geom_node_count"]
@@ -928,7 +928,7 @@ def current():
         for name, var in ds_his.data_vars.items():
             if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
                 source_sink_var_list.append(name)
-        print("source_sink_var_list", source_sink_var_list)
+        # print("source_sink_var_list", source_sink_var_list)
 
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
@@ -987,9 +987,8 @@ def current():
                                       ds_his.coords['time'].values)
 
             time_list = [i for i in range(ds_his.dims['time'])]
-            print('time list', time_list, type(time_list))
-            print('real times', realtimes, type(realtimes))
-            # layer_list = list(reversed(range(0, num_layers)))
+            # print('time list', time_list, type(time_list))
+            # print('real times', realtimes, type(realtimes))
 
             timeindex = time_list[realtimes.index(plottime)]
             data_fromhis_xr = ds_his[feature].sel(stations=locations).isel(time=timeindex)
@@ -1017,10 +1016,9 @@ def current():
 
         # Open and merge mapfile with xugrid(xarray) and print netcdf structure
         uds_map = dfmt.open_partitioned_dataset(file_nc_map)
-        print('uds_map contains along wgs84:\n', uds_map.data_vars['wgs84'])
 
         datavars = list(uds_map.data_vars)  # List of all data variables
-        print("uds_map.data_vars[0]", datavars[0])
+        print("uds_map", uds_map)
         # But don't use that. Create a list of only parameters which have a mesh2d_nFaces coordinate suitable for plots:
         includes_coordinate = "mesh2d_nFaces"
         excludes_coordinates = ["mesh2d_nEdges", "mesh2d_nNodes", "mesh2d_nMax_face_nodes"]
@@ -1028,7 +1026,7 @@ def current():
         for name, var in uds_map.data_vars.items():
             if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
                 mesh2d_nFaces_list.append(name)
-        print("mesh2d_nFaces_list", mesh2d_nFaces_list)
+        # print("mesh2d_nFaces_list", mesh2d_nFaces_list)
 
         parameter_names = {
             "Projected coordinate system": "wgs84",
@@ -1089,13 +1087,13 @@ def current():
 
             if num_layers > 1:
                 max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
-                print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
+                # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
                 layer_depths = np.round(np.linspace(0, max_depth - max_depth/num_layers, num_layers))
                 layer_depths = layer_depths.tolist()
                 layer_list = list(reversed(range(0, num_layers)))
                 depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)  # Create the dropdown menu
                 layer = layer_list[layer_depths.index(depth_selected)]
-                print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
+                # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
                 pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
                                          missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
             else:
@@ -1148,6 +1146,69 @@ def current():
 
             st.markdown(f"### Cross-section of {parameter_key} at {latlon} = {cross_section}, {selected_time_key}")
             st.pyplot(fig_cross)
+
+        st.markdown(f"### Here's an example of computing the differences:")
+
+        # uds_map = uds_map.assign(newdiff=lambda x: x.mesh2d_tem1 - x.mesh2d_Qtot)
+
+        first = 'mesh2d_tem1'
+        second = 'mesh2d_Qtot'
+        diff_options = ['mesh2d_tem1', 'mesh2d_Qtot', 'differential']
+        displayer = st.selectbox("Choose variable to display", diff_options)
+
+        uds_map = uds_map.assign(differential=uds_map['mesh2d_tem1'] - uds_map['mesh2d_Qtot'])
+
+        fig_diff, ax = plt.subplots(figsize=(20, 3))
+        pf = uds_map[displayer].isel(time=selected_time_index, mesh2d_nLayers=layer,
+                                     missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
+        ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
+        colorbar = plt.colorbar(pf, orientation="vertical", fraction=0.01, pad=0.001)
+
+        # Set colorbar label
+        colorbar.set_label(displayer)
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        ax.set_title("")
+        st.markdown(f"### {displayer} at depth of {depth_selected} m at {selected_time_key}")
+        st.pyplot(fig_diff)
+
+        some_value = 10  # Example threshold value
+
+        # Use .where() to filter the data and .dropna() to drop NaN values
+        # filtered_data = uds_map['differential'].where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
+        selected_slice = uds_map.isel(time=selected_time_index, mesh2d_nLayers=layer,missing_dims='ignore')
+        # selected_slice = ds.isel(time=selected_time_index, mesh2d_nLayers=layer, missing_dims='ignore')
+        print('selected time', selected_time_index)
+        # filtered2 = filtered_data.where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
+
+        boolean_indexer = (selected_slice['differential'] < some_value).compute()
+
+        filtered_data = selected_slice.where(boolean_indexer, drop=True)
+
+        # Get the coordinates of the items that meet the condition
+        coords_of_interest = filtered_data.coords
+
+        array1 = coords_of_interest['mesh2d_node_x'].values
+        array2 = coords_of_interest['mesh2d_node_y'].values
+        array3 = filtered_data['differential'].values
+
+        print('arraylens', len(array1), len(array2), len(array3))
+
+        # Combine arrays as columns in a DataFrame
+        df = pd.DataFrame({'Uncertainty': array3[0:len(array3)],
+                           'Lat': array2[0:len(array3)],
+                           'Lon': array1[0:len(array3)]})
+
+        # Write the DataFrame to a CSV file
+        df_sorted = df.sort_values(by='Uncertainty', ascending=False)
+        st.dataframe(df)
+
+        if st.button("Push to export ranking of points by uncertainty:"):
+            df.to_csv('Sample_Priority.csv', index=True)
+            st.write("Saved to file")
+
 
         # # Plot water level on map
         # fig2, ax = plt.subplots(figsize=(10, 4))
