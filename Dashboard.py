@@ -931,7 +931,7 @@ def current():
         file_nc_map = o_file
 
         rename_mapvars = {}
-        sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
+        # sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
         crs = 'EPSG:4326'
         raster_res = 50
         umag_clim = None
@@ -995,6 +995,12 @@ def current():
         except Exception as e:
             num_layers = 0
 
+        xmin = 6.385
+        xmax = 6.57
+        ymin = 62.46
+        ymax = 62.49
+
+
         # Plot water level on map
         fig_surface, ax = plt.subplots(figsize=(22, 2))
 
@@ -1008,43 +1014,64 @@ def current():
             if num_layers > 1:
                 max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
                 print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
-                layer_depths = np.linspace(0, max_depth - max_depth/num_layers, num_layers)
+                layer_depths = np.round(np.linspace(0, max_depth - max_depth/num_layers, num_layers))
                 layer_depths = layer_depths.tolist()
                 layer_list = list(reversed(range(0, num_layers)))
                 depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)  # Create the dropdown menu
                 layer = layer_list[layer_depths.index(depth_selected)]
                 print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
-                pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer, nmesh2d_layer=layer,
+                pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
                                          missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
             else:
-                pc = uds_map[parameter].isel(time=selected_time_index,missing_dims='ignore').ugrid.plot(cmap='jet')
+                pc = uds_map[parameter].isel(time=selected_time_index, missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
 
         if crs is None:
             ax.set_aspect('equal')
-        # else:
-        #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
+        else:
+            ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
         # fig_surface.suptitle(parameter_key)
         colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.01, pad=0.001)
         # Set colorbar label
         colorbar.set_label(parameter_key)
+        latlon = st.radio("Choose the orientation of the cross section", options=("Longitude", "Latitude"))
+        if latlon == "Longitude":
+            cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=xmin,
+                                  max_value=xmax, value=(xmin + xmax) / 2, step=.001, format="%.3f")
+            ax.axvline(cross_section, color='red')
+            line_array = np.array([[cross_section, ymin],
+                                   [cross_section, ymax]])
+        else:
+            cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=ymin,
+                                      max_value=ymax, value=(ymin + ymax) / 2, step=.001, format="%.3f")
+            ax.axhline(cross_section, color='red')
+            line_array = np.array([[xmin, cross_section],
+                                   [xmax, cross_section]])
+
         ax.set_aspect('equal')
         ax.set_xlabel("Longitude")
         ax.set_ylabel("Latitude")
-        xmin = 6.385
-        xmax = 6.57
-        ymin = 62.46
-        ymax = 62.49
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
         ax.set_title("")
-        st.markdown(f"### {parameter_key} at  at {selected_time_key}")
+        st.markdown(f"### {parameter_key} at depth of {depth_selected} m at {selected_time_key}")
         st.pyplot(fig_surface)
+
 
         if line_array is not None:
             uds_crs = dfmt.polyline_mapslice(uds_map.isel(time=selected_time_index), line_array)
             fig_cross, ax = plt.subplots()
-            uds_crs[parameter].ugrid.plot(cmap='jet')
-        st.pyplot(fig_cross)
+            cs = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False)
+            # ax.set_aspect('equal')
+            ax.set_xlabel("Position, m")
+            ax.set_ylabel("Depth, m")
+            ax.set_title("")
+            # fig_surface.suptitle(parameter_key)
+            colorbar = plt.colorbar(cs, orientation="vertical", fraction=0.1, pad=0.001)
+            # Set colorbar label
+            colorbar.set_label(parameter_key)
+
+            st.markdown(f"### Cross-section of {parameter_key} at {latlon} = {cross_section}, {selected_time_key}")
+            st.pyplot(fig_cross)
 
         # # Plot water level on map
         # fig2, ax = plt.subplots(figsize=(10, 4))
