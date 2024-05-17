@@ -125,9 +125,9 @@ def filter_csv_by_date_range(start_date, end_date, reference_time):
 
 
 def main():  
-    start_date = datetime.strptime('2024-05-01 00:00:00', '%Y-%m-%d %H:%M:%S')
-    end_date = datetime.strptime('2024-05-10 00:00:00', '%Y-%m-%d %H:%M:%S')
-    reference_time = pd.Timestamp('2024-05-01 00:00:00')
+    start_date = datetime.strptime('2020-06-09 00:00:00', '%Y-%m-%d %H:%M:%S')
+    end_date = datetime.strptime('2024-05-17 03:00:00', '%Y-%m-%d %H:%M:%S')
+    reference_time = pd.Timestamp('2020-06-09 00:00:00')
     filter_csv_by_date_range(start_date, end_date, reference_time)
 
 if __name__ == "__main__":
