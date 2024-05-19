@@ -122,7 +122,7 @@ def weather():
     st.title("Brusdalen Weather Station")
     st.markdown("##### 62.484778°N 6.479667°E, 69 MASL")
 
-    p = figure(title="Weather Time Series Data for ")
+    p = figure()
 
     df = upload_weather_csv()
 
@@ -868,10 +868,14 @@ def usv_plot():
     all_files = os.listdir()
 
     filtered_files = [f for f in all_files if f.endswith('.mis')] + ["Upload your own"]
-    selected_file = st.selectbox(label="Select which mission log to display", options=filtered_files)
+    hc1, hc2 = st.columns(2, gap="small")
+    with hc1:
+        selected_file = st.selectbox(label="Select which mission log to display", options=filtered_files)
 
     if selected_file == "Upload your own":
-        uploaded = st.file_uploader(label='Upload a mission log file')
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            uploaded = st.file_uploader(label='Upload a mission log file')
         # Create a temp filepath to use to access the uploaded file
         if uploaded is not None:
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
@@ -882,392 +886,286 @@ def usv_plot():
         display_mis(selected_file)
 
 
+def display_map(o_file):
+    crs = 'EPSG:4326'
+    raster_res = 50
+    umag_clim = None
+    scale = 1.5
+
+    # Open and merge mapfile with xugrid(xarray) and print netcdf structure
+    uds_map = dfmt.open_partitioned_dataset(o_file)
+
+    datavars = list(uds_map.data_vars)  # List of all data variables
+    print("uds_map", uds_map)
+    # But don't use that. Create a list of only parameters which have a mesh2d_nFaces coordinate suitable for plots:
+    includes_coordinate = "mesh2d_nFaces"
+    excludes_coordinates = ["mesh2d_nEdges", "mesh2d_nNodes", "mesh2d_nMax_face_nodes"]
+    mesh2d_nFaces_list = []
+    for name, var in uds_map.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            mesh2d_nFaces_list.append(name)
+    # print("mesh2d_nFaces_list", mesh2d_nFaces_list)
+
+    # Dictionary of more descriptive names for known Delft3D output variables
+    # (but there are more which are not described in documentation)
+    parameter_names = {
+        "Projected coordinate system": "wgs84",
+        "z-coordinate of mesh nodes (m)": "mesh2d_node_z",
+        "X-coordinate bounds of mesh faces (m)": "mesh2d_face_x_bnd",
+        "Y-coordinate bounds of mesh faces (m)": "mesh2d_face_y_bnd",
+        "Edge type (relation between edge and flow geometry)": "mesh2d_edge_type",
+        "Cell area (m^2)": "mesh2d_flowelem_ba",
+        "Flow element center bedlevel (m)": "mesh2d_flowelem_bl",
+        "Latest computational timestep size in each output interval (s)": "timestep",
+        "Water level (m)": "mesh2d_s1",
+        "Water depth (m)": "mesh2d_waterdepth",
+        "Velocity at velocity point, n-component (m/s)": "mesh2d_u1",
+        "Flow element center velocity vector, x-component (m/s)": "mesh2d_ucx",
+        "Flow element center velocity vector, y-component (m/s)": "mesh2d_ucy",
+        "Flow element center velocity magnitude (m/s)": "mesh2d_ucmag",
+        "Discharge through flow link at current time (m^3/s)": "mesh2d_q1",
+        "Salinity in flow element (.001)": "mesh2d_sa1",
+        "Temperature in flow element (C)": "mesh2d_tem1",
+        "Flow element center wind velocity vector, x-component (m/s)": "mesh2d_windx",
+        "Flow element center wind velocity vector, y-component (m/s)": "mesh2d_windy",
+        "Edge wind velocity, x-component (m/s)": "mesh2d_windxu",
+        "Edge wind velocity, y-component (m/s)": "mesh2d_windyu",
+    }
+
+    # Create a list of more descriptive parameter names for display in the UI
+    mesh2d_nFaces_list = [key for key, value in parameter_names.items() if value in mesh2d_nFaces_list]
+    # mesh2d_nFaces_list = [parameter_names.get(value, value) for value in mesh2d_nFaces_list]
+
+    # Extract and reformat a list of all time steps, and a dictionary for converting the calendar time to an index
+    times = uds_map.coords["time"]
+    formatted_times = times.dt.strftime("%Y-%m-%d %H:%M:%S")
+    formatted_times = formatted_times.values.tolist()
+    times_dict = {value: i for i, value in enumerate(formatted_times)}
+    # print('formatted_times', type(formatted_times), formatted_times)
+    # print('times[0]', type(times[0]), times[0])
+
+    # Check if the uploaded map file includes layers
+    if uds_map.dims['mesh2d_nLayers'] is not None:
+        num_layers = uds_map.dims['mesh2d_nLayers']
+    else:
+        num_layers = 0
+
+    xmin = 6.385  #
+    xmax = 6.57
+    ymin = 62.46
+    ymax = 62.49
+
+
+    # Plot water level on map
+    fig_surface, ax = plt.subplots(figsize=(20,3))
+
+    cc1, cc2 = st.columns(2, gap="small")
+    with cc1:
+        parameter_key = st.selectbox("Select parameter to display", mesh2d_nFaces_list)
+        parameter = parameter_names.get(parameter_key)
+        selected_time_key = st.selectbox("Select the time to display", list(times_dict.keys()))
+        selected_time_index = times_dict.get(selected_time_key)
+
+        if num_layers > 1:
+            max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
+            # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
+            layer_depths = np.round(np.linspace(0, max_depth - max_depth/num_layers, num_layers))
+            layer_depths = layer_depths.tolist()
+            layer_list = list(reversed(range(0, num_layers)))
+            depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)  # Create the dropdown menu
+            layer = layer_list[layer_depths.index(depth_selected)]
+            # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
+            pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
+                                     missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
+        else:
+            pc = uds_map[parameter].isel(time=selected_time_index, missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
+
+    if crs is None:
+        ax.set_aspect('equal')
+    else:
+        ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
+    # fig_surface.suptitle(parameter_key)
+    colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.01, pad=0.001)
+    # Set colorbar label
+    colorbar.set_label(parameter_key)
+
+    # Add a slider for selecting where to take a cross-section of the simulated water body
+    latlon = st.radio("Choose the orientation of the cross section", options=("Longitude", "Latitude"), horizontal=True)
+    if latlon == "Longitude":
+        cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=xmin,
+                              max_value=xmax, value=(xmin + xmax) / 2, step=.001, format="%.3f")
+        ax.axvline(cross_section, color='red')
+        line_array = np.array([[cross_section, ymin],
+                               [cross_section, ymax]])
+    else:
+        cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=ymin,
+                                  max_value=ymax, value=(ymin + ymax) / 2, step=.001, format="%.3f")
+        ax.axhline(cross_section, color='red')
+        line_array = np.array([[xmin, cross_section],
+                               [xmax, cross_section]])
+
+    ax.set_aspect('equal')
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_title("")
+    st.markdown(f"### {parameter_key} at depth of {depth_selected} m at {selected_time_key}")
+    st.pyplot(fig_surface)
+
+
+    # Plot a cross-section of the selected parameter at the line defined using the 'cross_section' slider
+    if line_array is not None:
+        uds_crs = dfmt.polyline_mapslice(uds_map.isel(time=selected_time_index), line_array)
+        fig_cross, ax = plt.subplots(figsize=(20,3))
+        cs = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False)
+        # Calculate the range for x and y data
+        # x_range = max(data_x) - min(data_x)
+        # y_range = max(data_y) - min(data_y)
+
+        # # Calculate the 1% extra for the limits
+        # x_limit = x_range * 0.01
+        # y_limit = y_range * 0.01
+        #
+        # # Set the limits for x and y axis on the 'ax' object
+        # ax.set_xlim(min(data_x) - x_limit, max(data_x) + x_limit)
+        # ax.set_ylim(min(data_y) - y_limit, max(data_y) + y_limit)
+
+        # Plot your data on the 'ax' object
+        # ax.plot(data_x, data_y)
+        ax.set_xlabel("Position, m")
+        ax.set_ylabel("Depth, m")
+        ax.set_title("")
+        # fig_surface.suptitle(parameter_key)
+        colorbar = plt.colorbar(cs, orientation="vertical", fraction=0.1, pad=0.001)
+        # Set colorbar label
+        colorbar.set_label(parameter_key)
+
+        st.markdown(f"### Cross-section of {parameter_key} at {latlon} = {cross_section}, {selected_time_key}")
+        st.pyplot(fig_cross)
+
+
+def display_his(o_file):
+    file_nc_his = o_file
+    sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
+    crs = 'EPSG:4326'
+    raster_res = 50
+    umag_clim = None
+    scale = 1.5
+    line_array = np.array([[53181.96942503, 424270.83361629],
+                           [55160.15232593, 416913.77136685]])
+
+    # Open hisfile with xarray and print netcdf structure
+    if file_nc_his is not None:
+        ds_his = xr.open_mfdataset(file_nc_his, preprocess=dfmt.preprocess_hisnc)
+        print('ds_his', ds_his)
+        print('ds_his contains along station_id:\n', ds_his.coords['stations'].values)
+    else:
+        st.write("No time series data is available in this directory.")
+
+    num_layers = ds_his.dims['laydim']
+    max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
+    # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
+    layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
+    layer_depths = layer_depths.tolist()
+    layer_list = list(reversed(range(0, num_layers)))
+
+    # Example of how to extract data fields from map.nc file:
+    includes_coordinate = "stations"
+    excludes_coordinates = ["station_geom_node_count",  "station_id", "station_geom", "station_geom_node_coordx",
+                            "station_geom_node_coordy", 'bedlevel']
+    station_var_list = []
+    for name, var in ds_his.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            station_var_list.append(name)
+    # print("station_var_list", station_var_list)
+
+    includes_coordinate = "source_sink"
+    excludes_coordinates = ["station_geom_node_count"]
+    source_sink_var_list = []
+    for name, var in ds_his.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            source_sink_var_list.append(name)
+    # print("source_sink_var_list", source_sink_var_list)
+
+    hc1, hc2 = st.columns(2, gap="small")
+    with hc1:
+        hisoptions = ['Time series', 'Instantaneous (vs. depth)']
+        plottype = st.radio("Choose which type of data to display:", options=hisoptions, horizontal=True)
+        locations = st.multiselect("Select stations at which to plot", ds_his.coords['stations'].values, default=ds_his.coords['stations'].values[0])
+        feature = st.selectbox("Select a variable to plot", station_var_list)
+
+
+    if plottype == hisoptions[0]:
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            axis_options = ['Single Depth', 'All Depths']
+            axis_count = st.radio("Select whether to display values from a single depth or all depths simultaneously", options=axis_options)
+        if axis_count == axis_options[0]:
+            hc1, hc2 = st.columns(2, gap="small")
+            with hc1:
+                depth_selected = st.selectbox("Select depth at which to plot", layer_depths)
+            layers = layer_list[layer_depths.index(depth_selected)]
+
+            data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
+            fig, ax = plt.subplots(figsize=(20,3))
+            data_fromhis_xr.plot.line('-', ax=ax, x='time')
+            ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
+            # data_fromhis_xr_dailymean = data_fromhis_xr.resample(time='D').mean(
+            #     dim='time')  # add daily mean values in the back #TODO: raises "TypeError: __init__() got an unexpected keyword argument 'base'" since py39 environment
+            # data_fromhis_xr_dailymean.plot.line('-', ax=ax, x='time', add_legend=False, zorder=0, linewidth=.8,
+            #                                     color='grey')
+            ax.set_xlabel('Time')
+            ax.set_ylabel(feature)
+            fig.tight_layout()
+            st.pyplot(fig)
+        else:
+            # plot his data: temperature zt at one station
+            if file_nc_his is not None:
+                for i, station in enumerate(locations):
+                    ds_his_sel = ds_his.isel(stations=i).isel(time=slice(0, 50))
+                    fig_z, ax = plt.subplots(1, 1, figsize=(20,3))
+                    pc = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax,
+                                          cmap='jet')  # temperature pcolormesh
+                    # CS = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax, only_contour=True, levels=9,
+                    #                       colors='k', linewidths=0.8, linestyles='solid')  # temperature contour
+                    # ax.clabel(CS, fontsize=10)
+                    colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.1, pad=0.001)
+                    colorbar.set_label(feature)
+                    ax.set_xlabel(feature)
+                    ax.set_ylabel("Depth")
+                    st.markdown(f"### {feature} vs. time at {locations[i]}")
+                    st.pyplot(fig_z)
+
+    else:
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            realtimes = list(ds_his.coords['time'].values)
+            plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
+                                  ds_his.coords['time'].values)
+
+        time_list = [i for i in range(ds_his.dims['time'])]
+        # print('time list', time_list, type(time_list))
+        # print('real times', realtimes, type(realtimes))
+
+        timeindex = time_list[realtimes.index(plottime)]
+        data_fromhis_xr = ds_his[feature].sel(stations=locations).isel(time=timeindex)
+        fig_instant_profile, ax = plt.subplots(figsize=(20,6))
+        data_fromhis_xr.T.plot.line('-', ax=ax, y='zcoordinate_c')
+        # ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
+        # ax.set_aspect('equal')
+        ax.set_xlabel(feature)
+        ax.set_ylabel("Depth")
+        ax.set_title("")
+        st.markdown(f"### {feature} at {plottime}")
+        fig_instant_profile.tight_layout()
+        st.pyplot(fig_instant_profile)
+
+
 def current():
     """
     Display and explore Delft3D output files
     """
-    def display_his(o_file):
-        file_nc_his = o_file
-        sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
-        crs = 'EPSG:4326'
-        raster_res = 50
-        umag_clim = None
-        scale = 1.5
-        line_array = np.array([[53181.96942503, 424270.83361629],
-                               [55160.15232593, 416913.77136685]])
-
-        # Open hisfile with xarray and print netcdf structure
-        if file_nc_his is not None:
-            ds_his = xr.open_mfdataset(file_nc_his, preprocess=dfmt.preprocess_hisnc)
-            print('ds_his', ds_his)
-        else:
-            st.write("No time series data is available in this directory.")
-
-        print('ds_his contains along station_id:\n', ds_his.coords['stations'].values)
-
-        num_layers = ds_his.dims['laydim']
-        max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
-        # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
-        layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
-        layer_depths = layer_depths.tolist()
-        layer_list = list(reversed(range(0, num_layers)))
-
-        # Example of how to extract data fields from map.nc file:
-        includes_coordinate = "stations"
-        excludes_coordinates = ["station_geom_node_count",  "station_id", "station_geom", "station_geom_node_coordx", 
-                                "station_geom_node_coordy", 'bedlevel']
-        station_var_list = []
-        for name, var in ds_his.data_vars.items():
-            if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
-                station_var_list.append(name)
-        # print("station_var_list", station_var_list)
-
-        includes_coordinate = "source_sink"
-        excludes_coordinates = ["station_geom_node_count"]
-        source_sink_var_list = []
-        for name, var in ds_his.data_vars.items():
-            if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
-                source_sink_var_list.append(name)
-        # print("source_sink_var_list", source_sink_var_list)
-
-        hc1, hc2 = st.columns(2, gap="small")
-        with hc1:
-            hisoptions = ['Time series', 'Instantaneous (vs. depth)']
-            plottype = st.radio("Choose which type of data to display:", options=hisoptions, horizontal=True)
-            locations = st.multiselect("Select stations at which to plot", ds_his.coords['stations'].values, default=ds_his.coords['stations'].values[0])
-            feature = st.selectbox("Select a variable to plot", station_var_list)
-
-
-        if plottype == hisoptions[0]:
-            hc1, hc2 = st.columns(2, gap="small")
-            with hc1:
-                axis_options = ['Single Depth', 'All Depths']
-                axis_count = st.radio("Select whether to display values from a single depth or all depths simultaneously", options=axis_options)
-            if axis_count == axis_options[0]:
-                hc1, hc2 = st.columns(2, gap="small")
-                with hc1:
-                    depth_selected = st.selectbox("Select depth at which to plot", layer_depths)
-                layers = layer_list[layer_depths.index(depth_selected)]
-                # Example of how to display a time series of a single variable for many stations
-                data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
-                fig, ax = plt.subplots(figsize=(20,3))
-                data_fromhis_xr.plot.line('-', ax=ax, x='time')
-                ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
-                # data_fromhis_xr_dailymean = data_fromhis_xr.resample(time='D').mean(
-                #     dim='time')  # add daily mean values in the back #TODO: raises "TypeError: __init__() got an unexpected keyword argument 'base'" since py39 environment
-                # data_fromhis_xr_dailymean.plot.line('-', ax=ax, x='time', add_legend=False, zorder=0, linewidth=.8,
-                #                                     color='grey')
-                ax.set_xlabel('Time')
-                ax.set_ylabel(feature)
-                fig.tight_layout()
-                st.pyplot(fig)
-            else:
-                # plot his data: temperature zt at one station
-                if file_nc_his is not None:
-                    for i, station in enumerate(locations):
-                        ds_his_sel = ds_his.isel(stations=i).isel(time=slice(0, 50))
-                        fig_z, ax = plt.subplots(1, 1, figsize=(20,3))
-                        pc = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax,
-                                              cmap='jet')  # temperature pcolormesh
-                        # CS = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax, only_contour=True, levels=9,
-                        #                       colors='k', linewidths=0.8, linestyles='solid')  # temperature contour
-                        # ax.clabel(CS, fontsize=10)
-                        colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.1, pad=0.001)
-                        colorbar.set_label(feature)
-                        ax.set_xlabel(feature)
-                        ax.set_ylabel("Depth")
-                        st.markdown(f"### {feature} vs. time at {locations[i]}")
-                        st.pyplot(fig_z)
-
-        else:
-            hc1, hc2 = st.columns(2, gap="small")
-            with hc1:
-                realtimes = list(ds_his.coords['time'].values)
-                plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
-                                      ds_his.coords['time'].values)
-
-            time_list = [i for i in range(ds_his.dims['time'])]
-            # print('time list', time_list, type(time_list))
-            # print('real times', realtimes, type(realtimes))
-
-            timeindex = time_list[realtimes.index(plottime)]
-            data_fromhis_xr = ds_his[feature].sel(stations=locations).isel(time=timeindex)
-            fig_instant_profile, ax = plt.subplots(figsize=(20,6))
-            data_fromhis_xr.T.plot.line('-', ax=ax, y='zcoordinate_c')
-            # ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
-            # ax.set_aspect('equal')
-            ax.set_xlabel(feature)
-            ax.set_ylabel("Depth")
-            ax.set_title("")
-            st.markdown(f"### {feature} at {plottime}")
-            fig_instant_profile.tight_layout()
-            st.pyplot(fig_instant_profile)
-
-
-    def display_map(o_file):
-        file_nc_map = o_file
-        # sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
-        crs = 'EPSG:4326'
-        raster_res = 50
-        umag_clim = None
-        scale = 1.5
-        line_array = np.array([[6.46124405, 62.48],
-                               [6.46124405, 62.4650]])
-
-        # Open and merge mapfile with xugrid(xarray) and print netcdf structure
-        uds_map = dfmt.open_partitioned_dataset(file_nc_map)
-
-        datavars = list(uds_map.data_vars)  # List of all data variables
-        print("uds_map", uds_map)
-        # But don't use that. Create a list of only parameters which have a mesh2d_nFaces coordinate suitable for plots:
-        includes_coordinate = "mesh2d_nFaces"
-        excludes_coordinates = ["mesh2d_nEdges", "mesh2d_nNodes", "mesh2d_nMax_face_nodes"]
-        mesh2d_nFaces_list = []
-        for name, var in uds_map.data_vars.items():
-            if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
-                mesh2d_nFaces_list.append(name)
-        # print("mesh2d_nFaces_list", mesh2d_nFaces_list)
-
-        parameter_names = {
-            "Projected coordinate system": "wgs84",
-            "z-coordinate of mesh nodes (m)": "mesh2d_node_z",
-            "X-coordinate bounds of mesh faces (m)": "mesh2d_face_x_bnd",
-            "Y-coordinate bounds of mesh faces (m)": "mesh2d_face_y_bnd",
-            "Edge type (relation between edge and flow geometry)": "mesh2d_edge_type",
-            "Cell area (m^2)": "mesh2d_flowelem_ba",
-            "Flow element center bedlevel (m)": "mesh2d_flowelem_bl",
-            "Latest computational timestep size in each output interval (s)": "timestep",
-            "Water level (m)": "mesh2d_s1",
-            "Water depth (m)": "mesh2d_waterdepth",
-            "Velocity at velocity point, n-component (m/s)": "mesh2d_u1",
-            "Flow element center velocity vector, x-component (m/s)": "mesh2d_ucx",
-            "Flow element center velocity vector, y-component (m/s)": "mesh2d_ucy",
-            "Flow element center velocity magnitude (m/s)": "mesh2d_ucmag",
-            "Discharge through flow link at current time (m^3/s)": "mesh2d_q1",
-            "Salinity in flow element (.001)": "mesh2d_sa1",
-            "Temperature in flow element (C)": "mesh2d_tem1",
-            "Flow element center wind velocity vector, x-component (m/s)": "mesh2d_windx",
-            "Flow element center wind velocity vector, y-component (m/s)": "mesh2d_windy",
-            "Edge wind velocity, x-component (m/s)": "mesh2d_windxu",
-            "Edge wind velocity, y-component (m/s)": "mesh2d_windyu",
-        }
-
-        # Create a list of more descriptive parameter names for display in the UI
-        mesh2d_nFaces_list = [key for key, value in parameter_names.items() if value in mesh2d_nFaces_list]
-
-        # Extract and reformat a list of all time steps, and a dictionary for converting the calendar time to an index
-        times = uds_map.coords["time"]
-        formatted_times = times.dt.strftime("%Y-%m-%d %H:%M:%S")
-        formatted_times = formatted_times.values.tolist()
-        times_dict = {value: i for i, value in enumerate(formatted_times)}
-        # print('formatted_times', type(formatted_times), formatted_times)
-        # print('times[0]', type(times[0]), times[0])
-
-        # Check for layers
-        try:
-            num_layers = uds_map.dims['mesh2d_nLayers']
-        except Exception as e:
-            num_layers = 0
-
-        xmin = 6.385
-        xmax = 6.57
-        ymin = 62.46
-        ymax = 62.49
-
-
-        # Plot water level on map
-        fig_surface, ax = plt.subplots(figsize=(20,3))
-
-        cc1, cc2 = st.columns(2, gap="small")
-        with cc1:
-            parameter_key = st.selectbox("Select parameter to display", mesh2d_nFaces_list)
-            parameter = parameter_names.get(parameter_key)
-            selected_time_key = st.selectbox("Select the time to display", list(times_dict.keys()))
-            selected_time_index = times_dict.get(selected_time_key)
-
-            if num_layers > 1:
-                max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
-                # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
-                layer_depths = np.round(np.linspace(0, max_depth - max_depth/num_layers, num_layers))
-                layer_depths = layer_depths.tolist()
-                layer_list = list(reversed(range(0, num_layers)))
-                depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)  # Create the dropdown menu
-                layer = layer_list[layer_depths.index(depth_selected)]
-                # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
-                pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
-                                         missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
-            else:
-                pc = uds_map[parameter].isel(time=selected_time_index, missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
-
-        if crs is None:
-            ax.set_aspect('equal')
-        else:
-            ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
-        # fig_surface.suptitle(parameter_key)
-        colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.01, pad=0.001)
-        # Set colorbar label
-        colorbar.set_label(parameter_key)
-        latlon = st.radio("Choose the orientation of the cross section", options=("Longitude", "Latitude"), horizontal=True)
-        if latlon == "Longitude":
-            cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=xmin,
-                                  max_value=xmax, value=(xmin + xmax) / 2, step=.001, format="%.3f")
-            ax.axvline(cross_section, color='red')
-            line_array = np.array([[cross_section, ymin],
-                                   [cross_section, ymax]])
-        else:
-            cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=ymin,
-                                      max_value=ymax, value=(ymin + ymax) / 2, step=.001, format="%.3f")
-            ax.axhline(cross_section, color='red')
-            line_array = np.array([[xmin, cross_section],
-                                   [xmax, cross_section]])
-
-        ax.set_aspect('equal')
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
-        ax.set_title("")
-        st.markdown(f"### {parameter_key} at depth of {depth_selected} m at {selected_time_key}")
-        st.pyplot(fig_surface)
-
-
-        if line_array is not None:
-            uds_crs = dfmt.polyline_mapslice(uds_map.isel(time=selected_time_index), line_array)
-            fig_cross, ax = plt.subplots(figsize=(20,3))
-            cs = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False)
-            # ax.set_aspect('equal')
-            ax.set_xlabel("Position, m")
-            ax.set_ylabel("Depth, m")
-            ax.set_title("")
-            # fig_surface.suptitle(parameter_key)
-            colorbar = plt.colorbar(cs, orientation="vertical", fraction=0.1, pad=0.001)
-            # Set colorbar label
-            colorbar.set_label(parameter_key)
-
-            st.markdown(f"### Cross-section of {parameter_key} at {latlon} = {cross_section}, {selected_time_key}")
-            st.pyplot(fig_cross)
-
-        st.markdown(f"### Here's an example of computing the differences:")
-
-        # uds_map = uds_map.assign(newdiff=lambda x: x.mesh2d_tem1 - x.mesh2d_Qtot)
-
-        first = 'mesh2d_tem1'
-        second = 'mesh2d_Qtot'
-        diff_options = ['mesh2d_tem1', 'mesh2d_Qtot', 'differential']
-        displayer = st.selectbox("Choose variable to display", diff_options)
-
-        uds_map = uds_map.assign(differential=uds_map['mesh2d_tem1'] - uds_map['mesh2d_Qtot'])
-
-        fig_diff, ax = plt.subplots(figsize=(20, 3))
-        pf = uds_map[displayer].isel(time=selected_time_index, mesh2d_nLayers=layer,
-                                     missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
-        ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
-        colorbar = plt.colorbar(pf, orientation="vertical", fraction=0.01, pad=0.001)
-
-        # Set colorbar label
-        colorbar.set_label(displayer)
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
-        ax.set_title("")
-        st.markdown(f"### {displayer} at depth of {depth_selected} m at {selected_time_key}")
-        st.pyplot(fig_diff)
-
-        some_value = 10  # Example threshold value
-
-        # Use .where() to filter the data and .dropna() to drop NaN values
-        # filtered_data = uds_map['differential'].where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
-        selected_slice = uds_map.isel(time=selected_time_index, mesh2d_nLayers=layer,missing_dims='ignore')
-        # selected_slice = ds.isel(time=selected_time_index, mesh2d_nLayers=layer, missing_dims='ignore')
-        print('selected time', selected_time_index)
-        # filtered2 = filtered_data.where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
-
-        boolean_indexer = (selected_slice['differential'] < some_value).compute()
-
-        filtered_data = selected_slice.where(boolean_indexer, drop=True)
-
-        # Get the coordinates of the items that meet the condition
-        coords_of_interest = filtered_data.coords
-
-        array1 = coords_of_interest['mesh2d_node_x'].values
-        array2 = coords_of_interest['mesh2d_node_y'].values
-        array3 = filtered_data['differential'].values
-
-        print('arraylens', len(array1), len(array2), len(array3))
-
-        # Combine arrays as columns in a DataFrame
-        df = pd.DataFrame({'Uncertainty': array3[0:len(array3)],
-                           'Lat': array2[0:len(array3)],
-                           'Lon': array1[0:len(array3)]})
-
-        # Write the DataFrame to a CSV file
-        df_sorted = df.sort_values(by='Uncertainty', ascending=False)
-        st.dataframe(df)
-
-        if st.button("Push to export ranking of points by uncertainty:"):
-            df.to_csv('Sample_Priority.csv', index=True)
-            st.write("Saved to file")
-
-
-        # # Plot water level on map
-        # fig2, ax = plt.subplots(figsize=(10, 4))
-        # pc = uds_map['mesh2d_sa1'].isel(time=-1, mesh2d_nLayers=layer, nmesh2d_layer=layer,
-        #                                 missing_dims='ignore').ugrid.plot(cmap='jet')
-        # if crs is None:
-        #     ax.set_aspect('equal')
-        # # else:
-        # #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        # fig2.suptitle("Salinity")
-        #
-        # st.pyplot(fig2)
-        # #
-        # pc2 = uds_map['mesh2d_tem1'].isel(time=3) + 5
-        # if crs is None:
-        #     ax.set_aspect('equal')
-        # # else:
-        # #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        #
-        # # Plot eastward velocities on map, on layer
-        # fig3, ax = plt.subplots(figsize=(10, 4))
-        # fig3.suptitle("Surface velocity")
-        # pc = uds_map['mesh2d_ucx'].isel(time=3, mesh2d_nLayers=layer, nmesh2d_layer=layer,
-        #                                 missing_dims='ignore').ugrid.plot(cmap='jet')
-        # if crs is None:
-        #     ax.set_aspect('equal')
-        # # else:
-        # #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        # st.pyplot(fig3)
-        #
-        # # Plot eastward velocities on map, on depth from waterlevel/z0/bedlevel
-        # uds_map_atdepths = dfmt.get_Dataset_atdepths(ds_his=uds_map.isel(time=3), depths=-5, reference='waterlevel')
-        # figy, ax = plt.subplots(figsize=(10, 4))
-        # pc = uds_map_atdepths['mesh2d_ucx'].ugrid.plot(cmap='jet')
-        # if crs is None:
-        #     ax.set_aspect('equal')
-        # # else:
-        # #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        # st.pyplot(figy)
-
-        # # Velocity magnitude and quiver
-        # uds_quiv = uds_map.isel(time=selected_time_index, mesh2d_nLayers=layer, nmesh2d_layer=layer, missing_dims='ignore')
-        # varn_ucx, varn_ucy = 'mesh2d_ucx', 'mesh2d_ucy'
-        # magn_attrs = {'long_name': 'velocity magnitude', 'units': 'm/s'}
-        # uds_quiv['magn'] = np.sqrt(uds_quiv[varn_ucx] ** 2 + uds_quiv[varn_ucy] ** 2).assign_attrs(magn_attrs)
-        # raster_quiv = dfmt.rasterize_ugrid(uds_quiv[[varn_ucx, varn_ucy]], resolution=raster_res)
-        #
-        # figx, ax = plt.subplots(figsize=(10, 4))
-        # pc = uds_quiv['magn'].ugrid.plot(cmap='jet')
-        # raster_quiv.plot.quiver(x='mesh2d_face_x', y='mesh2d_face_y', u=varn_ucx, v=varn_ucy, color='w', scale=scale,
-        #                         add_guide=True)
-        # pc.set_clim(umag_clim)
-        # figx.tight_layout()
-        # if crs is None:
-        #     ax.set_aspect('equal')
-        # # else:
-        # #     ctx.add_basemap(ax=ax, source=ctx.providers.Esri.WorldImagery, crs=crs, attribution=False)
-        # st.pyplot(figx)
-
     st.header("Brusdalsvatnet Water Quality Dashboard")
     st.title("Hydrodynamic Model of Current Conditions")
 
@@ -1281,9 +1179,13 @@ def current():
     # Filter files based on extension
     if d3d_output == output_options[1]:
         filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
-        selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
         if selected_file == "Upload your own":
-            uploaded = st.file_uploader(label='Upload your own Delft3D history output file (his.nc), maximum size 200MB', type='nc')
+            hc1, hc2 = st.columns(2, gap="small")
+            with hc1:
+                uploaded = st.file_uploader(label='Upload your own Delft3D history output file (his.nc), maximum size 200MB', type='nc')
             # Create a temp filepath to use to access the uploaded file
             if uploaded is not None:
                 if uploaded.name.endswith('his.nc'):
@@ -1300,9 +1202,13 @@ def current():
         filtered_files = [f for f in all_files if f.endswith('map.nc')] + ["Upload your own"]
         # if uploaded is not None:
         #     filtered_files.append(uploaded.name)
-        selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
         if selected_file == "Upload your own":
-            uploaded = st.file_uploader(label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB', type='nc')
+            hc1, hc2 = st.columns(2, gap="small")
+            with hc1:
+                uploaded = st.file_uploader(label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB', type='nc')
             # Create a temp filepath to use to access the uploaded file
             if uploaded is not None:
                 if uploaded.name.endswith('map.nc'):
@@ -1314,72 +1220,6 @@ def current():
                     st.markdown("### File uploaded is not a valid map file")
         else:
             display_map(selected_file)
-
-
-    # def create_map(selected_atrib, map_center, zoom_level=13):
-    #     # Create a Folium map
-    #     m = folium.Map(location=map_center, zoom_start=zoom_level)
-    #
-    #     # Add GeoJSON layers to the map with customizable style
-    #     for file_key, color in selected_atrib:
-    #         geojson_path = file_key_to_path[file_key]
-    #         gdf = gpd.read_file(geojson_path)
-    #         style_function = lambda x: {'fillColor': color, 'color': color}
-    #         folium.GeoJson(gdf, style_function=style_function).add_to(m)
-    #
-    #     return m
-    #
-    # # Hardcoded GeoJSON file paths, colors, and map center
-    # geojson_paths_and_colors = {
-    #     "Surface": (r"0m_grid_ps.geojson", "blue"),
-    #     "10m": (r"10m_grid_ps.geojson", "green"),
-    #     "20m": (r"20m_grid_ps.geojson", "red"),
-    #     "30m": (r"30m_grid_ps.geojson", "black"),
-    #     "40m": (r"40m_grid_ps.geojson", "yellow"),
-    #     "50m": (r"50m_grid_ps.geojson", "green"),
-    #     "60m": (r"60m_grid_ps.geojson", "green"),
-    #     "70m": (r"70m_grid_ps.geojson", "green"),
-    #     "80m": (r"80m_grid_ps.geojson", "green"),
-    #     "90m": (r"90m_grid_ps.geojson", "green"),
-    #     "100m": (r"100m_grid_ps.geojson", "green"),
-    # }
-    #
-    # hardcoded_map_center = [62.476994, 6.469730]
-    #
-    # # Convert the dictionary to a list for the multiselect widget
-    # file_key_to_path = {key: path for key, (path, _) in geojson_paths_and_colors.items()}
-    # multiselect_options = list(geojson_paths_and_colors.keys())
-    #
-    # # Display map with selectable GeoJSON overlays
-    # st.subheader("Displays water quality parameters on 100m x 100m grid for a given depth")
-    #
-    # # Multiselect widget to choose GeoJSON files
-    # mc1, mc2 = st.columns(2, gap="small")
-    # with mc1:
-    #     selected_files_and_colors = st.multiselect("Select depth at which to display parameters", multiselect_options)
-    #
-    #     chloropleth_options = ["Temperature (Celsius)", "Conductivity (microSiemens/centimeter)",
-    #                            "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
-    #                            "pH",
-    #                            "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)", "fDOM (RFU)",
-    #                            "fDOM (parts per billion QSU)"]
-    #
-    #     # Multiselect widget to choose GeoJSON files
-    #     selected_param = st.multiselect("Select parameter by which to color-code", chloropleth_options)
-    #
-    # # Display map if files are selected
-    # if selected_files_and_colors:
-    #     # Create Folium map with selected GeoJSON files and colors
-    #     folium_map = create_map(
-    #         [(file_key, geojson_paths_and_colors[file_key][1]) for file_key in selected_files_and_colors],
-    #         map_center=hardcoded_map_center, zoom_level=13)
-    #
-    #     # Display Folium map using folium_static
-    #     folium_static(folium_map, width=1300)
-    #     st.write("Find a bug? Or have an idea for how to improve the app? "
-    #              "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
-    # else:
-    #     st.info("Please select at least one depth and model parameter to display.")
 
 
 def interactive():
