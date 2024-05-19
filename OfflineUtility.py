@@ -1,0 +1,437 @@
+import csv
+import datetime
+import pandas as pd
+import streamlit as st
+import os
+import tempfile2 as tempfile
+import re
+
+def gen_MDU(all_files):
+    """
+    Make adjustments to the MDU file, which defines all simulation settings for Delft3D FM.
+    Running a simulation programatically entails calling a batch file, which calls the Delft 3D executable on a
+    DIMR configuration file. The DIMR configuration file defines paths to the input directory, where the executable
+    finds the .MDU file, as well as an output directory for the executable to save output files (.dia, _map.nc,
+    _his.nc, etc.)
+    :return:
+    """
+
+    # Get all files in the current directory
+    st.subheader("Make adjustments to the MDU file")
+
+    filtered_files = [f for f in all_files if f.endswith('.mdu')] + ["Upload your own"]
+    hc1, hc2 = st.columns(2, gap="small")
+    with hc1:
+        selected_file = st.selectbox(label="Select an MDU file to modify", options=filtered_files, help="The Master "
+                "Definition Unstructured file (mdu-file) is the input file for the hydrodynamic simulation "
+                "program. It contains the data required for defining a model and running a simulation. The .mdu file"
+                " also defines the names of the attribute files in which external input data is stored, "
+                "such as time-series data for forcing functions.")
+
+    if selected_file == "Upload your own":
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            uploaded = st.file_uploader(label='Upload an MDU file', type='mdu')
+        # Create a temp filepath to use to access the uploaded file
+        if uploaded is not None:
+            if uploaded.name.endswith('.mdu'):
+                with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                    temp_file.write(uploaded.read())
+                    file_path = temp_file.name
+            else:
+                st.markdown("### File uploaded is not a valid MDU file")
+
+    if uploaded is not None:
+        # To read file as string:
+        string_data = uploaded.getvalue().decode("utf-8")
+        st.text_area("MDU file content:", string_data, height=300)
+
+    # Define the pattern to search for and the replacement text
+    pattern_to_search = st.text_input("Enter the MDU content to replace:")
+    replacement_text = st.text_input("Enter the replacement content")
+
+    # Open the file and read its contents
+    with open(uploaded, 'r') as file:
+        file_contents = file.read()
+
+    # Use regular expressions to find and replace
+    modified_contents = re.sub(pattern_to_search, replacement_text, file_contents)
+
+    # Write the modified contents back to the file
+    with open('your_file.txt', 'w') as file:
+        file.write(modified_contents)
+
+def gen_sens():
+    test_options = []
+    param = st.selectbox("Select the input parameter for which sensitivity will be tested", test_options)
+
+
+def convert_to_minutes_relative(df_convo, datetime_col, ref_time):
+    """
+  Converts datetime values in a DataFrame column to minutes relative to a reference time.
+
+  Args:
+      df: The pandas DataFrame containing the datetime column.
+      datetime_col: The name of the column containing datetime values.
+      reference_time: A pandas.Timestamp object representing the reference time.
+
+  Returns:
+      A new DataFrame with the same columns as the input DataFrame, with the specified
+      column containing the datetime values converted to minutes relative to the reference time.
+  """
+
+    # Ensure reference time is a pandas.Timestamp
+    if not isinstance(ref_time, pd.Timestamp):
+        ref_time = pd.Timestamp(ref_time)
+
+    # Convert datetime column to timedelta (difference from reference time)
+    df_convo['time_diff'] = df_convo[datetime_col] - ref_time
+
+    # Convert timedelta to minutes (assuming microseconds are not relevant)
+    df_convo['time_diff_minutes'] = df_convo['time_diff'] / pd.Timedelta(minutes=1)
+
+    # Drop the original datetime column if desired
+    df_convo = df_convo.drop(datetime_col, axis=1)
+    df_convo = df_convo.drop('time_diff', axis=1)
+    return df_convo
+
+
+def filter_csv_by_date_range(start_date, end_date, reference_time, df):
+    """
+  Reads a CSV file, filters data by date range and specified columns,
+  performs optional data manipulation, and writes the result to a new CSV file.
+
+  Args:
+    start_date: String representing the start date in YYYY-MM-DD format.
+    end_date: String representing the end date in YYYY-MM-DD format.
+    reference_time: time relative to which output file time is expressed (in minutes)
+  """
+    wind_columns = ["Average wind speed (m/s)", "Hourly average wind direction (°)"]
+    met_columns = ["Average humidity (% relative humidity)", "Avg. Temp (°C)", "Cloud cover",
+                   "Shortwave (solar) radiation (W/m2)"]
+    rain_columns = ["Hourly precipitation (mm/hr)"]
+
+    if df is not None:
+        if df.columns[0] == "Time":
+            column_names = {"Time": "Timestamp",
+                            "1818_time: AA[mBar]": "Instantaneous atmospheric pressure (mBar)",
+                            "1818_time: DD Retning[°]": "Wind direction 10minRollingAvg (°)",
+                            "1818_time: DX_l[°]": "Hourly average wind direction (°)",
+                            "1818_time: FF Hastighet[m/s]": "Average wind speed (m/s)",
+                            "1818_time: FG_l[m/s]": "Maximum sustained wind speed, 3-second span (m/s)",
+                            "1818_time: FG_tid_l[N/A]": "Time of maximum 3s Gust",
+                            "1818_time: FX Kast[m/s]": "Maximum sustained wind speed, 10-minute span (m/s)",
+                            "1818_time: FX_tid_l[N/A]": "Time of maximum 10 minute gust",
+                            "1818_time: PO Trykk stasjonshøyde[mBar]": "Hourly average atmospheric pressure at station (mBar)",
+                            "1818_time: PP[mBar]": "Maximum pressure differential, 3-hour span (mBar)",
+                            "1818_time: PR Trykk redusert til havnivå[mBar]": "Instantaneous atmospheric pressure compensated for temperature, humidity and station elevation (mBar)",
+                            "1818_time: QLI Langbølget[W/m2]": "Longwave (IR) radiation (W/m2)",
+                            "1818_time: QNH[mBar]": "Instantaneous sea-level atmospheric pressure (mBar)",
+                            "1818_time: QSI Kortbølget[W/m2]": "Shortwave (solar) radiation (W/m2)",
+                            "1818_time: RR_1[mm]": "Hourly precipitation (mm/hr)",
+                            "1818_time: TA Middel[°C]": "Instantaneous temperature (°C)",
+                            "1818_time: TA_a_Max[°C]": "Hourly maximum temperature (°C)",
+                            "1818_time: TA_a_Min[°C]": "Hourly minimum temperature (°C)",
+                            "1818_time: UU Luftfuktighet[%RH]": "Average humidity (% relative humidity)"
+                            }
+            df = df.rename(columns=column_names)  # Assign column names for profiler data
+
+        # Data cleaning
+        for parameter in df.columns:
+            df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
+        df.iloc[:, 1:] = df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce', downcast='float')
+
+    # Sort by the time column
+    df = df.sort_values(by="Timestamp")
+    
+    # Drop columns which will not be used in the output
+    df = df.drop(columns=["Instantaneous atmospheric pressure (mBar)", "Wind direction 10minRollingAvg (°)",
+                          "Time of maximum 3s Gust", "Time of maximum 10 minute gust",
+                          "Instantaneous atmospheric pressure compensated for temperature, humidity and station elevation (mBar)",
+                          "Instantaneous sea-level atmospheric pressure (mBar)", "Instantaneous temperature (°C)"])
+
+    # Filter data by date range
+    filtered_df = df[(df['Timestamp'] >= start_date) & (df['Timestamp'] <= end_date)]
+
+    # Calculate "average" temperature:
+    filtered_df["Avg. Temp (°C)"] = (df['Hourly maximum temperature (°C)'] + df['Hourly minimum temperature (°C)']) / 2
+
+    # Add (missing but irrelevant) cloud cover data:
+    filtered_df["Cloud cover"] = 0
+
+    # Get rid of negative radiation values
+    filtered_df.loc[filtered_df['Shortwave (solar) radiation (W/m2)'] < 0, 'Shortwave (solar) radiation (W/m2)'] = 0
+
+    ###################################################################################################################
+    # Write wind data file
+
+    # Convert the time column to minutes relative to the reference date
+    filtered_df = convert_to_minutes_relative(filtered_df, "Timestamp", reference_time)
+
+    col_to_wind = ["time_diff_minutes", *wind_columns]
+    wind_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_wind})
+
+    # Select specified columns
+    wind_df = wind_df[col_to_wind]
+
+    ###################################################################################################################
+    # Repeat with met data
+    col_to_met = ["time_diff_minutes", *met_columns]
+    met_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_met})
+    # Select specified columns
+    met_df = met_df[col_to_met]
+
+    ##################################################################################################################
+    # Repeat with rainfall data
+
+    # Convert rainfall units from mm/hr to mm/day per Delft3D FM documentation
+    filtered_df['Hourly precipitation (mm/hr)'] = 24*filtered_df['Hourly precipitation (mm/hr)']
+
+    col_to_rain = ["time_diff_minutes", *rain_columns]
+    rain_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_rain})
+    # Select specified columns
+    rain_df = rain_df[col_to_rain]
+    return wind_df, met_df, rain_df
+
+    
+
+
+def pre():
+    st.title("Delft3D FM Simulation Configuration")
+    functions = ['Adjust simulation run settings', 'Generate forcing data', 'Configure sensitivity test']
+
+    # Ask the user for a directory path with the default as the current directory
+    c1, c2 = st.columns(2, gap="small")
+    with c1:
+        directory_path = st.text_input(
+            'Enter the directory containing a Delft3D project\'s input files to find all relevant files automatically. '
+            'Or, upload individual files as needed in the menus below.')
+
+    if directory_path:
+        all_files = os.listdir(directory_path)
+    else:
+        all_files = os.listdir()
+
+    c1, c2 = st.columns(2, gap="small")
+    with c1:
+        mode = st.radio("Select activity", functions, horizontal=True)
+
+    if mode == functions[0]:
+        gen_MDU(all_files)
+    elif mode == functions[1]:
+        gen_forcing(all_files)
+    elif mode == functions[2]:
+        gen_sens()
+
+def gen_forcing(all_files):
+    st.header("Create environmental forcing functions from Brusdalen weather station data")
+
+    # Read data into a pandas DataFrame
+    input_file = "All_time.csv"
+    df = pd.read_csv(input_file, header=0, sep=';', decimal=',')
+    df['Time'] = pd.to_datetime(df['Time']).apply(lambda x: x.to_pydatetime())
+    min_date = df['Time'].min()
+    max_date = df['Time'].max()
+    rc1, rc2, rc3, rc4 = st.columns(4, gap="small")
+    with rc1:
+        start_date = st.date_input("Select the simulation start date", value=min_date, min_value=min_date,
+                                   max_value=max_date, help=None, format="YYYY/MM/DD")
+        end_date = st.date_input("Select the simulation end date", value=max_date, min_value=min_date,
+                                   max_value=max_date, help=None, format="YYYY/MM/DD")
+        reference_date = st.date_input("Select a reference date for the simulation", value=min_date, key=None,
+                                       help='Within Delft3D and in output files, all absolute times will '
+                                            'be expressed as minutes relative to this selection.', format="YYYY/MM/DD")
+
+    with rc2:
+        start_time = st.time_input("Start time", datetime.time(0, 0))
+        end_time = st.time_input("End time", datetime.time(0, 0))
+        reference_time = st.time_input("Reference time", datetime.time(0, 0))
+    start = datetime.datetime.combine(start_date, start_time)
+    end = datetime.datetime.combine(end_date, end_time)
+    if start >= end:
+        st.markdown(":red[The start time must be before the end time. Please revise the input.]")
+    else:
+        reference = datetime.datetime.combine(reference_date, reference_time)
+        dfs = filter_csv_by_date_range(start, end, reference, df)
+
+        # Set the default directory path to the current directory
+        default_directory_path = ''
+
+        # Ask the user for a directory path with the default as the current directory
+        c1, c2 = st.columns(2, gap="small")
+        with c1:
+            directory_path = st.text_input('Enter a directory path in which to save the forcing '
+                                           'files (current directory by default)',
+                                       value=default_directory_path)
+
+        # Names for the output files
+        filenames = ["windxy.tim", "FlowFM_meteo.tim", "rainfall.tim"]
+
+        if st.button("Write data to Delft3D input files (.tim)"):
+            # Write filtered wind data to a new CSV file
+            for j, frame in enumerate(dfs):
+                if directory_path:
+                    frame.to_csv(f"{directory_path}/{filenames[j]}", index=False, header=False, sep=' ')
+                else:
+                    frame.to_csv(filenames[j], index=False, header=False, sep=' ')
+            if directory_path:
+                st.write(f"Data from selected range exported as {filenames} in {directory_path}")
+            else:
+                st.write(f"Data from selected range exported as {filenames} in the working directory")
+
+
+def post_cor(all_files):
+    st.header("Compare model outputs against real-world data for calibration")
+def post_sens(all_files):
+    st.header("Analyse sensitivity test output to determine the spatial and temporal distribution of uncertainty "
+              "in the modeled parameters")
+
+    output_options = ["Spatial distributions (map file)", "Fixed locations (history file)"]
+    d3d_output = st.radio("Select which type of model outputs to display",
+                          options=output_options, horizontal=True)
+
+    # Filter files based on extension
+    if d3d_output == output_options[1]:
+        filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+        if selected_file == "Upload your own":
+            hc1, hc2 = st.columns(2, gap="small")
+            with hc1:
+                uploaded = st.file_uploader(
+                    label='Upload your own Delft3D history output file (his.nc), maximum size 200MB', type='nc')
+            # Create a temp filepath to use to access the uploaded file
+            if uploaded is not None:
+                if uploaded.name.endswith('his.nc'):
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                        temp_file.write(uploaded.read())
+                        file_path = temp_file.name
+                    display_his(file_path)
+                else:
+                    st.markdown("### File uploaded is not a valid history file")
+        else:
+            display_his(selected_file)
+
+    else:
+        filtered_files = [f for f in all_files if f.endswith('map.nc')] + ["Upload your own"]
+        # if uploaded is not None:
+        #     filtered_files.append(uploaded.name)
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
+            selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+        if selected_file == "Upload your own":
+            hc1, hc2 = st.columns(2, gap="small")
+            with hc1:
+                uploaded = st.file_uploader(
+                    label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB', type='nc')
+            # Create a temp filepath to use to access the uploaded file
+            if uploaded is not None:
+                if uploaded.name.endswith('map.nc'):
+                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                        temp_file.write(uploaded.read())
+                        file_path = temp_file.name
+                    display_map(file_path)
+                else:
+                    st.markdown("### File uploaded is not a valid map file")
+        else:
+            display_map(selected_file)
+
+    first = 'mesh2d_tem1'
+    second = 'mesh2d_Qtot'
+    diff_options = ['mesh2d_tem1', 'mesh2d_Qtot', 'differential']
+    displayer = st.selectbox("Choose variable to display", diff_options)
+
+    uds_map = uds_map.assign(differential=uds_map['mesh2d_tem1'] - uds_map['mesh2d_Qtot'])
+
+    fig_diff, ax = plt.subplots(figsize=(20, 3))
+    pf = uds_map[displayer].isel(time=selected_time_index, mesh2d_nLayers=layer,
+                                 missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
+    ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
+    colorbar = plt.colorbar(pf, orientation="vertical", fraction=0.01, pad=0.001)
+
+    # Set colorbar label
+    colorbar.set_label(displayer)
+    ax.set_xlabel("Longitude")
+    ax.set_ylabel("Latitude")
+    ax.set_xlim(xmin, xmax)
+    ax.set_ylim(ymin, ymax)
+    ax.set_title("")
+    st.markdown(f"### {displayer} at depth of {depth_selected} m at {selected_time_key}")
+    st.pyplot(fig_diff)
+
+    some_value = 10  # Example threshold value
+
+    # Use .where() to filter the data and .dropna() to drop NaN values
+    # filtered_data = uds_map['differential'].where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
+    selected_slice = uds_map.isel(time=selected_time_index, mesh2d_nLayers=layer, missing_dims='ignore')
+    # selected_slice = ds.isel(time=selected_time_index, mesh2d_nLayers=layer, missing_dims='ignore')
+    print('selected time', selected_time_index)
+    # filtered2 = filtered_data.where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
+
+    boolean_indexer = (selected_slice['differential'] < some_value).compute()
+
+    filtered_data = selected_slice.where(boolean_indexer, drop=True)
+
+    # Get the coordinates of the items that meet the condition
+    coords_of_interest = filtered_data.coords
+
+    array1 = coords_of_interest['mesh2d_node_x'].values
+    array2 = coords_of_interest['mesh2d_node_y'].values
+    array3 = filtered_data['differential'].values
+
+    print('arraylens', len(array1), len(array2), len(array3))
+
+    # Combine arrays as columns in a DataFrame
+    df = pd.DataFrame({'Uncertainty': array3[0:len(array3)],
+                       'Lat': array2[0:len(array3)],
+                       'Lon': array1[0:len(array3)]})
+
+    # Write the DataFrame to a CSV file
+    df_sorted = df.sort_values(by='Uncertainty', ascending=False)
+    st.dataframe(df)
+
+    if st.button("Push to export ranking of points by uncertainty:"):
+        df.to_csv('Sample_Priority.csv', index=True)
+        st.write("Saved to file")
+
+def post():
+    st.title("Delft3D FM Post-Processing")
+    functions = ['Correlate model to data', 'Uncertainty Analysis']
+
+    # Ask the user for a directory path with the default as the current directory
+    c1, c2 = st.columns(2, gap="small")
+    with c1:
+        directory_path = st.text_input(
+            'Enter the directory containing Delft3D output files to find all relevant files automatically. '
+            'Or, upload individual files as needed below.')
+
+    if directory_path:
+        all_files = os.listdir(directory_path)
+    else:
+        all_files = os.listdir()
+
+    c1, c2 = st.columns(2, gap="small")
+    with c1:
+        mode = st.radio("Select activity", functions, horizontal=True)
+
+    if mode == functions[0]:
+        post_cor(all_files)
+    elif mode == functions[1]:
+        post_sens(all_files)
+
+def main():
+    st.set_page_config("Brusdalsvatnet Digital Twin Utility", layout="wide")
+    st.sidebar.title("Choose Mode")
+    pages = ["Pre-process", "Post-process"]
+    selected_page = st.sidebar.radio("", pages)
+
+    if selected_page == pages[0]:
+        pre()
+    elif selected_page == pages[1]:
+        post()
+
+
+
+if __name__ == "__main__":
+    main()
