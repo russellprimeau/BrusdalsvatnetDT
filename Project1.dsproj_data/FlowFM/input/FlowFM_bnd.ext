@@ -1,0 +1,5 @@
+
+[boundary]
+quantity=waterlevelbnd
+locationFile=Boundary01.pli
+forcingFile=WaterLevel.bc
