@@ -1788,7 +1788,7 @@ def display_his(o_file):
         if 'laydim' in ds_his[feature].dims:
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
-                realtimes = ds_his.coords['time'].values.to_list()
+                realtimes = list(ds_his.coords['time'].values)
                 plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
                                         ds_his.coords['time'].values)
 
