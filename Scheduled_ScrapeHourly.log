@@ -1664,3 +1664,23 @@ hint: its remote counterpart. If you want to integrate the remote changes,
 hint: use 'git pull' before pushing again.
 hint: See the 'Note about fast-forwards' in 'git push --help' for details.
 
+ERROR:root:Command failed: git pull origin main. Error message: From https://github.com/russellprimeau/BrusdalsvatnetDT
+ * branch            main       -> FETCH_HEAD
+error: Your local changes to the following files would be overwritten by merge:
+	Scheduled_ScrapeWeather.log
+Please commit your changes or stash them before you merge.
+Aborting
+Merge with strategy ort failed.
+
+INFO:root:Successfully appended records to Profiler_modem_SondeHourly.csv at 2024-05-23 04:01:09
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: Profiler_modem_SondeHourly.csv
+Scheduled_ScrapeWeather.log
+ERROR:root:Command failed: git push origin main. Error message: To https://github.com/russellprimeau/BrusdalsvatnetDT.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/russellprimeau/BrusdalsvatnetDT.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. If you want to integrate the remote changes,
+hint: use 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+
