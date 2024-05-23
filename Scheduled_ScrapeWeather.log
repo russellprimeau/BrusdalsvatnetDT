@@ -2914,3 +2914,25 @@ INFO:root:Command succeeded: git add .
 INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
 Scheduled_ScrapeHourly.log
 INFO:root:Command succeeded: git push origin main
+ERROR:root:Command failed: git pull origin main. Error message: From https://github.com/russellprimeau/BrusdalsvatnetDT
+ * branch            main       -> FETCH_HEAD
+   17d8a30..fec287b  main       -> origin/main
+error: Your local changes to the following files would be overwritten by merge:
+	Scheduled_ScrapeHourly.log
+Please commit your changes or stash them before you merge.
+Aborting
+Merge with strategy ort failed.
+
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-23 03:08:57
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+ERROR:root:Command failed: git push origin main. Error message: To https://github.com/russellprimeau/BrusdalsvatnetDT.git
+ ! [rejected]        main -> main (non-fast-forward)
+error: failed to push some refs to 'https://github.com/russellprimeau/BrusdalsvatnetDT.git'
+hint: Updates were rejected because the tip of your current branch is behind
+hint: its remote counterpart. If you want to integrate the remote changes,
+hint: use 'git pull' before pushing again.
+hint: See the 'Note about fast-forwards' in 'git push --help' for details.
+
