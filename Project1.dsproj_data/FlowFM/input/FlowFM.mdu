@@ -1,4 +1,4 @@
-# Generated on 2024-05-23 13:56:00
+# Generated on 2024-05-23 14:09:35
 # Deltares, Plugin D-FLOW FM Version 4.11.0.4098, D-Flow FM Version 1.2.177.142431
 
 [General]
@@ -141,7 +141,7 @@ Gammax                            = 1                                           
 [time]
 RefDate                           = 20240101                                                                # Reference date [YYYY-MM-DD HH:MM:SS]
 Tzone                             = 0                                                                       # Time zone assigned to input time series
-DtUser                            = 43200                                                                   # Time interval for external forcing update [Dd HH:MM:SS.ZZZ]
+DtUser                            = 21600                                                                   # Time interval for external forcing update [Dd HH:MM:SS.ZZZ]
 DtNodal                           = 3600                                                                    # Time interval (s) for updating nodal factors in astronomical boundary conditions [Dd HH:MM:SS.ZZZ]
 DtMax                             = 30                                                                      # Maximal computation timestep
 DtInit                            = 1                                                                       # Initial computation timestep
@@ -184,18 +184,18 @@ OutputDir                         = output                                      
 WAQOutputDir                      =                                                                         # Output directory of WAQ files, default: DFM_DELWAQ_<modelname>. Set to . for current dir.
 FlowGeomFile                      =                                                                         # Flow geometry NetCDF *_flowgeom.nc
 ObsFile                           = FlowFM_obs.xyn                                                          # Points file *.xyn with observation stations with rows x, y, station name
-CrsFile                           =                                                                         # Polyline file *_crs.pli defining observation cross sections
+CrsFile                           = FlowFM_crs.pli                                                          # Polyline file *_crs.pli defining observation cross sections
 HisFile                           =                                                                         # History output file *_his.nc in NetCDF format
 HisInterval                       = 43200                                                                   # History output times, given as 'interval' 'start period' 'end period'
 XLSInterval                       =                                                                         # Interval between XLS history [Dd HH:MM:SS.ZZZ]
 MapFile                           =                                                                         # Map file output file *_map.nc in NetCDF format
-MapInterval                       = 43200                                                                   # Map file output times, given as 'interval' 'start period' 'end period'
+MapInterval                       = 21600                                                                   # Map file output times, given as 'interval' 'start period' 'end period'
 RstInterval                       = 0                                                                       # Restart file output times, given as 'interval' 'start period' 'end period'
 S1incinterval                     =                                                                         # Interval (m) in incremental file for water levels s1
 MapFormat                         = 4                                                                       # Map file format (1: NetCDF, 2: Tecplot, 3: NetCFD and Tecplot)
 Wrihis_balance                    = 1                                                                       # Write mass balance totals to his file (1: yes, 0: no)
 Wrihis_sourcesink                 = 1                                                                       # Write sources-sinks statistics to his file (1: yes, 0: no)
-Wrihis_structure_gen              = 1                                                                       # Write general structure parameters to his file (1: yes, 0: no)
+Wrihis_structure_gen              = 0                                                                       # Write general structure parameters to his file (1: yes, 0: no)
 Wrihis_structure_dam              = 0                                                                       # Write dam parameters to his file (1: yes, 0: no)
 Wrihis_structure_pump             = 0                                                                       # Write pump parameters to his file (1: yes, 0: no)
 Wrihis_structure_gate             = 0                                                                       # Write gate parameters to his file (1: yes, 0: no)
