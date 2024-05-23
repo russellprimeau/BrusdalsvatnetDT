@@ -1395,7 +1395,7 @@ def display_map(o_file):
     on_off = ["Display file attributes", "Hide"]
     print_attrs = st.radio(label='', options=on_off, horizontal=True, index=1)
     if print_attrs == on_off[0]:
-        a1, a2, a3, a4 = st.columns(4, gap='small')
+        a1, a2, a3 = st.columns(3, gap='small')
         with a1:
             st.markdown("#### Dimensions")
             st.write("Faces (elements):", uds_map.sizes['mesh2d_nFaces'])
@@ -1424,7 +1424,7 @@ def display_map(o_file):
     else:
         st.empty()
 
-    # Some useful commands for looking at what's in each dimension/coordinate/data variable:
+    # Some useful commands for looking at what is in each dimension/coordinate/data variable:
     # st.write('uds_map.data_vars', uds_map.coords['mesh2d_layer_z'].values)
     # my_variable_values = uds_map.coords['mesh2d_layer_z'].values
     # df = pd.DataFrame({'mesh2d_layer_z': my_variable_values})
@@ -1655,7 +1655,7 @@ def display_his(o_file):
     on_off = ["Display file attributes", "Hide"]
     print_attrs = st.radio(label='', options=on_off, horizontal=True, index=1)
     if print_attrs == on_off[0]:
-        a1, a2, a3, a4 = st.columns(4, gap='small')
+        a1, a2, a3 = st.columns(3, gap='small')
         with a1:
             st.markdown("#### Dimensions")
             st.write("Observation Points:", num_stations)
@@ -1674,8 +1674,6 @@ def display_his(o_file):
             st.write("Run date:", ds_his.attrs['date_modified'])
     else:
         st.empty()
-
-    
 
     hc1, hc2 = st.columns(2, gap="small")
     with hc1:
@@ -1701,12 +1699,6 @@ def display_his(o_file):
                                        ds_his.coords['stations'].values,
                                        default=ds_his.coords['stations'].values[0])
             feature = st.selectbox("Select a variable to plot", stations_list)
-
-            # Check if the parameter is defined for multiple layers and ask for selection if so
-
-
-    vmin = np.nanmin(ds_his.data_vars[feature].values)
-    vmax = np.nanmax(ds_his.data_vars[feature].values)
 
     ###################################################################################################################
     # 2. Plot time series data for the selected point(s), at one or several depths
@@ -1788,28 +1780,31 @@ def display_his(o_file):
     ###################################################################################################################
     # 3. Plot parameters vs. depth at selected point(s) at one time
     else:
-        hc1, hc2 = st.columns(2, gap="small")
-        with hc1:
-            realtimes = list(ds_his.coords['time'].values)
-            plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
-                                    ds_his.coords['time'].values)
+        if 'laydim' in ds_his[feature].dims:
+            hc1, hc2 = st.columns(2, gap="small")
+            with hc1:
+                realtimes = list(ds_his.coords['time'].values)
+                plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
+                                        ds_his.coords['time'].values)
 
-        time_list = [i for i in range(ds_his.dims['time'])]
-        # print('time list', time_list, type(time_list))
-        # print('real times', realtimes, type(realtimes))
+            time_list = [i for i in range(ds_his.dims['time'])]
+            # print('time list', time_list, type(time_list))
+            # print('real times', realtimes, type(realtimes))
 
-        timeindex = time_list[realtimes.index(plottime)]
-        data_fromhis_xr = ds_his[feature].sel(stations=locations).isel(time=timeindex)
-        fig_instant_profile, ax = plt.subplots(figsize=(20, 5))
-        data_fromhis_xr.T.plot.line('-', ax=ax, y='zcoordinate_c')
-        # ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
-        # ax.set_aspect('equal')
-        ax.set_xlabel(feature)
-        ax.set_ylabel("Depth")
-        ax.set_title("")
-        st.markdown(f"### {feature} at {plottime}")
-        fig_instant_profile.tight_layout()
-        st.pyplot(fig_instant_profile)
+            timeindex = time_list[realtimes.index(plottime)]
+            data_fromhis_xr = ds_his[feature].sel(stations=locations).isel(time=timeindex)
+            fig_instant_profile, ax = plt.subplots(figsize=(20, 5))
+            data_fromhis_xr.T.plot.line('-', ax=ax, y='zcoordinate_c')
+            # ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
+            # ax.set_aspect('equal')
+            ax.set_xlabel(feature)
+            ax.set_ylabel("Depth")
+            ax.set_title("")
+            st.markdown(f"### {feature} at {plottime}")
+            fig_instant_profile.tight_layout()
+            st.pyplot(fig_instant_profile)
+        else:
+            st.write(f"Selected variable does not vary with depth.")
 
 
 def current():
