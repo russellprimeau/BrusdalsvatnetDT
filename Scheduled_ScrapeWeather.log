@@ -2936,3 +2936,37 @@ hint: its remote counterpart. If you want to integrate the remote changes,
 hint: use 'git pull' before pushing again.
 hint: See the 'Note about fast-forwards' in 'git push --help' for details.
 
+ERROR:root:Command failed: git pull origin main. Error message: From https://github.com/russellprimeau/BrusdalsvatnetDT
+ * branch            main       -> FETCH_HEAD
+
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference b6be35c7-b000-4ceb-8638-f44df680510f is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-23 04:08:59
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: .idea/.name
+.idea/BrusdalsvatnetDT.iml
+.idea/csv-editor.xml
+.idea/inspectionProfiles/Project_Default.xml
+.idea/inspectionProfiles/profiles_settings.xml
+.idea/misc.xml
+.idea/vcs.xml
+.idea/workspace.xml
+All_time.csv
+Dashboard.py
+FlowFM_meteo.tim
+OfflineUtility.py
+Scheduled_ScrapeHourly.log
+rainfall.tim
+windxy.tim
+INFO:root:Command succeeded: git push origin main
