@@ -5,8 +5,18 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="">
+<<<<<<< Updated upstream
       <change beforePath="$PROJECT_DIR$/Scheduled_ScrapeHourly.log" beforeDir="false" afterPath="$PROJECT_DIR$/Scheduled_ScrapeHourly.log" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/Scheduled_ScrapeWeather.log" beforeDir="false" afterPath="$PROJECT_DIR$/Scheduled_ScrapeWeather.log" afterDir="false" />
+=======
+      <change beforePath="$PROJECT_DIR$/.idea/csv-editor.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/csv-editor.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Dashboard.py" beforeDir="false" afterPath="$PROJECT_DIR$/Dashboard.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/FlowFM_meteo.tim" beforeDir="false" afterPath="$PROJECT_DIR$/FlowFM_meteo.tim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/OfflineUtility.py" beforeDir="false" afterPath="$PROJECT_DIR$/OfflineUtility.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/rainfall.tim" beforeDir="false" afterPath="$PROJECT_DIR$/rainfall.tim" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/windxy.tim" beforeDir="false" afterPath="$PROJECT_DIR$/windxy.tim" afterDir="false" />
+>>>>>>> Stashed changes
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
