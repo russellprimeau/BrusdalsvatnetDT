@@ -4,6 +4,7 @@
 # Launch by opening the terminal to the script's location and entering "streamlit run Dashboard.py".
 
 import os
+import statistics
 import numpy as np
 import pandas as pd
 import geopandas as gpd
@@ -97,7 +98,7 @@ def upload_weather_csv():
                             "1818_time: TA_a_Max[°C]": "Hourly maximum temperature (°C)",
                             "1818_time: TA_a_Min[°C]": "Hourly minimum temperature (°C)",
                             "1818_time: UU Luftfuktighet[%RH]": "Average humidity (% relative humidity)"
-            }
+                            }
             df = df.rename(columns=column_names)  # Assign column names for profiler data
 
         # st.write("Uploaded DataFrame:")
@@ -114,7 +115,7 @@ def upload_weather_csv():
         df = df.drop(columns=["Instantaneous atmospheric pressure (mBar)", "Wind direction 10minRollingAvg (°)",
                               "Time of maximum 3s Gust", "Time of maximum 10 minute gust",
                               "Instantaneous atmospheric pressure compensated for temperature, humidity and station elevation (mBar)",
-                              "Instantaneous sea-level atmospheric pressure (mBar)","Instantaneous temperature (°C)"])
+                              "Instantaneous sea-level atmospheric pressure (mBar)", "Instantaneous temperature (°C)"])
     return df
 
 
@@ -155,25 +156,39 @@ def weather():
         error_conditions = {
             "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
                     df['Timestamp'] > pd.to_datetime('2099-12-31')),
-            'Hourly average wind direction (°)': (df['Hourly average wind direction (°)'] < 0) | (df['Hourly average wind direction (°)'] > 360),
+            'Hourly average wind direction (°)': (df['Hourly average wind direction (°)'] < 0) | (
+                        df['Hourly average wind direction (°)'] > 360),
             "Average wind speed (m/s)": (df["Average wind speed (m/s)"] < 0) | (
-                        df["Average wind speed (m/s)"] > 100),
-            'Maximum sustained wind speed, 3-second span (m/s)': (df['Maximum sustained wind speed, 3-second span (m/s)'] < 0) |
-                                                      (df['Maximum sustained wind speed, 3-second span (m/s)'] > 100),
+                    df["Average wind speed (m/s)"] > 100),
+            'Maximum sustained wind speed, 3-second span (m/s)': (df[
+                                                                      'Maximum sustained wind speed, 3-second span (m/s)'] < 0) |
+                                                                 (df[
+                                                                      'Maximum sustained wind speed, 3-second span (m/s)'] > 100),
             'Maximum sustained wind speed, 10-minute span (m/s)': (
-                    df['Maximum sustained wind speed, 10-minute span (m/s)'] < 0) |
-                                                      (df['Maximum sustained wind speed, 10-minute span (m/s)'] > 100),
-            'Hourly average atmospheric pressure at station (mBar)': (df['Hourly average atmospheric pressure at station (mBar)'] < 860) | (df['Hourly average atmospheric pressure at station (mBar)'] > 1080),
-            'Maximum pressure differential, 3-hour span (mBar)': (df['Maximum pressure differential, 3-hour span (mBar)'] < 0) | (df['Maximum pressure differential, 3-hour span (mBar)'] > 50),
+                                                                          df[
+                                                                              'Maximum sustained wind speed, 10-minute span (m/s)'] < 0) |
+                                                                  (df[
+                                                                       'Maximum sustained wind speed, 10-minute span (m/s)'] > 100),
+            'Hourly average atmospheric pressure at station (mBar)': (df[
+                                                                          'Hourly average atmospheric pressure at station (mBar)'] < 860) | (
+                                                                                 df[
+                                                                                     'Hourly average atmospheric pressure at station (mBar)'] > 1080),
+            'Maximum pressure differential, 3-hour span (mBar)': (df[
+                                                                      'Maximum pressure differential, 3-hour span (mBar)'] < 0) | (
+                                                                             df[
+                                                                                 'Maximum pressure differential, 3-hour span (mBar)'] > 50),
             'Longwave (IR) radiation (W/m2)': (df['Longwave (IR) radiation (W/m2)'] < 0) | (
                     df['Longwave (IR) radiation (W/m2)'] > 750),
             'Shortwave (solar) radiation (W/m2)': (df['Shortwave (solar) radiation (W/m2)'] < 0) | (
                     df['Shortwave (solar) radiation (W/m2)'] > 900),
             'Hourly precipitation (mm/hr)': (df['Hourly precipitation (mm/hr)'] < 0) | (
                     df['Hourly precipitation (mm/hr)'] > 50),
-            'Hourly maximum temperature (°C)': (df['Hourly maximum temperature (°C)'] < -40) | (df['Hourly maximum temperature (°C)'] > 40),
-            'Hourly minimum temperature (°C)': (df['Hourly minimum temperature (°C)'] < -40) | (df['Hourly minimum temperature (°C)'] > 40),
-            'Average humidity (% relative humidity)': (df['Average humidity (% relative humidity)'] < 0) | (df['Average humidity (% relative humidity)'] > 100)
+            'Hourly maximum temperature (°C)': (df['Hourly maximum temperature (°C)'] < -40) | (
+                        df['Hourly maximum temperature (°C)'] > 40),
+            'Hourly minimum temperature (°C)': (df['Hourly minimum temperature (°C)'] < -40) | (
+                        df['Hourly minimum temperature (°C)'] > 40),
+            'Average humidity (% relative humidity)': (df['Average humidity (% relative humidity)'] < 0) | (
+                        df['Average humidity (% relative humidity)'] > 100)
         }
 
         # Replace values meeting the error conditions with np.nan using boolean indexing
@@ -221,7 +236,6 @@ def weather():
 
     set_begin_date = datetime.combine(st.session_state.ksd, time())
     set_last_date = datetime.combine(st.session_state.knd, time())
-
 
     # Check if "Select All" is chosen
     if "Select All" in selected_variables:
@@ -276,6 +290,7 @@ def weather():
         st.bokeh_chart(p, use_container_width=True)
         st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                  "Click legend entries to toggle series on/off.")
+
 
 # Function to the upload new profiler data from CSV
 def upload_hourly_csv_page():
@@ -382,7 +397,8 @@ def hourly():
             "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
             "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
             "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
-            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (df['fDOM (parts per billion QSU)'] > 300),
+            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (
+                        df['fDOM (parts per billion QSU)'] > 300),
             "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
             "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
         }
@@ -434,7 +450,6 @@ def hourly():
 
     set_begin_date = datetime.combine(st.session_state.ksd, time())
     set_last_date = datetime.combine(st.session_state.knd, time())
-
 
     # Check if "Select All" is chosen
     if "Select All" in selected_variables:
@@ -587,7 +602,8 @@ def vertical():
                             "fDOM (parts per billion QSU)"]
     mc1, mc2 = st.columns(2, gap="small")
     with mc1:
-        selected_variables_p1 = st.multiselect('Select Water Quality Parameters', variables_to_plot_p1, default=["Temperature (Celsius)"])
+        selected_variables_p1 = st.multiselect('Select Water Quality Parameters', variables_to_plot_p1,
+                                               default=["Temperature (Celsius)"])
 
     # User input for depth selection
     dc1, dc2 = st.columns(2, gap="small")
@@ -622,7 +638,8 @@ def vertical():
             "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
             "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
             "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
-            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (df['fDOM (parts per billion QSU)'] > 300),
+            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (
+                        df['fDOM (parts per billion QSU)'] > 300),
             "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
             "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
         }
@@ -852,9 +869,8 @@ def usv_plot():
         if "Select All" in hover_labels:
             hover_labels = included_cols
 
-        center_lat = (track['Lat'].max() + track['Lat'].min())/2
-        center_lon = (track['Lon'].max() + track['Lon'].min())/2
-
+        center_lat = (track['Lat'].max() + track['Lat'].min()) / 2
+        center_lon = (track['Lon'].max() + track['Lon'].min()) / 2
 
         fig = px.line_mapbox(track, lat="Lat", lon="Lon", hover_data=['Time'] + hover_labels)
 
@@ -885,124 +901,655 @@ def usv_plot():
     else:
         display_mis(selected_file)
 
+def rename_ds(ds):
+    # Dictionary of more descriptive names for known Delft3D output variables, with duplicate keys
+    # for alternate capitalization and element vs. point conventions
+    # (but there are likely more which are not described well in documentation)
+    parameter_names = {
+        "timestep": "Timestep (s)",
+        "wgs84": "Projected coordinate system",
+        "mesh2d_node_z": "z-coordinate of mesh nodes (m)",
+        "mesh2d_face_x_bnd": "X-coordinate bounds of mesh faces (m)",
+        "mesh2d_face_y_bnd": "Y-coordinate bounds of mesh faces (m)",
+        "mesh2d_edge_type": "Edge type (relation between edge and flow geometry)",
+        "mesh2d_flowelem_ba": "Cell area (m^2)",
+        "mesh2d_flowelem_bl": "Bed level (m below mean surface elevation)",
+        "mesh2d_s1": "Water level (m above mean surface elevation)",
+        "mesh2d_waterdepth": "Water depth (m above bed level)",
+        "mesh2d_u1": "Velocity at velocity point (m/s)",
+        "mesh2d_ucx": "Velocity vector, x-component (m/s)",
+        "mesh2d_ucy": "Velocity vector, y-component (m/s)",
+        "mesh2d_ucxa": "Velocity vector, x-component (other) (m/s)",
+        "mesh2d_ucya": "Velocity vector, y-component (other) (m/s)",
+        "mesh2d_ucmag": "Velocity magnitude (m/s)",
+        "mesh2d_q1": "Discharge through flow link (m^3/s)",
+        "mesh2d_sa1": "Salinity (ppt)",
+        "mesh2d_tem1": "Temperature (C)",
+        "mesh2d_windx": "Wind velocity vector, x-component (m/s)",
+        "mesh2d_windy": "Wind velocity vector, y-component (m/s)",
+        "mesh2d_windxu": "Edge wind velocity, x-component (m/s)",
+        "mesh2d_windyu": "Edge wind velocity, y-component (m/s)",
+        "mesh2d_station_id": "Station ID",
+        "mesh2d_station_name": "Station Name",
+        "mesh2d_station_x_coordinate": "Station x-coordinate (non-snapped)",
+        "mesh2d_station_y_coordinate": "Station y-coordinate (non-snapped)",
+        "mesh2d_zcoordinate_c": "Vertical coordinate, layer center",
+        "mesh2d_zcoordinate_w": "Vertical coordinate, layer interface",
+        "mesh2d_zcoordinate_wu": "Vertical coordinate, cell edge and layer interface",
+        "mesh2d_waterlevel": "Water level (m above mean surface elevation)",
+        "mesh2d_bedlevel": "Bed level (m below mean surface elevation)",
+        "mesh2d_tausx": "x-components of mean bottom shear stress vector (Pa)",
+        "mesh2d_tausy": "y-components of mean bottom shear stress vector (Pa)",
+        "mesh2d_x_velocity": "x-components of layer velocity vector (m/s)",
+        "mesh2d_y_velocity": "y-components of layer velocity vector (m/s)",
+        "mesh2d_z_velocity": "z-components of depth-averaged velocity vector (m/s)",
+        "mesh2d_depth-averaged_x_velocity": "x-components of depth-averaged velocity vector (m/s)",
+        "mesh2d_depth-averaged_y_velocity": "y-components of depth-averaged velocity vector (m/s)",
+        "mesh2d_tke": "Turbulent kinetic energy (m^2/s^2)",
+        "mesh2d_vicww": "Turbulent vertical eddy viscosity (m^2/s)",
+        "mesh2d_eps": "Turbulent energy dissipation (m^2/s^3)",
+        "mesh2d_tau": "Turbulent time scale (1/s)",
+        "mesh2d_rich": "Richardson number (%)",
+        "mesh2d_salinity": "Salinity (ppt)",
+        "mesh2d_velocity_magnitude": "Velocity magnitude (m/s)",
+        "mesh2d_discharge_magnitude": "Average discharge (m^3/s)",
+        "mesh2d_R": "Roller energy (J/m^2)",
+        "mesh2d_hwav": "Significant wave height (m)",
+        "mesh2d_twav": "Wave period (s)",
+        "mesh2d_phiwav": "Wave length from direction (deg from N)",
+        "mesh2d_rlabda": "Wave length (m)",
+        "mesh2d_uorb": "Orbital velocity (m/s)",
+        "mesh2d_vstokes": "y-component of Stokes drift (m/s)",
+        "mesh2d_wtau": "Mean bed shear stress (Pa).",
+        "mesh2d_temperature": "Temperature (◦C)",
+        "mesh2d_wind": "Wind speed (m/s)",
+        "mesh2d_Tair": "Air temperature (◦C)",
+        "mesh2d_rhum": "Relative humidity (%)",
+        "mesh2d_clou": "Cloudiness (%)",
+        "mesh2d_Qsun": "Solar influx (W/m^2)",
+        "mesh2d_Qeva": "Evaporative heat flux (W/m^2)",
+        "mesh2d_Qcon": "Sensible heat flux (W/m^2)",
+        "mesh2d_Qlong": "Long wave back radiation (W/m^2)",
+        "mesh2d_Qfreva": "Free convection evaporative heat flux (W/m^2)",
+        "mesh2d_Qfrcon": "Free convection sensible heat flux (W/m^2)",
+        "mesh2d_Qtot": "Total heat flux (W/m^2)",
+        "mesh2d_density": "Density (kg/m^2)",
+        "mesh2d_seddif": "Sediment vertical diffusion (m^2/s)",
+        "mesh2d_sed": "Sediment concentration (kg/m^3)",
+        "mesh2d_ws": "Sediment settling velocity (m/s)",
+        "mesh2d_taub": "Bed shear stress for morphology (Pa)",
+        "mesh2d_sbcx": "x-component of current-related bedload transport (kg/s/m)",
+        "mesh2d_sbcy": "y-component of current-related bedload transport (kg/s/m)",
+        "mesh2d_sbwx": "x-component of wave-related bedload transport (kg/s/m)",
+        "mesh2d_wbxy": "y-component of wave-related bedload transport (kg/s/m)",
+        "mesh2d_sswx": "x-component of wave-related suspended transport (kg/s/m)",
+        "mesh2d_sswy": "y-component of wave-related suspended transport (kg/s/m)",
+        "mesh2d_sscx": "x-component of current-related suspended transport (kg/s/m)",
+        "mesh2d_sscy": "y-component of current-related suspended transport (kg/s/m)",
+        "mesh2d_sourse": "Source term suspended sediment transport (kg/m^3/s)",
+        "mesh2d_sinkse": "Sink term suspended sediment transport (kg/m^3/s)",
+        "mesh2d_bodsed": "Available sediment mass in bed (kg/m^2)",
+        "mesh2d_dpsed": "Sediment thickness in bed (m)",
+        "mesh2d_msed": "Available sediment mass in bed layer (kg/m^2)",
+        "mesh2d_thlyr": "Thickness of bed layer (m)",
+        "mesh2d_poros": "Porosity of bed layer (%)",
+        "mesh2d_lyrfrac": "Volume fraction in bed layer (m)",
+        "mesh2d_frac": "(Underlayer) IUn",
+        "mesh2d_mudfrac": "Mud fraction in top layer (%)",
+        "mesh2d_sandfrac": "Sand fraction in top layer (%)",
+        "mesh2d_fixfac": "Reduction factor due to limited sediment thickness (%)",
+        "mesh2d_hidexp": "Hiding and exposure factor (%)",
+        "mesh2d_mfluff": "Sediment mass in fluff layer (%)",
+        "mesh2d_sediment_concentration": "Sediment concentration (kg/m^3)",
+        "mesh2d_patm": "Atmospheric pressure (N/m^2)",
+        "mesh2d_rain": "Precipitation rate (mm/day)",
+        "mesh2d_inflitration_cap": "Infiltration capacity (mm/hr)",
+        "mesh2d_inflitration_actual": "Infiltration (mm/hr)",
+        "timestep": "Latest computational timestep size in each output interval (s)",
+        "wgs84": "Projected coordinate system",
+        "mesh2d_Node_z": "z-coordinate of mesh nodes (m)",
+        "mesh2d_Face_x_bnd": "X-coordinate bounds of mesh faces (m)",
+        "mesh2d_Face_y_bnd": "Y-coordinate bounds of mesh faces (m)",
+        "mesh2d_Edge_type": "Edge type (relation between edge and flow geometry)",
+        "mesh2d_Flowelem_ba": "Cell area (m^2)",
+        "mesh2d_Flowelem_bl": "Bed level (m below mean surface elevation)",
+        "mesh2d_S1": "Water level (m above mean surface elevation)",
+        "mesh2d_Waterdepth": "Water depth (m above bed level)",
+        "mesh2d_U1": "Velocity at velocity point (m/s)",
+        "mesh2d_Ucx": "Velocity vector, x-component (m/s)",
+        "mesh2d_Ucy": "Velocity vector, y-component (m/s)",
+        "mesh2d_Ucmag": "Velocity magnitude (m/s)",
+        "mesh2d_Q1": "Discharge through flow link (m^3/s)",
+        "mesh2d_Sa1": "Salinity (ppt)",
+        "mesh2d_Tem1": "Temperature (C)",
+        "mesh2d_Windx": "Wind velocity vector, x-component (m/s)",
+        "mesh2d_Windy": "Wind velocity vector, y-component (m/s)",
+        "mesh2d_Windxu": "Edge wind velocity, x-component (m/s)",
+        "mesh2d_Windyu": "Edge wind velocity, y-component (m/s)",
+        "mesh2d_Station_id": "Station ID",
+        "mesh2d_Station_name": "Station Name",
+        "mesh2d_Station_x_coordinate": "Station x-coordinate (non-snapped)",
+        "mesh2d_Station_y_coordinate": "Station y-coordinate (non-snapped)",
+        "mesh2d_Zcoordinate_c": "Vertical coordinate, layer center",
+        "mesh2d_Zcoordinate_w": "Vertical coordinate, layer interface",
+        "mesh2d_Zcoordinate_wu": "Vertical coordinate, cell edge and layer interface",
+        "mesh2d_Waterlevel": "Water level (m above mean surface elevation)",
+        "mesh2d_Bedlevel": "Bed level (m below mean surface elevation)",
+        "mesh2d_Tausx": "x-components of mean bottom shear stress vector (Pa)",
+        "mesh2d_Tausy": "y-components of mean bottom shear stress vector (Pa)",
+        "mesh2d_X_velocity": "x-components of layer velocity vector (m/s)",
+        "mesh2d_Y_velocity": "y-components of layer velocity vector (m/s)",
+        "mesh2d_Z_velocity": "z-components of depth-averaged velocity vector (m/s)",
+        "mesh2d_Depth-averaged_x_velocity": "x-components of depth-averaged velocity vector (m/s)",
+        "mesh2d_Depth-averaged_y_velocity": "y-components of depth-averaged velocity vector (m/s)",
+        "mesh2d_Tke": "Turbulent kinetic energy (m^2/s^2)",
+        "mesh2d_Vicww": "Turbulent vertical eddy viscosity (m^2/s)",
+        "mesh2d_Eps": "Turbulent energy dissipation (m^2/s^3)",
+        "mesh2d_Tau": "Turbulent time scale (1/s)",
+        "mesh2d_Rich": "Richardson number (%)",
+        "mesh2d_Salinity": "Salinity (ppt)",
+        "mesh2d_Velocity_magnitude": "Velocity magnitude (m/s)",
+        "mesh2d_Discharge_magnitude": "Average discharge (m^3/s)",
+        "mesh2d_Hwav": "Significant wave height (m)",
+        "mesh2d_Twav": "Wave period (s)",
+        "mesh2d_Phiwav": "Wave length from direction (deg from N)",
+        "mesh2d_Rlabda": "Wave length (m)",
+        "mesh2d_Uorb": "Orbital velocity (m/s)",
+        "mesh2d_Vstokes": "y-component of Stokes drift (m/s)",
+        "mesh2d_Wtau": "Mean bed shear stress (Pa).",
+        "mesh2d_Temperature": "Temperature (◦C)",
+        "mesh2d_Wind": "Wind speed (m/s)",
+        "mesh2d_Rhum": "Relative humidity (%)",
+        "mesh2d_Clou": "Cloudiness (%)",
+        "mesh2d_Density": "Density (kg/m^2)",
+        "mesh2d_Seddif": "Sediment vertical diffusion (m^2/s)",
+        "mesh2d_Sed": "Sediment concentration (kg/m^3)",
+        "mesh2d_Ws": "Sediment settling velocity (m/s)",
+        "mesh2d_Taub": "Bed shear stress for morphology (Pa)",
+        "mesh2d_Sbcx": "x-component of current-related bedload transport (kg/s/m)",
+        "mesh2d_Sbcy": "y-component of current-related bedload transport (kg/s/m)",
+        "mesh2d_Sbwx": "x-component of wave-related bedload transport (kg/s/m)",
+        "mesh2d_Wbxy": "y-component of wave-related bedload transport (kg/s/m)",
+        "mesh2d_Sswx": "x-component of wave-related suspended transport (kg/s/m)",
+        "mesh2d_Sswy": "y-component of wave-related suspended transport (kg/s/m)",
+        "mesh2d_Sscx": "x-component of current-related suspended transport (kg/s/m)",
+        "mesh2d_Sscy": "y-component of current-related suspended transport (kg/s/m)",
+        "mesh2d_Sourse": "Source term suspended sediment transport (kg/m^3/s)",
+        "mesh2d_Sinkse": "Sink term suspended sediment transport (kg/m^3/s)",
+        "mesh2d_Bodsed": "Available sediment mass in bed (kg/m^2)",
+        "mesh2d_Dpsed": "Sediment thickness in bed (m)",
+        "mesh2d_Msed": "Available sediment mass in bed layer (kg/m^2)",
+        "mesh2d_Thlyr": "Thickness of bed layer (m)",
+        "mesh2d_Poros": "Porosity of bed layer (%)",
+        "mesh2d_Lyrfrac": "Volume fraction in bed layer (m)",
+        "mesh2d_Frac": "(Underlayer) IUn",
+        "mesh2d_Mudfrac": "Mud fraction in top layer (%)",
+        "mesh2d_Sandfrac": "Sand fraction in top layer (%)",
+        "mesh2d_Fixfac": "Reduction factor due to limited sediment thickness (%)",
+        "mesh2d_Hidexp": "Hiding and exposure factor (%)",
+        "mesh2d_Mfluff": "Sediment mass in fluff layer (%)",
+        "mesh2d_Sediment_concentration": "Sediment concentration (kg/m^3)",
+        "mesh2d_Patm": "Atmospheric pressure (N/m^2)",
+        "mesh2d_Rain": "Precipitation rate (mm/day)",
+        "mesh2d_Inflitration_cap": "Infiltration capacity (mm/hr)",
+        "mesh2d_Inflitration_actual": "Infiltration (mm/hr)",
+        "mesh2d_r": "Roller energy (J/m^2)",
+        "mesh2d_tair": "Air temperature (◦C)",
+        "mesh2d_qsun": "Solar influx (W/m^2)",
+        "mesh2d_qeva": "Evaporative heat flux (W/m^2)",
+        "mesh2d_qcon": "Sensible heat flux (W/m^2)",
+        "mesh2d_qlong": "Long wave back radiation (W/m^2)",
+        "mesh2d_qfreva": "Free convection evaporative heat flux (W/m^2)",
+        "mesh2d_qfrcon": "Free convection sensible heat flux (W/m^2)",
+        "mesh2d_qtot": "Total heat flux (W/m^2)",
+        "mesh2d_source_sink_prescribed_discharge": "Prescribed discharge (m^3/s)",
+        "mesh2d_source_sink_cumulative_volume": "Cumulative volume (m^3)",
+        "mesh2d_source_sink_current_discharge": "Current discharge (m^3/s)",
+        "mesh2d_source_sink_discharge_average": "Average discharge (m^3/s)",
+        "mesh2d_source_sink_prescribed_salinity_increment": "Prescribed salinity (ppt)",
+        "mesh2d_source_sink_prescribed_temperature_increment": "Prescribed temperature (◦C)",
+        "timestep": "Timestep (s)",
+        "wgs84": "Projected coordinate system",
+        "node_z": "z-coordinate of mesh nodes (m)",
+        "face_x_bnd": "X-coordinate bounds of mesh faces (m)",
+        "face_y_bnd": "Y-coordinate bounds of mesh faces (m)",
+        "edge_type": "Edge type (relation between edge and flow geometry)",
+        "flowelem_ba": "Cell area (m^2)",
+        "flowelem_bl": "Bed level (m below mean surface elevation)",
+        "s1": "Water level (m above mean surface elevation)",
+        "waterdepth": "Water depth (m above bed level)",
+        "u1": "Velocity at velocity point (m/s)",
+        "ucx": "Velocity vector, x-component (m/s)",
+        "ucy": "Velocity vector, y-component (m/s)",
+        "ucxa": "Velocity vector, x-component (other) (m/s)",
+        "ucya": "Velocity vector, y-component (other) (m/s)",
+        "ucmag": "Velocity magnitude (m/s)",
+        "q1": "Discharge through flow link (m^3/s)",
+        "sa1": "Salinity (ppt)",
+        "tem1": "Temperature (C)",
+        "windx": "Wind velocity vector, x-component (m/s)",
+        "windy": "Wind velocity vector, y-component (m/s)",
+        "windxu": "Edge wind velocity, x-component (m/s)",
+        "windyu": "Edge wind velocity, y-component (m/s)",
+        "station_id": "Station ID",
+        "station_name": "Station Name",
+        "station_x_coordinate": "Station x-coordinate (non-snapped)",
+        "station_y_coordinate": "Station y-coordinate (non-snapped)",
+        "zcoordinate_c": "Vertical coordinate, layer center",
+        "zcoordinate_w": "Vertical coordinate, layer interface",
+        "zcoordinate_wu": "Vertical coordinate, cell edge and layer interface",
+        "waterlevel": "Water level (m above mean surface elevation)",
+        "bedlevel": "Bed level (m below mean surface elevation)",
+        "tausx": "x-components of mean bottom shear stress vector (Pa)",
+        "tausy": "y-components of mean bottom shear stress vector (Pa)",
+        "x_velocity": "x-components of layer velocity vector (m/s)",
+        "y_velocity": "y-components of layer velocity vector (m/s)",
+        "z_velocity": "z-components of depth-averaged velocity vector (m/s)",
+        "depth-averaged_x_velocity": "x-components of depth-averaged velocity vector (m/s)",
+        "depth-averaged_y_velocity": "y-components of depth-averaged velocity vector (m/s)",
+        "tke": "Turbulent kinetic energy (m^2/s^2)",
+        "vicww": "Turbulent vertical eddy viscosity (m^2/s)",
+        "eps": "Turbulent energy dissipation (m^2/s^3)",
+        "tau": "Turbulent time scale (1/s)",
+        "rich": "Richardson number (%)",
+        "salinity": "Salinity (ppt)",
+        "velocity_magnitude": "Velocity magnitude (m/s)",
+        "discharge_magnitude": "Average discharge (m^3/s)",
+        "R": "Roller energy (J/m^2)",
+        "hwav": "Significant wave height (m)",
+        "twav": "Wave period (s)",
+        "phiwav": "Wave length from direction (deg from N)",
+        "rlabda": "Wave length (m)",
+        "uorb": "Orbital velocity (m/s)",
+        "vstokes": "y-component of Stokes drift (m/s)",
+        "wtau": "Mean bed shear stress (Pa).",
+        "temperature": "Temperature (◦C)",
+        "wind": "Wind speed (m/s)",
+        "Tair": "Air temperature (◦C)",
+        "rhum": "Relative humidity (%)",
+        "clou": "Cloudiness (%)",
+        "Qsun": "Solar influx (W/m^2)",
+        "Qeva": "Evaporative heat flux (W/m^2)",
+        "Qcon": "Sensible heat flux (W/m^2)",
+        "Qlong": "Long wave back radiation (W/m^2)",
+        "Qfreva": "Free convection evaporative heat flux (W/m^2)",
+        "Qfrcon": "Free convection sensible heat flux (W/m^2)",
+        "Qtot": "Total heat flux (W/m^2)",
+        "density": "Density (kg/m^2)",
+        "seddif": "Sediment vertical diffusion (m^2/s)",
+        "sed": "Sediment concentration (kg/m^3)",
+        "ws": "Sediment settling velocity (m/s)",
+        "taub": "Bed shear stress for morphology (Pa)",
+        "sbcx": "x-component of current-related bedload transport (kg/s/m)",
+        "sbcy": "y-component of current-related bedload transport (kg/s/m)",
+        "sbwx": "x-component of wave-related bedload transport (kg/s/m)",
+        "wbxy": "y-component of wave-related bedload transport (kg/s/m)",
+        "sswx": "x-component of wave-related suspended transport (kg/s/m)",
+        "sswy": "y-component of wave-related suspended transport (kg/s/m)",
+        "sscx": "x-component of current-related suspended transport (kg/s/m)",
+        "sscy": "y-component of current-related suspended transport (kg/s/m)",
+        "sourse": "Source term suspended sediment transport (kg/m^3/s)",
+        "sinkse": "Sink term suspended sediment transport (kg/m^3/s)",
+        "bodsed": "Available sediment mass in bed (kg/m^2)",
+        "dpsed": "Sediment thickness in bed (m)",
+        "msed": "Available sediment mass in bed layer (kg/m^2)",
+        "thlyr": "Thickness of bed layer (m)",
+        "poros": "Porosity of bed layer (%)",
+        "lyrfrac": "Volume fraction in bed layer (m)",
+        "frac": "(Underlayer) IUn",
+        "mudfrac": "Mud fraction in top layer (%)",
+        "sandfrac": "Sand fraction in top layer (%)",
+        "fixfac": "Reduction factor due to limited sediment thickness (%)",
+        "hidexp": "Hiding and exposure factor (%)",
+        "mfluff": "Sediment mass in fluff layer (%)",
+        "sediment_concentration": "Sediment concentration (kg/m^3)",
+        "patm": "Atmospheric pressure (N/m^2)",
+        "rain": "Precipitation rate (mm/day)",
+        "inflitration_cap": "Infiltration capacity (mm/hr)",
+        "inflitration_actual": "Infiltration (mm/hr)",
+        "Timestep": "Latest computational timestep size in each output interval (s)",
+        "Wgs84": "Projected coordinate system",
+        "Node_z": "z-coordinate of mesh nodes (m)",
+        "Face_x_bnd": "X-coordinate bounds of mesh faces (m)",
+        "Face_y_bnd": "Y-coordinate bounds of mesh faces (m)",
+        "Edge_type": "Edge type (relation between edge and flow geometry)",
+        "Flowelem_ba": "Cell area (m^2)",
+        "Flowelem_bl": "Bed level (m below mean surface elevation)",
+        "S1": "Water level (m above mean surface elevation)",
+        "Waterdepth": "Water depth (m above bed level)",
+        "U1": "Velocity at velocity point (m/s)",
+        "Ucx": "Velocity vector, x-component (m/s)",
+        "Ucy": "Velocity vector, y-component (m/s)",
+        "Ucmag": "Velocity magnitude (m/s)",
+        "Q1": "Discharge through flow link (m^3/s)",
+        "Sa1": "Salinity (ppt)",
+        "Tem1": "Temperature (C)",
+        "Windx": "Wind velocity vector, x-component (m/s)",
+        "Windy": "Wind velocity vector, y-component (m/s)",
+        "Windxu": "Edge wind velocity, x-component (m/s)",
+        "Windyu": "Edge wind velocity, y-component (m/s)",
+        "Station_id": "Station ID",
+        "Station_name": "Station Name",
+        "Station_x_coordinate": "Station x-coordinate (non-snapped)",
+        "Station_y_coordinate": "Station y-coordinate (non-snapped)",
+        "Zcoordinate_c": "Vertical coordinate, layer center",
+        "Zcoordinate_w": "Vertical coordinate, layer interface",
+        "Zcoordinate_wu": "Vertical coordinate, cell edge and layer interface",
+        "Waterlevel": "Water level (m above mean surface elevation)",
+        "Bedlevel": "Bed level (m below mean surface elevation)",
+        "Tausx": "x-components of mean bottom shear stress vector (Pa)",
+        "Tausy": "y-components of mean bottom shear stress vector (Pa)",
+        "X_velocity": "x-components of layer velocity vector (m/s)",
+        "Y_velocity": "y-components of layer velocity vector (m/s)",
+        "Z_velocity": "z-components of depth-averaged velocity vector (m/s)",
+        "Depth-averaged_x_velocity": "x-components of depth-averaged velocity vector (m/s)",
+        "Depth-averaged_y_velocity": "y-components of depth-averaged velocity vector (m/s)",
+        "Tke": "Turbulent kinetic energy (m^2/s^2)",
+        "Vicww": "Turbulent vertical eddy viscosity (m^2/s)",
+        "Eps": "Turbulent energy dissipation (m^2/s^3)",
+        "Tau": "Turbulent time scale (1/s)",
+        "Rich": "Richardson number (%)",
+        "Salinity": "Salinity (ppt)",
+        "Velocity_magnitude": "Velocity magnitude (m/s)",
+        "Discharge_magnitude": "Average discharge (m^3/s)",
+        "Hwav": "Significant wave height (m)",
+        "Twav": "Wave period (s)",
+        "Phiwav": "Wave length from direction (deg from N)",
+        "Rlabda": "Wave length (m)",
+        "Uorb": "Orbital velocity (m/s)",
+        "Vstokes": "y-component of Stokes drift (m/s)",
+        "Wtau": "Mean bed shear stress (Pa).",
+        "Temperature": "Temperature (◦C)",
+        "Wind": "Wind speed (m/s)",
+        "Rhum": "Relative humidity (%)",
+        "Clou": "Cloudiness (%)",
+        "Density": "Density (kg/m^2)",
+        "Seddif": "Sediment vertical diffusion (m^2/s)",
+        "Sed": "Sediment concentration (kg/m^3)",
+        "Ws": "Sediment settling velocity (m/s)",
+        "Taub": "Bed shear stress for morphology (Pa)",
+        "Sbcx": "x-component of current-related bedload transport (kg/s/m)",
+        "Sbcy": "y-component of current-related bedload transport (kg/s/m)",
+        "Sbwx": "x-component of wave-related bedload transport (kg/s/m)",
+        "Wbxy": "y-component of wave-related bedload transport (kg/s/m)",
+        "Sswx": "x-component of wave-related suspended transport (kg/s/m)",
+        "Sswy": "y-component of wave-related suspended transport (kg/s/m)",
+        "Sscx": "x-component of current-related suspended transport (kg/s/m)",
+        "Sscy": "y-component of current-related suspended transport (kg/s/m)",
+        "Sourse": "Source term suspended sediment transport (kg/m^3/s)",
+        "Sinkse": "Sink term suspended sediment transport (kg/m^3/s)",
+        "Bodsed": "Available sediment mass in bed (kg/m^2)",
+        "Dpsed": "Sediment thickness in bed (m)",
+        "Msed": "Available sediment mass in bed layer (kg/m^2)",
+        "Thlyr": "Thickness of bed layer (m)",
+        "Poros": "Porosity of bed layer (%)",
+        "Lyrfrac": "Volume fraction in bed layer (m)",
+        "Frac": "(Underlayer) IUn",
+        "Mudfrac": "Mud fraction in top layer (%)",
+        "Sandfrac": "Sand fraction in top layer (%)",
+        "Fixfac": "Reduction factor due to limited sediment thickness (%)",
+        "Hidexp": "Hiding and exposure factor (%)",
+        "Mfluff": "Sediment mass in fluff layer (%)",
+        "Sediment_concentration": "Sediment concentration (kg/m^3)",
+        "Patm": "Atmospheric pressure (N/m^2)",
+        "Rain": "Precipitation rate (mm/day)",
+        "Inflitration_cap": "Infiltration capacity (mm/hr)",
+        "Inflitration_actual": "Infiltration (mm/hr)",
+        "r": "Roller energy (J/m^2)",
+        "tair": "Air temperature (◦C)",
+        "qsun": "Solar influx (W/m^2)",
+        "qeva": "Evaporative heat flux (W/m^2)",
+        "qcon": "Sensible heat flux (W/m^2)",
+        "qlong": "Long wave back radiation (W/m^2)",
+        "qfreva": "Free convection evaporative heat flux (W/m^2)",
+        "qfrcon": "Free convection sensible heat flux (W/m^2)",
+        "qtot": "Total heat flux (W/m^2)",
+        "source_sink_prescribed_discharge": "Prescribed discharge (m^3/s)",
+        "source_sink_cumulative_volume": "Cumulative volume (m^3)",
+        "source_sink_current_discharge": "Current discharge (m^3/s)",
+        "source_sink_discharge_average": "Average discharge (m^3 /s)",
+        "source_sink_prescribed_salinity_increment": "Prescribed salinity (ppt)",
+        "source_sink_prescribed_temperature_increment": "Prescribed temperature (◦C)"
+    }
+    filtered_dict = {k: v for k, v in parameter_names.items() if k in ds.data_vars}
+    new = ds.rename(name_dict=filtered_dict)
+    return new
+
 
 def display_map(o_file):
-    crs = 'EPSG:4326'
-    raster_res = 50
-    umag_clim = None
-    scale = 1.5
-
     # Open and merge mapfile with xugrid(xarray) and print netcdf structure
-    uds_map = dfmt.open_partitioned_dataset(o_file)
+    uds_map_o = dfmt.open_partitioned_dataset(o_file)
+    uds_map = rename_ds(uds_map_o)
 
-    datavars = list(uds_map.data_vars)  # List of all data variables
-    print("uds_map", uds_map)
-    # But don't use that. Create a list of only parameters which have a mesh2d_nFaces coordinate suitable for plots:
+    ###################################################################################################################
+    # 1. Analyze the file contents. Create references for plotting.
+    # print(uds_map)
+    # Set coordinate reference system for background map
+    crs = 'EPSG:4326'
+
+    # Get extents of map from attributes, for setting plot limits
+    xmin_abs = uds_map.attrs['geospatial_lon_min']
+    xmax_abs = uds_map.attrs['geospatial_lon_max']
+    ymin_abs = uds_map.attrs['geospatial_lat_min']
+    ymax_abs = uds_map.attrs['geospatial_lat_max']
+
+    # Create lists of data variables based on their dimensionality
     includes_coordinate = "mesh2d_nFaces"
     excludes_coordinates = ["mesh2d_nEdges", "mesh2d_nNodes", "mesh2d_nMax_face_nodes"]
     mesh2d_nFaces_list = []
     for name, var in uds_map.data_vars.items():
         if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
             mesh2d_nFaces_list.append(name)
-    # print("mesh2d_nFaces_list", mesh2d_nFaces_list)
 
-    # Dictionary of more descriptive names for known Delft3D output variables
-    # (but there are more which are not described in documentation)
-    parameter_names = {
-        "Projected coordinate system": "wgs84",
-        "z-coordinate of mesh nodes (m)": "mesh2d_node_z",
-        "X-coordinate bounds of mesh faces (m)": "mesh2d_face_x_bnd",
-        "Y-coordinate bounds of mesh faces (m)": "mesh2d_face_y_bnd",
-        "Edge type (relation between edge and flow geometry)": "mesh2d_edge_type",
-        "Cell area (m^2)": "mesh2d_flowelem_ba",
-        "Flow element center bedlevel (m)": "mesh2d_flowelem_bl",
-        "Latest computational timestep size in each output interval (s)": "timestep",
-        "Water level (m)": "mesh2d_s1",
-        "Water depth (m)": "mesh2d_waterdepth",
-        "Velocity at velocity point, n-component (m/s)": "mesh2d_u1",
-        "Flow element center velocity vector, x-component (m/s)": "mesh2d_ucx",
-        "Flow element center velocity vector, y-component (m/s)": "mesh2d_ucy",
-        "Flow element center velocity magnitude (m/s)": "mesh2d_ucmag",
-        "Discharge through flow link at current time (m^3/s)": "mesh2d_q1",
-        "Salinity in flow element (.001)": "mesh2d_sa1",
-        "Temperature in flow element (C)": "mesh2d_tem1",
-        "Flow element center wind velocity vector, x-component (m/s)": "mesh2d_windx",
-        "Flow element center wind velocity vector, y-component (m/s)": "mesh2d_windy",
-        "Edge wind velocity, x-component (m/s)": "mesh2d_windxu",
-        "Edge wind velocity, y-component (m/s)": "mesh2d_windyu",
-    }
+    includes_coordinate = "mesh2d_nEdges"
+    excludes_coordinates = ["mesh2d_nFaces", "mesh2d_nNodes", "mesh2d_nMax_face_nodes"]
+    mesh2d_nEdges_list = []
+    for name, var in uds_map.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            mesh2d_nEdges_list.append(name)
 
-    # Create a list of more descriptive parameter names for display in the UI
-    mesh2d_nFaces_list = [key for key, value in parameter_names.items() if value in mesh2d_nFaces_list]
-    # mesh2d_nFaces_list = [parameter_names.get(value, value) for value in mesh2d_nFaces_list]
+    includes_coordinate = "mesh2d_nNodes"
+    excludes_coordinates = ["mesh2d_nFaces", "mesh2d_nEdges", "mesh2d_nMax_face_nodes"]
+    mesh2d_nNodes_list = []
+    for name, var in uds_map.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            mesh2d_nNodes_list.append(name)
 
-    # Extract and reformat a list of all time steps, and a dictionary for converting the calendar time to an index
-    times = uds_map.coords["time"]
-    formatted_times = times.dt.strftime("%Y-%m-%d %H:%M:%S")
-    formatted_times = formatted_times.values.tolist()
-    times_dict = {value: i for i, value in enumerate(formatted_times)}
-    # print('formatted_times', type(formatted_times), formatted_times)
-    # print('times[0]', type(times[0]), times[0])
+    includes_coordinate = "mesh2d_nMax_face_nodes"
+    # excludes_coordinates = ["mesh2d_nFaces", "mesh2d_nEdges", "mesh2d_nNodes"]
+    mesh2d_nMax_face_nodes_list = []
+    for name, var in uds_map.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            mesh2d_nMax_face_nodes_list.append(name)
 
-    # Check if the uploaded map file includes layers
-    if uds_map.dims['mesh2d_nLayers'] is not None:
-        num_layers = uds_map.dims['mesh2d_nLayers']
+    includes_coordinate = "mesh2d_nLayers"
+    # excludes_coordinates = ["mesh2d_nFaces", "mesh2d_nEdges", "mesh2d_nNodes"]
+    mesh2d_nLayers_list = []
+    for name, var in uds_map.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            mesh2d_nLayers_list.append(name)
+
+    includes_coordinate = "mesh2d_nInterfaces"
+    # excludes_coordinates = ["mesh2d_nFaces", "mesh2d_nEdges", "mesh2d_nNodes"]
+    mesh2d_nInterfaces_list = []
+    for name, var in uds_map.data_vars.items():
+        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
+            mesh2d_nInterfaces_list.append(name)
+
+    # Handle the possibility that some dimensions or coordinates are not present in the dataset
+    if 'mesh2d_nLayers' in uds_map.dims:
+        num_layers = uds_map.sizes['mesh2d_nLayers']
     else:
-        num_layers = 0
+        num_layers = None
+    if 'time' in uds_map.dims:
+        num_times = uds_map.sizes['time']
+        # Extract and reformat a list of all time steps, and create a dictionary for converting the calendar time to an index
+        times = uds_map.coords["time"]
+        formatted_times = times.dt.strftime("%Y-%m-%d %H:%M:%S")
+        formatted_times = formatted_times.values.tolist()
+        times_dict = {value: i for i, value in enumerate(formatted_times)}
+    else:
+        num_times = None
 
-    xmin = 6.385  #
-    xmax = 6.57
-    ymin = 62.46
-    ymax = 62.49
+    # Option to display dimensionality and contents of the file
+    on_off = ["Display file attributes", "Hide"]
+    print_attrs = st.radio(label='', options=on_off, horizontal=True, index=1)
+    if print_attrs == on_off[0]:
+        a1, a2, a3, a4 = st.columns(4, gap='small')
+        with a1:
+            st.markdown("#### Dimensions")
+            st.write("Faces (elements):", uds_map.sizes['mesh2d_nFaces'])
+            st.write("Edges (links):", uds_map.sizes['mesh2d_nEdges'])
+            st.write("Nodes:", uds_map.sizes['mesh2d_nNodes'])
+            st.write("Layers:", num_layers)
+            st.write("Timesteps:", num_times)
+        with a2:
+            st.markdown("#### Data variables")
+            st.write("Data variables per face", len(mesh2d_nFaces_list), mesh2d_nFaces_list)
+            st.write("Data variables per edge", len(mesh2d_nEdges_list), mesh2d_nEdges_list)
+            st.write("Data variables per node", len(mesh2d_nNodes_list), mesh2d_nNodes_list)
+            st.write("Data variables per mesh2d_nMax_face_nodes", len(mesh2d_nMax_face_nodes_list),
+                     mesh2d_nMax_face_nodes_list)
+            st.write("Data variables per mesh2d_nLayers", len(mesh2d_nLayers_list),
+                     mesh2d_nLayers_list)
+            st.write("Data variables per mesh2d_nInterfaces", len(mesh2d_nInterfaces_list),
+                     mesh2d_nInterfaces_list)
+        with a3:
+            st.markdown("#### Timing")
+            st.write('Start:', uds_map.attrs["time_coverage_start"])
+            st.write('End:', uds_map.attrs["time_coverage_end"])
+            st.write('Duration:', uds_map.attrs["time_coverage_duration"])
+            st.write("Time resolution:", uds_map.attrs['time_coverage_resolution'])
+            st.write("Run date:", uds_map.attrs['date_modified'])
+    else:
+        st.empty()
 
+    # Some useful commands for looking at what's in each dimension/coordinate/data variable:
+    # st.write('uds_map.data_vars', uds_map.coords['mesh2d_layer_z'].values)
+    # my_variable_values = uds_map.coords['mesh2d_layer_z'].values
+    # df = pd.DataFrame({'mesh2d_layer_z': my_variable_values})
+    # st.write(df)
+    #
+    # # Sort the DataFrame by the data variable values
+    # sorted_df = df.sort_values(by='mesh2d_layer_z')
+    # st.write(sorted_df)
+    #
+    # csv_filename = 'sorted_values.csv'
+    # sorted_df.to_csv(csv_filename, index=False)
+    # print("Wrote mesh2d_layer_z values to csv")
 
-    # Plot water level on map
-    fig_surface, ax = plt.subplots(figsize=(20,3))
+    ###################################################################################################################
+    # 2. Plot the distribution of map parameters in the x,y plane using selections based on references in #1 above.
+    fig_surface, ax = plt.subplots(figsize=(20, 5))
 
     cc1, cc2 = st.columns(2, gap="small")
     with cc1:
-        parameter_key = st.selectbox("Select parameter to display", mesh2d_nFaces_list)
-        parameter = parameter_names.get(parameter_key)
-        selected_time_key = st.selectbox("Select the time to display", list(times_dict.keys()))
-        selected_time_index = times_dict.get(selected_time_key)
+        # Convert the list of faces to more descriptive parameter names for display in the UI selection window
+        # mesh2d_nFaces_list = ([value for key, value in parameter_names.items() if key in mesh2d_nFaces_list] +
+        #                       [item for item in mesh2d_nFaces_list if item not in parameter_names.keys()])
 
-        if num_layers > 1:
-            max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
-            # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
-            layer_depths = np.round(np.linspace(0, max_depth - max_depth/num_layers, num_layers))
-            layer_depths = layer_depths.tolist()
-            layer_list = list(reversed(range(0, num_layers)))
-            depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)  # Create the dropdown menu
-            layer = layer_list[layer_depths.index(depth_selected)]
-            # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
-            pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
-                                     missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
+        parameter = st.selectbox("Select parameter to display", mesh2d_nFaces_list)
+        vmin = np.nanmin(uds_map.data_vars[parameter].values)
+        vmax = np.nanmax(uds_map.data_vars[parameter].values)
+
+        # Check if the parameter is defined for multiple timesteps and ask for selection if so
+        if num_times is not None:
+            if 'time' in uds_map[parameter].dims:
+                concise = uds_map[parameter].dropna(dim='time', how='all')
+                num_times = concise.sizes['time']
+                selected_time_key = st.selectbox("Select the time to display", list(times_dict.keys()))
+                selected_time_index = times_dict.get(selected_time_key)
+            else:
+                num_times = None
+
+        # Check if the parameter is defined for multiple layers and ask for selection if so
+        if num_layers is not None:
+            if 'mesh2d_nLayers' in uds_map[parameter].dims:
+                concise = uds_map[parameter].dropna(dim='mesh2d_nLayers', how='all')
+                num_layers = concise.sizes['mesh2d_nLayers']
+                layer_list = list(reversed(range(0, num_layers)))
+                if 'mesh2d_layer_z' in uds_map.coords:
+                    depths = uds_map.coords['mesh2d_layer_z'].values
+                    layer_depths = depths + abs(depths[1] - depths[0])
+                    layer_depths = layer_depths[::-1].tolist()
+                else:
+                    # Handle sigma or mixed layers by creating an approximation of the depths
+                    max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
+                    # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
+                    layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
+                    layer_depths = layer_depths.tolist()
+                    # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
+                depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)
+                layer = layer_list[layer_depths.index(depth_selected)]
+            else:
+                num_layers = None
+
+    # Set plot limits. Location is intended to preserve option to add slider for zoom functionality later with 'scaler'.
+    # aspect = st.slider("Zoom", min_value=-0.5, max_value=1.0, value=0.01)
+    scaler = 1.0
+    aspect = 0.02
+    xavg = (xmax_abs + xmin_abs) / 2
+    yavg = (ymax_abs + ymin_abs) / 2
+    x_int = (xmax_abs - xmin_abs) / 2
+    y_int = (ymax_abs - ymin_abs) / 2
+    xmin = xavg - x_int * (1 + scaler * aspect)
+    xmax = xavg + x_int * (1 + scaler * aspect)
+    ymin = yavg - y_int * (1 + scaler)
+    ymax = yavg + y_int * (1 + scaler)
+
+    # Add a slider for selecting where to take a cross-section of the simulated water body
+    line_array = None
+    if num_layers is not None:
+        latlon = st.radio("Choose the orientation of the cross section", options=("Longitude", "Latitude"),
+                          horizontal=True)
+        if latlon == "Longitude":
+            cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=xmin_abs,
+                                      max_value=xmax_abs, value=(xmin_abs + xmax_abs) / 2, step=.001, format="%.3f")
+            ax.axvline(cross_section, color='red')
+            line_array = np.array([[cross_section, ymin_abs],
+                                   [cross_section, ymax_abs]])
         else:
-            pc = uds_map[parameter].isel(time=selected_time_index, missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
+            cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=ymin_abs,
+                                      max_value=ymax_abs, value=(ymin_abs + ymax_abs) / 2, step=.001, format="%.3f")
+            ax.axhline(cross_section, color='red')
+            line_array = np.array([[xmin_abs, cross_section],
+                                   [xmax_abs, cross_section]])
+
+    # Set up plot depending on dimensionality of parameter: is it defined at multiple timesteps or layers
+    if num_layers is None:
+        if num_times is None:
+            pc = uds_map[parameter].isel(missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False,
+                                                                           vmin=vmin, vmax=vmax)
+            st.markdown(f"### {parameter}")
+        else:
+            pc = uds_map[parameter].isel(time=selected_time_index, missing_dims='ignore').ugrid.plot(cmap='jet',
+                                                                                                     add_colorbar=False,
+                                                                                                     vmin=vmin,
+                                                                                                     vmax=vmax)
+            st.markdown(f"### {parameter} at {selected_time_key}")
+    else:
+        if num_times is None:
+            pc = uds_map[parameter].isel(mesh2d_nLayers=layer, missing_dims='ignore').ugrid.plot(cmap='jet',
+                                                                                                 add_colorbar=False,
+                                                                                                 vmin=vmin,
+                                                                                                 vmax=vmax)
+            st.markdown(f"### {parameter} at depth of {depth_selected} m")
+        else:
+            pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
+                                         missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False,
+                                                                           vmin=vmin, vmax=vmax)
+            st.markdown(f"### {parameter} at depth of {depth_selected} m at {selected_time_key}")
 
     if crs is None:
         ax.set_aspect('equal')
     else:
         ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
-    # fig_surface.suptitle(parameter_key)
-    colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.01, pad=0.001)
-    # Set colorbar label
-    colorbar.set_label(parameter_key)
+    # fig_surface.suptitle(parameter)  # Add a title within the figure's limits
 
-    # Add a slider for selecting where to take a cross-section of the simulated water body
-    latlon = st.radio("Choose the orientation of the cross section", options=("Longitude", "Latitude"), horizontal=True)
-    if latlon == "Longitude":
-        cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=xmin,
-                              max_value=xmax, value=(xmin + xmax) / 2, step=.001, format="%.3f")
-        ax.axvline(cross_section, color='red')
-        line_array = np.array([[cross_section, ymin],
-                               [cross_section, ymax]])
-    else:
-        cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=ymin,
-                                  max_value=ymax, value=(ymin + ymax) / 2, step=.001, format="%.3f")
-        ax.axhline(cross_section, color='red')
-        line_array = np.array([[xmin, cross_section],
-                               [xmax, cross_section]])
+    # Add a colorbar to show the values of the colors
+    fraction = 0.01  # Percentage of the figure's width given to the colorbar (scale/legend)
+    colorbar = plt.colorbar(pc, orientation="vertical", fraction=fraction, pad=0.001)
+    colorbar.set_label(parameter)  # Set colorbar label
 
     ax.set_aspect('equal')
     ax.set_xlabel("Longitude")
@@ -1010,139 +1557,242 @@ def display_map(o_file):
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_title("")
-    st.markdown(f"### {parameter_key} at depth of {depth_selected} m at {selected_time_key}")
+    ax.set_position([0, 0, 1, 1])
+    plt.tight_layout()
     st.pyplot(fig_surface)
 
-
-    # Plot a cross-section of the selected parameter at the line defined using the 'cross_section' slider
+    ###################################################################################################################
+    # 3. Plot x- or y- vs. z cross-section of the selections in #2 above
     if line_array is not None:
-        uds_crs = dfmt.polyline_mapslice(uds_map.isel(time=selected_time_index), line_array)
-        fig_cross, ax = plt.subplots(figsize=(20,3))
-        cs = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False)
+        # dfmt functions expect the original data variable names, so use the dataset as originally imported
+        uds_crs = dfmt.polyline_mapslice(uds_map_o.isel(time=selected_time_index), line_array)
+        uds_crs = rename_ds(uds_crs)  # then rename once imported
+        fig_cross, ax = plt.subplots(figsize=(20, 5))
+        cross = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False, vmin=vmin, vmax=vmax)
+        x_coords = uds_crs[parameter].coords['mesh2d_face_x'].values
+        y_coords = uds_crs[parameter].coords['mesh2d_face_y'].values
         # Calculate the range for x and y data
-        # x_range = max(data_x) - min(data_x)
-        # y_range = max(data_y) - min(data_y)
+        x_range = max(x_coords) - min(x_coords)
+        # y_range = max(y_coords) - min(y_coords)
 
-        # # Calculate the 1% extra for the limits
-        # x_limit = x_range * 0.01
+        # Calculate the 1% extra for the limits
+        x_limit = x_range * 0.01
         # y_limit = y_range * 0.01
-        #
-        # # Set the limits for x and y axis on the 'ax' object
-        # ax.set_xlim(min(data_x) - x_limit, max(data_x) + x_limit)
-        # ax.set_ylim(min(data_y) - y_limit, max(data_y) + y_limit)
+
+        # Set the limits for x and y axis on the 'ax' object
+        # ax.set_xlim(min(x_coords) - x_limit, max(x_coords) + x_limit)
+        # ax.set_ylim(min(y_coords) - y_limit, max(y_coords) + y_limit)
 
         # Plot your data on the 'ax' object
         # ax.plot(data_x, data_y)
-        ax.set_xlabel("Position, m")
+        if latlon == "Longitude":
+            ax.set_xlabel(f"Position, m north of latitude {ymin_abs}")
+        else:
+            ax.set_xlabel(f"Position, m east of longitude {xmin_abs}")
         ax.set_ylabel("Depth, m")
         ax.set_title("")
-        # fig_surface.suptitle(parameter_key)
-        colorbar = plt.colorbar(cs, orientation="vertical", fraction=0.1, pad=0.001)
+        # fig_surface.suptitle(parameter)
+        colorbar = plt.colorbar(cross, orientation="vertical", fraction=fraction, pad=0.001)
         # Set colorbar label
-        colorbar.set_label(parameter_key)
+        colorbar.set_label(parameter)
 
-        st.markdown(f"### Cross-section of {parameter_key} at {latlon} = {cross_section}, {selected_time_key}")
+        st.markdown(f"### Cross-section of {parameter} at {latlon} = {cross_section}, {selected_time_key}")
+        ax.set_position([0, 0, 1, 1])
+        plt.tight_layout()
         st.pyplot(fig_cross)
 
 
 def display_his(o_file):
-    file_nc_his = o_file
-    sel_slice_x, sel_slice_y = slice(50000, 55000), slice(None, 424000)
-    crs = 'EPSG:4326'
-    raster_res = 50
-    umag_clim = None
-    scale = 1.5
-    line_array = np.array([[53181.96942503, 424270.83361629],
-                           [55160.15232593, 416913.77136685]])
-
     # Open hisfile with xarray and print netcdf structure
-    if file_nc_his is not None:
-        ds_his = xr.open_mfdataset(file_nc_his, preprocess=dfmt.preprocess_hisnc)
-        print('ds_his', ds_his)
-        print('ds_his contains along station_id:\n', ds_his.coords['stations'].values)
+    ds_his_o = xr.open_mfdataset(o_file, preprocess=dfmt.preprocess_hisnc)
+    ds_his = rename_ds(ds_his_o)
+
+    ###################################################################################################################
+    # 1. Analyze the file contents. Create references for plotting.
+    print('ds_his', ds_his)
+
+    # Handle the possibility that some dimensions or coordinates are not present in the dataset
+    if 'stations' in ds_his.dims:
+        num_stations = ds_his.sizes['stations']
     else:
-        st.write("No time series data is available in this directory.")
+        num_stations = None
+    if 'source_sink' in ds_his.dims:
+        num_source_sink = ds_his.sizes['source_sink']
+    else:
+        num_source_sink = None
+    if 'time' in ds_his.dims:
+        num_times = ds_his.sizes['time']
+        # Extract and reformat a list of all time steps, and create a dictionary for converting the calendar time to an index
+        times = ds_his.coords["time"]
+        formatted_times = times.dt.strftime("%Y-%m-%d %H:%M:%S")
+        formatted_times = formatted_times.values.tolist()
+        times_dict = {value: i for i, value in enumerate(formatted_times)}
+    else:
+        num_times = None
+    if 'laydim' in ds_his.dims:
+        num_layers = ds_his.sizes['laydim']
+    else:
+        num_layers = None
 
-    num_layers = ds_his.dims['laydim']
-    max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
-    # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
-    layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
-    layer_depths = layer_depths.tolist()
-    layer_list = list(reversed(range(0, num_layers)))
-
-    # Example of how to extract data fields from map.nc file:
-    includes_coordinate = "stations"
-    excludes_coordinates = ["station_geom_node_count",  "station_id", "station_geom", "station_geom_node_coordx",
-                            "station_geom_node_coordy", 'bedlevel']
-    station_var_list = []
+    # Create lists of data variables based on their dimensionality (must exist at location and times)
+    includes_coordinate = ["stations", "time"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts"]
+    stations_list = []
     for name, var in ds_his.data_vars.items():
-        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
-            station_var_list.append(name)
-    # print("station_var_list", station_var_list)
+        if (all(coord in var.dims for coord in includes_coordinate) and
+                all(coord not in var.dims for coord in excludes_coordinates)):
+            stations_list.append(name)
 
-    includes_coordinate = "source_sink"
-    excludes_coordinates = ["station_geom_node_count"]
-    source_sink_var_list = []
+    includes_coordinate = ["source_sink", "time"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts"]
+    source_sink_list = []
     for name, var in ds_his.data_vars.items():
-        if (includes_coordinate in var.dims and all(coord not in var.dims for coord in excludes_coordinates)):
-            source_sink_var_list.append(name)
-    # print("source_sink_var_list", source_sink_var_list)
+        if (all(coord in var.dims for coord in includes_coordinate) and
+                all(coord not in var.dims for coord in excludes_coordinates)):
+            source_sink_list.append(name)
+
+    # Option to display dimensionality and contents of the file
+    on_off = ["Display file attributes", "Hide"]
+    print_attrs = st.radio(label='', options=on_off, horizontal=True, index=1)
+    if print_attrs == on_off[0]:
+        a1, a2, a3, a4 = st.columns(4, gap='small')
+        with a1:
+            st.markdown("#### Dimensions")
+            st.write("Observation Points:", num_stations)
+            st.write("Sources/Sinks:", num_source_sink)
+            st.write("Time steps:", num_times)
+        with a2:
+            st.markdown("#### Data variables")
+            st.write("Data variables per observation point", len(stations_list), stations_list)
+            st.write("Data variables per source/sink", len(source_sink_list), source_sink_list)
+        with a3:
+            st.markdown("#### Timing")
+            st.write('Start:', ds_his.attrs["time_coverage_start"])
+            st.write('End:', ds_his.attrs["time_coverage_end"])
+            st.write('Duration:', ds_his.attrs["time_coverage_duration"])
+            st.write("Time resolution:", ds_his.attrs['time_coverage_resolution'])
+            st.write("Run date:", ds_his.attrs['date_modified'])
+    else:
+        st.empty()
+
+    
 
     hc1, hc2 = st.columns(2, gap="small")
     with hc1:
         hisoptions = ['Time series', 'Instantaneous (vs. depth)']
         plottype = st.radio("Choose which type of data to display:", options=hisoptions, horizontal=True)
-        locations = st.multiselect("Select stations at which to plot", ds_his.coords['stations'].values, default=ds_his.coords['stations'].values[0])
-        feature = st.selectbox("Select a variable to plot", station_var_list)
 
+        if plottype == hisoptions[0]:
+            pointoptions = ["Observation Points", "Sources/Sinks"]
+            pointtype = st.radio("Choose which type of location to plot:", options=pointoptions, horizontal=True)
 
-    if plottype == hisoptions[0]:
-        hc1, hc2 = st.columns(2, gap="small")
-        with hc1:
-            axis_options = ['Single Depth', 'All Depths']
-            axis_count = st.radio("Select whether to display values from a single depth or all depths simultaneously", options=axis_options)
-        if axis_count == axis_options[0]:
-            hc1, hc2 = st.columns(2, gap="small")
-            with hc1:
-                depth_selected = st.selectbox("Select depth at which to plot", layer_depths)
-            layers = layer_list[layer_depths.index(depth_selected)]
-
-            data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
-            fig, ax = plt.subplots(figsize=(20,3))
-            data_fromhis_xr.plot.line('-', ax=ax, x='time')
-            ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
-            # data_fromhis_xr_dailymean = data_fromhis_xr.resample(time='D').mean(
-            #     dim='time')  # add daily mean values in the back #TODO: raises "TypeError: __init__() got an unexpected keyword argument 'base'" since py39 environment
-            # data_fromhis_xr_dailymean.plot.line('-', ax=ax, x='time', add_legend=False, zorder=0, linewidth=.8,
-            #                                     color='grey')
-            ax.set_xlabel('Time')
-            ax.set_ylabel(feature)
-            fig.tight_layout()
-            st.pyplot(fig)
+            if pointtype == pointoptions[1]:
+                locations = st.multiselect("Select sources/sinks at which to plot", ds_his.coords['source_sink'].values,
+                                           default=ds_his.coords['source_sink'].values[0])
+                feature = st.selectbox("Select a variable to plot", source_sink_list)
+                num_layers = None
+            else:
+                locations = st.multiselect("Select observation points at which to plot",
+                                           ds_his.coords['stations'].values,
+                                           default=ds_his.coords['stations'].values[0])
+                feature = st.selectbox("Select a variable to plot", stations_list)
         else:
-            # plot his data: temperature zt at one station
-            if file_nc_his is not None:
-                for i, station in enumerate(locations):
-                    ds_his_sel = ds_his.isel(stations=i).isel(time=slice(0, 50))
-                    fig_z, ax = plt.subplots(1, 1, figsize=(20,3))
-                    pc = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax,
-                                          cmap='jet')  # temperature pcolormesh
-                    # CS = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax, only_contour=True, levels=9,
-                    #                       colors='k', linewidths=0.8, linestyles='solid')  # temperature contour
-                    # ax.clabel(CS, fontsize=10)
-                    colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.1, pad=0.001)
-                    colorbar.set_label(feature)
-                    ax.set_xlabel(feature)
-                    ax.set_ylabel("Depth")
-                    st.markdown(f"### {feature} vs. time at {locations[i]}")
-                    st.pyplot(fig_z)
+            locations = st.multiselect("Select observation points at which to plot",
+                                       ds_his.coords['stations'].values,
+                                       default=ds_his.coords['stations'].values[0])
+            feature = st.selectbox("Select a variable to plot", stations_list)
 
+            # Check if the parameter is defined for multiple layers and ask for selection if so
+
+
+    vmin = np.nanmin(ds_his.data_vars[feature].values)
+    vmax = np.nanmax(ds_his.data_vars[feature].values)
+
+    ###################################################################################################################
+    # 2. Plot time series data for the selected point(s), at one or several depths
+    if plottype == hisoptions[0]:
+        # Deprecated logic for selecting between line or 'heat map' plots
+        # axis_options = ['Line', 'Heat map']
+        # if pointtype == pointoptions[0]:
+        #     hc1, hc2 = st.columns(2, gap="small")
+        #     with hc1:
+        #         axis_count = st.radio("Select plot type", options=axis_options, horizontal=True)
+        # else:
+        #     axis_count = axis_options[0]
+        # Plot lines representing a single depth on parameter vs. time axis
+        # if axis_count == axis_options[0]:
+        if num_layers is not None:
+            if 'laydim' in ds_his[feature].dims:
+                concise = ds_his[feature].dropna(dim='laydim', how='all')
+                num_layers = concise.sizes['laydim']
+                layer_list = list(reversed(range(0, num_layers)))
+                if 'zcoordinate_c' not in ds_his.coords:  # Skipping this for a moment
+                    depths = ds_his.coords['zcoordinate_c'].values
+                    layer_depths = ds_his.coords['zcoordinate_c'].values + 1.25
+                    layer_depths = layer_depths[::-1].tolist()
+                else:
+                    max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
+                    # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
+                    layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
+                    layer_depths = layer_depths.tolist()
+                    layer_list = list(reversed(range(0, num_layers)))
+                hc1, hc2 = st.columns(2, gap="small")
+                with hc1:
+                    depth_selected = st.selectbox("Select depth at which to plot", layer_depths)
+                    layers = layer_list[layer_depths.index(depth_selected)]
+            else:
+                num_layers = None
+
+        fig, ax = plt.subplots(figsize=(20, 5))
+
+        if pointtype == pointoptions[0] and num_layers is not None:
+            data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
+            data_fromhis_xr.plot.line('-', ax=ax, x='time')
+            ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)
+        elif pointtype == pointoptions[0]:
+            data_fromhis_xr = ds_his[feature].sel(stations=locations)
+            data_fromhis_xr.plot.line('-', ax=ax, x='time')
+            ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)
+        elif pointtype == pointoptions[1]:
+            data_fromhis_xr = ds_his[feature].sel(source_sink=locations)
+            data_fromhis_xr.plot.line('-', ax=ax, x='time')
+            ax.legend(data_fromhis_xr.source_sink.to_series(), fontsize=9)
+
+        ax.set_xlabel('Time')
+        ax.set_ylabel(feature)
+        fig.tight_layout()
+        st.pyplot(fig)
+
+        # Deprecated function for 'heat map' of a parameter
+        # else:
+        #     # # Plot colors representing the parameter on depth vs. time axis
+        #     for i, station in enumerate(locations):
+        #         ds_his_sel = ds_his_o.isel(stations=i).isel(time=slice(0, 50))
+        #         fig_z, ax = plt.subplots(1, 1, figsize=(20, 5))
+        #         pc = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax,
+        #                               cmap='jet', vmin=vmin, vmax=vmax)  # temperature pcolormesh
+        #
+        #         # Option to add contours to break up colormap (I think this looks bad)
+        #         # CS = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax, only_contour=True, levels=9,
+        #         #                       colors='k', linewidths=0.8, linestyles='solid')
+        #         # ax.clabel(CS, fontsize=10)
+        #
+        #         # Add a custom color bar to define temperature ranges
+        #         colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.1, pad=0.001)
+        #         colorbar.set_label(feature)
+        #         ax.set_xlabel(feature)
+        #         ax.set_ylabel("Depth")
+        #         st.markdown(f"### {feature} vs. time at {locations[i]}")
+        #         st.pyplot(fig_z)
+
+    ###################################################################################################################
+    # 3. Plot parameters vs. depth at selected point(s) at one time
     else:
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             realtimes = list(ds_his.coords['time'].values)
             plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
-                                  ds_his.coords['time'].values)
+                                    ds_his.coords['time'].values)
 
         time_list = [i for i in range(ds_his.dims['time'])]
         # print('time list', time_list, type(time_list))
@@ -1150,7 +1800,7 @@ def display_his(o_file):
 
         timeindex = time_list[realtimes.index(plottime)]
         data_fromhis_xr = ds_his[feature].sel(stations=locations).isel(time=timeindex)
-        fig_instant_profile, ax = plt.subplots(figsize=(20,6))
+        fig_instant_profile, ax = plt.subplots(figsize=(20, 5))
         data_fromhis_xr.T.plot.line('-', ax=ax, y='zcoordinate_c')
         # ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
         # ax.set_aspect('equal')
@@ -1185,7 +1835,8 @@ def current():
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
-                uploaded = st.file_uploader(label='Upload your own Delft3D history output file (his.nc), maximum size 200MB', type='nc')
+                uploaded = st.file_uploader(
+                    label='Upload your own Delft3D history output file (his.nc), maximum size 200MB', type='nc')
             # Create a temp filepath to use to access the uploaded file
             if uploaded is not None:
                 if uploaded.name.endswith('his.nc'):
@@ -1208,7 +1859,8 @@ def current():
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
-                uploaded = st.file_uploader(label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB', type='nc')
+                uploaded = st.file_uploader(
+                    label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB', type='nc')
             # Create a temp filepath to use to access the uploaded file
             if uploaded is not None:
                 if uploaded.name.endswith('map.nc'):
