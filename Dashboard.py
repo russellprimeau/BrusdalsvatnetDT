@@ -928,6 +928,7 @@ def rename_ds(ds):
         "mesh2d_ucxa": "Velocity vector, depth-averaged x-component (m/s)",
         "mesh2d_ucya": "Velocity vector, depth-averaged y-component (m/s)",
         "mesh2d_ucmaga": "Velocity magnitude, depth-averaged (m/s)",
+        "mesh2d_ww1": "Upward velocity component",
         "mesh2d_q1": "Discharge through flow link (m^3/s)",
         "mesh2d_sa1": "Salinity (ppt)",
         "mesh2d_tem1": "Temperature (C)",
@@ -1408,15 +1409,12 @@ def display_map(o_file):
             st.write("Timesteps:", num_times)
         with a2:
             st.markdown("#### Data variables")
-            st.write("Data variables per face", len(mesh2d_nFaces_list), mesh2d_nFaces_list)
-            st.write("Data variables per edge", len(mesh2d_nEdges_list), mesh2d_nEdges_list)
-            st.write("Data variables per node", len(mesh2d_nNodes_list), mesh2d_nNodes_list)
-            st.write("Data variables per mesh2d_nMax_face_nodes", len(mesh2d_nMax_face_nodes_list),
-                     mesh2d_nMax_face_nodes_list)
-            st.write("Data variables per mesh2d_nLayers", len(mesh2d_nLayers_list),
-                     mesh2d_nLayers_list)
-            st.write("Data variables per mesh2d_nInterfaces", len(mesh2d_nInterfaces_list),
-                     mesh2d_nInterfaces_list)
+            st.write("Data variables per face", mesh2d_nFaces_list)
+            st.write("Data variables per edge", mesh2d_nEdges_list)
+            st.write("Data variables per node", mesh2d_nNodes_list)
+            st.write("Data variables per mesh2d_nMax_face_nodes", mesh2d_nMax_face_nodes_list)
+            st.write("Data variables per mesh2d_nLayers", mesh2d_nLayers_list)
+            st.write("Data variables per mesh2d_nInterfaces", mesh2d_nInterfaces_list)
         with a3:
             st.markdown("#### Timing")
             st.write('Start:', uds_map.attrs["time_coverage_start"])
@@ -1613,16 +1611,19 @@ def display_his(o_file):
     ###################################################################################################################
     # 1. Analyze the file contents. Create references for plotting.
     print('ds_his', ds_his)
+    print('All data_vars', ds_his.data_vars)
+    print('station coordx, coordy', ds_his['station_geom_node_coordx'].values, ds_his['station_geom_node_coordy'].values)
+    print('source_sink coordx, coordy', ds_his['source_sink_geom_node_coordx'].values,
+          ds_his['source_sink_geom_node_coordy'].values)
+
+
+
 
     # Handle the possibility that some dimensions or coordinates are not present in the dataset
     if 'stations' in ds_his.dims:
         num_stations = ds_his.sizes['stations']
     else:
         num_stations = None
-    if 'source_sink' in ds_his.dims:
-        num_source_sink = ds_his.sizes['source_sink']
-    else:
-        num_source_sink = None
     if 'time' in ds_his.dims:
         num_times = ds_his.sizes['time']
         # Extract and reformat a list of all time steps, and create a dictionary for converting the calendar time to an index
@@ -1636,10 +1637,18 @@ def display_his(o_file):
         num_layers = ds_his.sizes['laydim']
     else:
         num_layers = None
+    if 'cross_section' in ds_his.dims:
+        num_source_sink = ds_his.sizes['cross_section']
+    else:
+        num_cross_section = None
+    if 'source_sink' in ds_his.dims:
+        num_source_sink = ds_his.sizes['source_sink']
+    else:
+        num_source_sink = None
 
     # Create lists of data variables based on their dimensionality (must exist at location and times)
     includes_coordinate = ["stations", "time"]
-    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts", "cross_section_geom_nNodes"]
     stations_list = []
     for name, var in ds_his.data_vars.items():
         if (all(coord in var.dims for coord in includes_coordinate) and
@@ -1647,12 +1656,20 @@ def display_his(o_file):
             stations_list.append(name)
 
     includes_coordinate = ["source_sink", "time"]
-    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts", "cross_section_geom_nNodes"]
     source_sink_list = []
     for name, var in ds_his.data_vars.items():
         if (all(coord in var.dims for coord in includes_coordinate) and
                 all(coord not in var.dims for coord in excludes_coordinates)):
             source_sink_list.append(name)
+
+    includes_coordinate = ["cross_section", "time"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts", "cross_section_geom_nNodes"]
+    cross_section_list = []
+    for name, var in ds_his.data_vars.items():
+        if (all(coord in var.dims for coord in includes_coordinate) and
+                all(coord not in var.dims for coord in excludes_coordinates)):
+            cross_section_list.append(name)
 
     # Option to display dimensionality and contents of the file
     on_off = ["Display file attributes", "Hide"]
@@ -1666,8 +1683,9 @@ def display_his(o_file):
             st.write("Time steps:", num_times)
         with a2:
             st.markdown("#### Data variables")
-            st.write("Data variables per observation point", len(stations_list), stations_list)
-            st.write("Data variables per source/sink", len(source_sink_list), source_sink_list)
+            st.write("Data variables per observation point", stations_list)
+            st.write("Data variables per source/sink", source_sink_list)
+            st.write("Data variables per cross_section", cross_section_list)
         with a3:
             st.markdown("#### Timing")
             st.write('Start:', ds_his.attrs["time_coverage_start"])
