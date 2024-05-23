@@ -87,9 +87,12 @@ def upload_weather_csv():
                             "1818_time: FG_tid_l[N/A]": "Time of maximum 3s Gust",
                             "1818_time: FX Kast[m/s]": "Maximum sustained wind speed, 10-minute span (m/s)",
                             "1818_time: FX_tid_l[N/A]": "Time of maximum 10 minute gust",
-                            "1818_time: PO Trykk stasjonshøyde[mBar]": "Hourly average atmospheric pressure at station (mBar)",
+                            "1818_time: PO Trykk stasjonshøyde[mBar]":
+                                "Hourly average atmospheric pressure at station (mBar)",
                             "1818_time: PP[mBar]": "Maximum pressure differential, 3-hour span (mBar)",
-                            "1818_time: PR Trykk redusert til havnivå[mBar]": "Instantaneous atmospheric pressure compensated for temperature, humidity and station elevation (mBar)",
+                            "1818_time: PR Trykk redusert til havnivå[mBar]":
+                                "Instantaneous atmospheric pressure compensated for temperature, humidity and station "
+                                "elevation (mBar)",
                             "1818_time: QLI Langbølget[W/m2]": "Longwave (IR) radiation (W/m2)",
                             "1818_time: QNH[mBar]": "Instantaneous sea-level atmospheric pressure (mBar)",
                             "1818_time: QSI Kortbølget[W/m2]": "Shortwave (solar) radiation (W/m2)",
@@ -114,7 +117,8 @@ def upload_weather_csv():
         df = df.sort_values(by="Timestamp")
         df = df.drop(columns=["Instantaneous atmospheric pressure (mBar)", "Wind direction 10minRollingAvg (°)",
                               "Time of maximum 3s Gust", "Time of maximum 10 minute gust",
-                              "Instantaneous atmospheric pressure compensated for temperature, humidity and station elevation (mBar)",
+                              "Instantaneous atmospheric pressure compensated for temperature, "
+                              "humidity and station elevation (mBar)",
                               "Instantaneous sea-level atmospheric pressure (mBar)", "Instantaneous temperature (°C)"])
     return df
 
@@ -919,9 +923,11 @@ def rename_ds(ds):
         "mesh2d_u1": "Velocity at velocity point (m/s)",
         "mesh2d_ucx": "Velocity vector, x-component (m/s)",
         "mesh2d_ucy": "Velocity vector, y-component (m/s)",
-        "mesh2d_ucxa": "Velocity vector, x-component (other) (m/s)",
-        "mesh2d_ucya": "Velocity vector, y-component (other) (m/s)",
+        "mesh2d_ucz": "Velocity vector, z-component (m/s)",
         "mesh2d_ucmag": "Velocity magnitude (m/s)",
+        "mesh2d_ucxa": "Velocity vector, depth-averaged x-component (m/s)",
+        "mesh2d_ucya": "Velocity vector, depth-averaged y-component (m/s)",
+        "mesh2d_ucmaga": "Velocity magnitude, depth-averaged (m/s)",
         "mesh2d_q1": "Discharge through flow link (m^3/s)",
         "mesh2d_sa1": "Salinity (ppt)",
         "mesh2d_tem1": "Temperature (C)",
@@ -1005,8 +1011,6 @@ def rename_ds(ds):
         "mesh2d_rain": "Precipitation rate (mm/day)",
         "mesh2d_inflitration_cap": "Infiltration capacity (mm/hr)",
         "mesh2d_inflitration_actual": "Infiltration (mm/hr)",
-        "timestep": "Latest computational timestep size in each output interval (s)",
-        "wgs84": "Projected coordinate system",
         "mesh2d_Node_z": "z-coordinate of mesh nodes (m)",
         "mesh2d_Face_x_bnd": "X-coordinate bounds of mesh faces (m)",
         "mesh2d_Face_y_bnd": "Y-coordinate bounds of mesh faces (m)",
@@ -1108,8 +1112,6 @@ def rename_ds(ds):
         "mesh2d_source_sink_discharge_average": "Average discharge (m^3/s)",
         "mesh2d_source_sink_prescribed_salinity_increment": "Prescribed salinity (ppt)",
         "mesh2d_source_sink_prescribed_temperature_increment": "Prescribed temperature (◦C)",
-        "timestep": "Timestep (s)",
-        "wgs84": "Projected coordinate system",
         "node_z": "z-coordinate of mesh nodes (m)",
         "face_x_bnd": "X-coordinate bounds of mesh faces (m)",
         "face_y_bnd": "Y-coordinate bounds of mesh faces (m)",
@@ -1121,9 +1123,10 @@ def rename_ds(ds):
         "u1": "Velocity at velocity point (m/s)",
         "ucx": "Velocity vector, x-component (m/s)",
         "ucy": "Velocity vector, y-component (m/s)",
-        "ucxa": "Velocity vector, x-component (other) (m/s)",
-        "ucya": "Velocity vector, y-component (other) (m/s)",
         "ucmag": "Velocity magnitude (m/s)",
+        "ucxa": "Velocity vector, depth-averaged x-component (m/s)",
+        "ucya": "Velocity vector, depth-averaged y-component (m/s)",
+        "ucmaga": "Velocity magnitude, depth-averaged (m/s)",
         "q1": "Discharge through flow link (m^3/s)",
         "sa1": "Salinity (ppt)",
         "tem1": "Temperature (C)",
@@ -1735,23 +1738,25 @@ def display_his(o_file):
             else:
                 num_layers = None
 
+        st.markdown(f"### {feature} vs. Time")
         fig, ax = plt.subplots(figsize=(20, 5))
 
         if pointtype == pointoptions[0] and num_layers is not None:
             data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
             data_fromhis_xr.plot.line('-', ax=ax, x='time')
-            ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)
+            ax.legend(data_fromhis_xr.stations.to_series())
         elif pointtype == pointoptions[0]:
             data_fromhis_xr = ds_his[feature].sel(stations=locations)
             data_fromhis_xr.plot.line('-', ax=ax, x='time')
-            ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)
+            ax.legend(data_fromhis_xr.stations.to_series())
         elif pointtype == pointoptions[1]:
             data_fromhis_xr = ds_his[feature].sel(source_sink=locations)
             data_fromhis_xr.plot.line('-', ax=ax, x='time')
-            ax.legend(data_fromhis_xr.source_sink.to_series(), fontsize=9)
+            ax.legend(data_fromhis_xr.source_sink.to_series())
 
         ax.set_xlabel('Time')
         ax.set_ylabel(feature)
+        ax.set_title('')
         fig.tight_layout()
         st.pyplot(fig)
 
@@ -1783,7 +1788,7 @@ def display_his(o_file):
         if 'laydim' in ds_his[feature].dims:
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
-                realtimes = list(ds_his.coords['time'].values)
+                realtimes = ds_his.coords['time'].values.to_list()
                 plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
                                         ds_his.coords['time'].values)
 

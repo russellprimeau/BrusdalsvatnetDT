@@ -59,8 +59,8 @@ def est_map_size(start=None, end=None, m_step=None, Ndxi=1, Kmax=1, Lnx=1, m1n=N
         m4 = (end - start) / m_step
     if start is None and end is None and m_step is None and m4 is None:
         m4 = 1
-        print("Estimated 'his' size is per output interval")
-    return ((m1n * (m2n + m3) + m1l * m2l) * m4 * 8)/1024
+        print("Estimated 'map' size is per output interval")
+    return (((m1n * (m2n + m3)) + (m1l * m2l)) * m4 * 8)/1024
 
 
 def gen_MDU(all_files):
@@ -133,7 +133,7 @@ def gen_MDU(all_files):
         his_size = est_his_size(h1=h1,h3=h3,h4=h4)
         st.markdown(f"File size: {his_size} kB")
     with u2:
-        st.markdown("History (his.nc) file")
+        st.markdown("Map (map.nc) file")
         c1, c2 = st.columns(2, gap='small')
 
         with c1:
@@ -142,7 +142,7 @@ def gen_MDU(all_files):
         with c2:
             m3 = st.number_input("# Number of process parameters written", value=2, step=1)
             m4 = st.number_input("# Number of map output time steps written", value=1, step=1)
-        map_size = est_map_size(Ndxi=Ndxi, Kmax=Kmax, m3=m3,m4=m4)
+        map_size = est_map_size(Ndxi=Ndxi, Kmax=Kmax, m3=m3, m4=m4)
         st.markdown(f"File size: {map_size} kB")
 
 
