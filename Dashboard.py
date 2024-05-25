@@ -1781,9 +1781,9 @@ def display_his(o_file):
                     depth_selected = st.selectbox("Select depth at which to plot", layer_depths_his)
                     layers = layer_list[layer_depths_his.index(depth_selected)]
             else:
-                num_layers = None
+                num_layers = 1
         else:
-            layer_depths_his = []
+            num_layers = 1
 
         # st.markdown(f"### {feature} vs. Time")
         fig, ax = plt.subplots(figsize=(20, 5))
@@ -1800,18 +1800,16 @@ def display_his(o_file):
         #     data_fromhis_xr = ds_his[feature].sel(source_sink=locations)
         #     data_fromhis_xr.plot.line('-', ax=ax, x='time')
         #     ax.legend(data_fromhis_xr.source_sink.to_series())
-
-        data_for_bokeh = ds_his[feature].sel(stations=locations)
-        his_df = data_for_bokeh.to_dataframe()
-
         # ax.set_xlabel('Time')
         # ax.set_ylabel(feature)
         # ax.set_title('')
         # fig.tight_layout()
         # st.pyplot(fig)
 
-        selected_depths = layer_depths_his
-        num_colors = (len(selected_depths))
+        data_for_bokeh = ds_his[feature].sel(stations=locations)
+        his_df = data_for_bokeh.to_dataframe()
+
+        num_colors = (num_layers)
         print('num_colors', num_colors)
         viridis_colors = Viridis256
         step = len(viridis_colors) // num_colors
