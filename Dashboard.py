@@ -1756,6 +1756,7 @@ def display_his(o_file):
     ###################################################################################################################
     # 2. Plot time series data for the selected point(s), at one or several depths
     if plottype == hisoptions[0]:
+        layer_depths_his = []
         if num_layers is not None:
             if 'laydim' in ds_his[feature].dims:
                 concise = ds_his[feature].dropna(dim='laydim', how='all')
@@ -1766,21 +1767,23 @@ def display_his(o_file):
                     ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)
                     depths = np.unique(ds_his.coords['zcoordinate_c'].values)
                     interval = abs(depths[1] - depths[0]) / 2
-                    layer_depths = depths + interval
-                    layer_depths = list(layer_depths[::-1])
-                    layer_depths = [x for x in layer_depths if not math.isnan(x)]
+                    layer_depths_his = depths + interval
+                    layer_depths_his = list(layer_depths_his[::-1])
+                    layer_depths_his = [x for x in layer_depths_his if not math.isnan(x)]
                 else:
                     max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
                     # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
-                    layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
-                    layer_depths = layer_depths.tolist()
+                    layer_depths_his = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
+                    layer_depths_his = layer_depths_his.tolist()
                     layer_list = list(reversed(range(0, num_layers)))
                 hc1, hc2 = st.columns(2, gap="small")
                 with hc1:
-                    depth_selected = st.selectbox("Select depth at which to plot", layer_depths)
-                    layers = layer_list[layer_depths.index(depth_selected)]
+                    depth_selected = st.selectbox("Select depth at which to plot", layer_depths_his)
+                    layers = layer_list[layer_depths_his.index(depth_selected)]
             else:
                 num_layers = None
+        else:
+            layer_depths_his = []
 
         # st.markdown(f"### {feature} vs. Time")
         fig, ax = plt.subplots(figsize=(20, 5))
@@ -1807,7 +1810,7 @@ def display_his(o_file):
         # fig.tight_layout()
         # st.pyplot(fig)
 
-        selected_depths = layer_depths
+        selected_depths = layer_depths_his
         num_colors = (len(selected_depths))
         print('num_colors', num_colors)
         viridis_colors = Viridis256
@@ -1817,7 +1820,7 @@ def display_his(o_file):
         def update_plot_p_his(p_his, df, selected_variables_p_his):
             # Group the data by 'Depth' and create separate ColumnDataSources for each group
             df.reset_index()
-            grouped_data = df.groupby('zcoordinate_c', 'stations')
+            grouped_data = df.groupby('zcoordinate_c')
 
             p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations} for All Depths'
             p_his.renderers = []  # Remove existing renderers

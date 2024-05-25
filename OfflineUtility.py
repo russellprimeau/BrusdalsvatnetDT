@@ -380,6 +380,7 @@ def gen_forcing(all_files):
         for key, value in nominal_discharge.items():
             dfs_profile.append(filter_profiler(start_date=start, end_date=end, reference_time=reference, df=df_profile, discharge=value, salinity=salinity,
                                                scalefactor=factor, randomize_type=type))
+        print("# Number of discharges defined:", len(dfs_profile))
 
         # Set the default directory path to the current directory
         default_directory_path = ''
@@ -405,6 +406,7 @@ def gen_forcing(all_files):
             else:
                 st.write(f"Data from selected range exported as {met_filenames} in the working directory")
 
+        print("# of output files defined:", len(inlet_filenames))
         if st.button("Write inlet flow data to Delft3D input files (.tim)"):
             # Write filtered stream data to new CSV files
             for j, frame in enumerate(dfs_profile):
