@@ -286,7 +286,8 @@ def weather():
             p.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1, hours=3))
         p.yaxis.axis_label = "Parameter Value(s)"
         p.legend.title = "Weather Parameters"
-        p.legend.location = "top_left"
+        p.add_layout(p.legend[0], 'right')
+        # p.legend.location = "top_left"
         p.legend.click_policy = "hide"  # Hide lines on legend click
         # p.add_layout(p.legend[0], 'below')  # Option to move the legend out of the plotspace
         # Set the x-axis formatter to display dates in the desired format
@@ -501,7 +502,8 @@ def hourly():
             p.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1, hours=3))
         p.yaxis.axis_label = "Parameter Value(s)"
         p.legend.title = "Water Quality Parameters"
-        p.legend.location = "top_left"
+        p.add_layout(p.legend[0], 'right')
+        # p.legend.location = "top_left"
         p.legend.click_policy = "hide"  # Hide lines on legend click
         # p.add_layout(p.legend[0], 'below')  # Option to move the legend out of the plotspace
         # Set the x-axis formatter to display dates in the desired format
@@ -762,7 +764,8 @@ def vertical():
 
         # Show legend for the first plot
         p1.legend.title = 'Depth'
-        p1.legend.location = "top_left"
+        # p1.legend.location = "top_left"
+        p1.add_layout(p1.legend[0], 'right')
         p1.legend.label_text_font_size = '10px'
         p1.legend.click_policy = "hide"  # Hide lines on legend click
         p1.yaxis.axis_label = "Variable Value(s)"
@@ -868,7 +871,9 @@ def usv_plot():
 
         exclude_cols = ['Time, ms', 'Time', 'Lat', 'Lon']
         included_cols = [col for col in track.columns if col not in exclude_cols]
-        hover_labels = st.multiselect(label="Choose log parameters to display",
+        h1, h2 = st.columns(2, gap='small')
+        with h1:
+            hover_labels = st.multiselect(label="Choose log parameters to display",
                                       options=["Select All"] + included_cols)
 
         if "Select All" in hover_labels:
@@ -1806,28 +1811,37 @@ def display_his(o_file):
         # fig.tight_layout()
         # st.pyplot(fig)
 
-        data_for_bokeh = ds_his[feature].sel(stations=locations)
+        if pointtype == pointoptions[0]:
+            data_for_bokeh = ds_his[feature].sel(stations=locations)
+        elif pointtype == pointoptions[1]:
+            data_for_bokeh = ds_his[feature].sel(source_sink=locations)
         his_df = data_for_bokeh.to_dataframe()
 
-        num_colors = (num_layers)
-        print('num_colors', num_colors)
-        viridis_colors = Viridis256
-        step = len(viridis_colors) // num_colors
-        viridis_subset = viridis_colors[::step][:num_colors]
-
         def update_plot_p_his(p_his, df, selected_variables_p_his):
+
             # Group the data by 'Depth' and create separate ColumnDataSources for each group
             df.reset_index()
-            grouped_data = df.groupby('zcoordinate_c')
+            if 'zcoordinate_c' in df.columns:
+                grouped_data = df.groupby('zcoordinate_c')
+            elif 'stations' in df.columns:
+                grouped_data = df.groupby('stations')
+            elif 'source_sink' in df.columns:
+                grouped_data = df.groupby('source_sink')
 
-            p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations} for All Depths'
+            num_colors = grouped_data.ngroups
+            print('num_colors', num_colors)
+            viridis_colors = Viridis256
+            step = len(viridis_colors) // num_colors
+            viridis_subset = viridis_colors[::step][:num_colors]
+
+            p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations}'
             p_his.renderers = []  # Remove existing renderers
 
-            for i, (depth, group) in enumerate(grouped_data):
-                depth_source = ColumnDataSource(group)
-                renderer = p_his.line(x='time', y=selected_variables_p_his, source=depth_source, line_width=2, line_color=viridis_subset[i])#, legend_label=f'{depth}m: {var}')
+            for i, (groupname, group) in enumerate(grouped_data):
+                groupname_source = ColumnDataSource(group)
+                renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2, line_color=viridis_subset[i], legend_label=f'{groupname}m: {selected_variables_p_his}')
                 p_his.add_tools(HoverTool(renderers=[renderer],
-                                       tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
+                                       tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Group", f'{groupname}'),
                                                  (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
                                        mode="vline"))
                 p_his.renderers.append(renderer)
@@ -1838,10 +1852,11 @@ def display_his(o_file):
         update_plot_p_his(p_his, df_reset, feature)
 
         # Show legend for the first plot
-        # p_his.legend.title = 'Depth'
-        # p_his.legend.location = "top_left"
-        # p_his.legend.label_text_font_size = '10px'
-        # p_his.legend.click_policy = "hide"  # Hide lines on legend click
+        p_his.add_layout(p_his.legend[0], 'right')
+        p_his.legend.title = 'Depth'
+        p_his.legend.location = "top_left"
+        p_his.legend.label_text_font_size = '10px'
+        p_his.legend.click_policy = "hide"  # Hide lines on legend click
         p_his.yaxis.axis_label = f"{feature}"
         p_his.xaxis.axis_label = "Time"
         # plotrange = set_last_date - set_begin_date
