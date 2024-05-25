@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 import contextily as ctx
 import dfm_tools as dfmt
 import plotly.express as px
+import math
 
 
 def main():
@@ -1324,6 +1325,7 @@ def display_map(o_file):
     # Open and merge mapfile with xugrid(xarray) and print netcdf structure
     uds_map_o = dfmt.open_partitioned_dataset(o_file)
     uds_map = rename_ds(uds_map_o)
+    print("uds_map.attrs", uds_map.attrs)
 
     ###################################################################################################################
     # 1. Analyze the file contents. Create references for plotting.
@@ -1332,10 +1334,25 @@ def display_map(o_file):
     crs = 'EPSG:4326'
 
     # Get extents of map from attributes, for setting plot limits
-    xmin_abs = uds_map.attrs['geospatial_lon_min']
-    xmax_abs = uds_map.attrs['geospatial_lon_max']
-    ymin_abs = uds_map.attrs['geospatial_lat_min']
-    ymax_abs = uds_map.attrs['geospatial_lat_max']
+    try:
+        xmin_abs = uds_map.attrs['geospatial_lon_min']
+    except:
+        xmin_abs = 6.387478790667275
+
+    try:
+        xmax_abs = uds_map.attrs['geospatial_lon_max']
+    except:
+        xmax_abs = 6.56781074840919
+
+    try:
+        ymin_abs = uds_map.attrs['geospatial_lat_min']
+    except:
+        ymin_abs = 62.46442857883768
+
+    try:
+        ymax_abs = uds_map.attrs['geospatial_lat_max']
+    except:
+        ymax_abs = 62.48487637586751
 
     # Create lists of data variables based on their dimensionality
     includes_coordinate = "mesh2d_nFaces"
@@ -1603,6 +1620,19 @@ def display_map(o_file):
         st.pyplot(fig_cross)
 
 
+def display_error():
+    compatible_list = ["Salinity (ppt)", "Temperature (◦C)"]
+    errorplots = ["Surface (hourly)", "Depth contours"]
+    c1, c2 = st.columns(2, gap='small')
+    with c1:
+        feature = st.selectbox("Select a variable to plot", compatible_list)
+        errorplot = st.selectbox("Select a sensor dataset for comparison", errorplots)
+    # if errorplot == errorplots[0]:
+    #
+    # elif errorplot == errorplots[1]:
+
+
+
 def display_his(o_file):
     # Open hisfile with xarray and print netcdf structure
     ds_his_o = xr.open_mfdataset(o_file, preprocess=dfmt.preprocess_hisnc)
@@ -1610,11 +1640,11 @@ def display_his(o_file):
 
     ###################################################################################################################
     # 1. Analyze the file contents. Create references for plotting.
-    print('ds_his', ds_his)
-    print('All data_vars', ds_his.data_vars)
-    print('station coordx, coordy', ds_his['station_geom_node_coordx'].values, ds_his['station_geom_node_coordy'].values)
-    print('source_sink coordx, coordy', ds_his['source_sink_geom_node_coordx'].values,
-          ds_his['source_sink_geom_node_coordy'].values)
+    # print('ds_his', ds_his)
+    # print('All data_vars', ds_his.data_vars)
+    # print('station coordx, coordy', ds_his['station_geom_node_coordx'].values, ds_his['station_geom_node_coordy'].values)
+    # print('source_sink coordx, coordy', ds_his['source_sink_geom_node_coordx'].values,
+    #       ds_his['source_sink_geom_node_coordy'].values)
 
 
 
@@ -1698,7 +1728,7 @@ def display_his(o_file):
 
     hc1, hc2 = st.columns(2, gap="small")
     with hc1:
-        hisoptions = ['Time series', 'Instantaneous (vs. depth)']
+        hisoptions = ['Time series', 'Instantaneous (vs. depth)', 'Compare model to sensor data']
         plottype = st.radio("Choose which type of data to display:", options=hisoptions, horizontal=True)
 
         if plottype == hisoptions[0]:
@@ -1715,34 +1745,30 @@ def display_his(o_file):
                                            ds_his.coords['stations'].values,
                                            default=ds_his.coords['stations'].values[0])
                 feature = st.selectbox("Select a variable to plot", stations_list)
-        else:
+        elif plottype == hisoptions[1]:
             locations = st.multiselect("Select observation points at which to plot",
                                        ds_his.coords['stations'].values,
                                        default=ds_his.coords['stations'].values[0])
             feature = st.selectbox("Select a variable to plot", stations_list)
+        elif plottype == hisoptions[2]:
+            display_error()
 
     ###################################################################################################################
     # 2. Plot time series data for the selected point(s), at one or several depths
     if plottype == hisoptions[0]:
-        # Deprecated logic for selecting between line or 'heat map' plots
-        # axis_options = ['Line', 'Heat map']
-        # if pointtype == pointoptions[0]:
-        #     hc1, hc2 = st.columns(2, gap="small")
-        #     with hc1:
-        #         axis_count = st.radio("Select plot type", options=axis_options, horizontal=True)
-        # else:
-        #     axis_count = axis_options[0]
-        # Plot lines representing a single depth on parameter vs. time axis
-        # if axis_count == axis_options[0]:
         if num_layers is not None:
             if 'laydim' in ds_his[feature].dims:
                 concise = ds_his[feature].dropna(dim='laydim', how='all')
                 num_layers = concise.sizes['laydim']
                 layer_list = list(reversed(range(0, num_layers)))
-                if 'zcoordinate_c' not in ds_his.coords:  # Skipping this for a moment
-                    depths = ds_his.coords['zcoordinate_c'].values
-                    layer_depths = ds_his.coords['zcoordinate_c'].values + 1.25
-                    layer_depths = layer_depths[::-1].tolist()
+                if 'zcoordinate_c' in ds_his.coords:
+                    # ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2).astype('float64')
+                    ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)
+                    depths = np.unique(ds_his.coords['zcoordinate_c'].values)
+                    interval = abs(depths[1] - depths[0]) / 2
+                    layer_depths = depths + interval
+                    layer_depths = list(layer_depths[::-1])
+                    layer_depths = [x for x in layer_depths if not math.isnan(x)]
                 else:
                     max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
                     # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
@@ -1756,27 +1782,76 @@ def display_his(o_file):
             else:
                 num_layers = None
 
-        st.markdown(f"### {feature} vs. Time")
+        # st.markdown(f"### {feature} vs. Time")
         fig, ax = plt.subplots(figsize=(20, 5))
 
-        if pointtype == pointoptions[0] and num_layers is not None:
-            data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
-            data_fromhis_xr.plot.line('-', ax=ax, x='time')
-            ax.legend(data_fromhis_xr.stations.to_series())
-        elif pointtype == pointoptions[0]:
-            data_fromhis_xr = ds_his[feature].sel(stations=locations)
-            data_fromhis_xr.plot.line('-', ax=ax, x='time')
-            ax.legend(data_fromhis_xr.stations.to_series())
-        elif pointtype == pointoptions[1]:
-            data_fromhis_xr = ds_his[feature].sel(source_sink=locations)
-            data_fromhis_xr.plot.line('-', ax=ax, x='time')
-            ax.legend(data_fromhis_xr.source_sink.to_series())
+        # if pointtype == pointoptions[0] and num_layers is not None:
+        #     data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
+        #     data_fromhis_xr.plot.line('-', ax=ax, x='time')
+        #     ax.legend(data_fromhis_xr.stations.to_series())
+        # elif pointtype == pointoptions[0]:
+        #     data_fromhis_xr = ds_his[feature].sel(stations=locations)
+        #     data_fromhis_xr.plot.line('-', ax=ax, x='time')
+        #     ax.legend(data_fromhis_xr.stations.to_series())
+        # elif pointtype == pointoptions[1]:
+        #     data_fromhis_xr = ds_his[feature].sel(source_sink=locations)
+        #     data_fromhis_xr.plot.line('-', ax=ax, x='time')
+        #     ax.legend(data_fromhis_xr.source_sink.to_series())
 
-        ax.set_xlabel('Time')
-        ax.set_ylabel(feature)
-        ax.set_title('')
-        fig.tight_layout()
-        st.pyplot(fig)
+        data_for_bokeh = ds_his[feature].sel(stations=locations)
+        his_df = data_for_bokeh.to_dataframe()
+
+        # ax.set_xlabel('Time')
+        # ax.set_ylabel(feature)
+        # ax.set_title('')
+        # fig.tight_layout()
+        # st.pyplot(fig)
+
+        selected_depths = layer_depths
+        num_colors = (len(selected_depths))
+        print('num_colors', num_colors)
+        viridis_colors = Viridis256
+        step = len(viridis_colors) // num_colors
+        viridis_subset = viridis_colors[::step][:num_colors]
+
+        def update_plot_p_his(p_his, df, selected_variables_p_his):
+            # Group the data by 'Depth' and create separate ColumnDataSources for each group
+            df.reset_index()
+            grouped_data = df.groupby('zcoordinate_c', 'stations')
+
+            p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations} for All Depths'
+            p_his.renderers = []  # Remove existing renderers
+
+            for i, (depth, group) in enumerate(grouped_data):
+                depth_source = ColumnDataSource(group)
+                renderer = p_his.line(x='time', y=selected_variables_p_his, source=depth_source, line_width=2, line_color=viridis_subset[i])#, legend_label=f'{depth}m: {var}')
+                p_his.add_tools(HoverTool(renderers=[renderer],
+                                       tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
+                                                 (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
+                                       mode="vline"))
+                p_his.renderers.append(renderer)
+
+        # Call the update_plot function with the selected variables for the first plot
+        p_his = figure()
+        df_reset = his_df.reset_index()
+        update_plot_p_his(p_his, df_reset, feature)
+
+        # Show legend for the first plot
+        # p_his.legend.title = 'Depth'
+        # p_his.legend.location = "top_left"
+        # p_his.legend.label_text_font_size = '10px'
+        # p_his.legend.click_policy = "hide"  # Hide lines on legend click
+        p_his.yaxis.axis_label = f"{feature}"
+        p_his.xaxis.axis_label = "Time"
+        # plotrange = set_last_date - set_begin_date
+        # if plotrange > timedelta(days=62):
+        #     p_his.x_range = Range1d(set_begin_date - timedelta(days=3), set_last_date + timedelta(days=3))
+        # else:
+        #     p_his.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1, hours=3))
+        p_his.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+
+        # Display the Bokeh chart for the first plot using Streamlit
+        st.bokeh_chart(p_his, use_container_width=True)
 
         # Deprecated function for 'heat map' of a parameter
         # else:
@@ -1849,7 +1924,7 @@ def current():
         filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
-            selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+            selected_file = st.selectbox(label="Select which output to display", options=filtered_files)
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
@@ -1866,8 +1941,7 @@ def current():
                     st.markdown("### File uploaded is not a valid history file")
         else:
             display_his(selected_file)
-
-    else:
+    elif d3d_output == output_options[0]:
         filtered_files = [f for f in all_files if f.endswith('map.nc')] + ["Upload your own"]
         # if uploaded is not None:
         #     filtered_files.append(uploaded.name)

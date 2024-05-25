@@ -176,8 +176,56 @@ def convert_to_minutes_relative(df_convo, datetime_col, ref_time):
     df_convo = df_convo.drop('time_diff', axis=1)
     return df_convo
 
+def filter_profiler(start_date, end_date, reference_time, df, discharge, salinity, scalefactor, randomize_type):
+    """
 
-def filter_csv_by_date_range(start_date, end_date, reference_time, df):
+    :param start_date:
+    :param end_date:
+    :param reference_time:
+    :param df:
+    :param discharge:
+    :param salinity:
+    :param scalefactor: reserved for future use
+    :param randomize_type: reserved for future use
+    :return: dataframe of: Relative time; Discharge; Salinity; Temperature
+    """
+
+    source_columns = ["Temperature (Celsius)"]
+
+    # Drop columns which will not be used in the output
+    df = df.drop(columns=["Conductivity (microSiemens/centimeter)",
+                          "Specific Conductivity (microSiemens/centimeter)", "Salinity (parts per thousand, ppt)",
+                          "pH", "Dissolved Oxygen (% saturation)", "Turbidity (NTU)", "Turbidity (FNU)",
+                          "fDOM (RFU)", "fDOM (parts per billion QSU)", "Latitude",
+                          "Longitude"])
+
+    # Filter data by date range
+    df['Timestamp'] = df['Timestamp'].dt.ceil('H')
+    filtered_df = df[(df['Timestamp'] >= start_date) & (df['Timestamp'] <= end_date)]
+
+    # Add columns for data which is not driver by profiler data
+    filtered_df["Discharge (m^3/s)"] = discharge
+    filtered_df["Salinity (ppt)"] = salinity
+
+    ###################################################################################################################
+    # Write wind data file
+
+    # Convert the time column to minutes relative to the reference date
+    filtered_df = convert_to_minutes_relative(filtered_df, "Timestamp", reference_time)
+
+    # Example for converting units
+    # filtered_df['Hourly precipitation (mm/hr)'] = 24 * filtered_df['Hourly precipitation (mm/hr)']
+
+    # Select columns to include
+    col_to_source = ["time_diff_minutes", "Discharge (m^3/s)", "Salinity (ppt)", *source_columns]
+
+    # Format for .tim file (scientific notation, 7 significant digits)
+    source_sink_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_source})
+    source_sink_df = source_sink_df[col_to_source]
+
+    return source_sink_df
+
+def filter_met(start_date, end_date, reference_time, df):
     """
     Reads a CSV file, filters data by date range and specified columns,
   performs optional data manipulation, and writes the result to a new CSV file.
@@ -192,38 +240,37 @@ def filter_csv_by_date_range(start_date, end_date, reference_time, df):
                    "Shortwave (solar) radiation (W/m2)"]
     rain_columns = ["Hourly precipitation (mm/hr)"]
 
-    if df is not None:
-        if df.columns[0] == "Time":
-            column_names = {"Time": "Timestamp",
-                            "1818_time: AA[mBar]": "Instantaneous atmospheric pressure (mBar)",
-                            "1818_time: DD Retning[°]": "Wind direction 10minRollingAvg (°)",
-                            "1818_time: DX_l[°]": "Hourly average wind direction (°)",
-                            "1818_time: FF Hastighet[m/s]": "Average wind speed (m/s)",
-                            "1818_time: FG_l[m/s]": "Maximum sustained wind speed, 3-second span (m/s)",
-                            "1818_time: FG_tid_l[N/A]": "Time of maximum 3s Gust",
-                            "1818_time: FX Kast[m/s]": "Maximum sustained wind speed, 10-minute span (m/s)",
-                            "1818_time: FX_tid_l[N/A]": "Time of maximum 10 minute gust",
-                            "1818_time: PO Trykk stasjonshøyde[mBar]": "Hourly average atmospheric pressure at station "
-                                                                       "(mBar)",
-                            "1818_time: PP[mBar]": "Maximum pressure differential, 3-hour span (mBar)",
-                            "1818_time: PR Trykk redusert til havnivå[mBar]": "Instantaneous atmospheric pressure "
-                                                                              "compensated for temperature, humidity "
-                                                                              "and station elevation (mBar)",
-                            "1818_time: QLI Langbølget[W/m2]": "Longwave (IR) radiation (W/m2)",
-                            "1818_time: QNH[mBar]": "Instantaneous sea-level atmospheric pressure (mBar)",
-                            "1818_time: QSI Kortbølget[W/m2]": "Shortwave (solar) radiation (W/m2)",
-                            "1818_time: RR_1[mm]": "Hourly precipitation (mm/hr)",
-                            "1818_time: TA Middel[°C]": "Instantaneous temperature (°C)",
-                            "1818_time: TA_a_Max[°C]": "Hourly maximum temperature (°C)",
-                            "1818_time: TA_a_Min[°C]": "Hourly minimum temperature (°C)",
-                            "1818_time: UU Luftfuktighet[%RH]": "Average humidity (% relative humidity)"
-                            }
-            df = df.rename(columns=column_names)  # Assign column names for profiler data
+    if df.columns[0] == "Time":
+        column_names = {"Time": "Timestamp",
+                        "1818_time: AA[mBar]": "Instantaneous atmospheric pressure (mBar)",
+                        "1818_time: DD Retning[°]": "Wind direction 10minRollingAvg (°)",
+                        "1818_time: DX_l[°]": "Hourly average wind direction (°)",
+                        "1818_time: FF Hastighet[m/s]": "Average wind speed (m/s)",
+                        "1818_time: FG_l[m/s]": "Maximum sustained wind speed, 3-second span (m/s)",
+                        "1818_time: FG_tid_l[N/A]": "Time of maximum 3s Gust",
+                        "1818_time: FX Kast[m/s]": "Maximum sustained wind speed, 10-minute span (m/s)",
+                        "1818_time: FX_tid_l[N/A]": "Time of maximum 10 minute gust",
+                        "1818_time: PO Trykk stasjonshøyde[mBar]": "Hourly average atmospheric pressure at station "
+                                                                   "(mBar)",
+                        "1818_time: PP[mBar]": "Maximum pressure differential, 3-hour span (mBar)",
+                        "1818_time: PR Trykk redusert til havnivå[mBar]": "Instantaneous atmospheric pressure "
+                                                                          "compensated for temperature, humidity "
+                                                                          "and station elevation (mBar)",
+                        "1818_time: QLI Langbølget[W/m2]": "Longwave (IR) radiation (W/m2)",
+                        "1818_time: QNH[mBar]": "Instantaneous sea-level atmospheric pressure (mBar)",
+                        "1818_time: QSI Kortbølget[W/m2]": "Shortwave (solar) radiation (W/m2)",
+                        "1818_time: RR_1[mm]": "Hourly precipitation (mm/hr)",
+                        "1818_time: TA Middel[°C]": "Instantaneous temperature (°C)",
+                        "1818_time: TA_a_Max[°C]": "Hourly maximum temperature (°C)",
+                        "1818_time: TA_a_Min[°C]": "Hourly minimum temperature (°C)",
+                        "1818_time: UU Luftfuktighet[%RH]": "Average humidity (% relative humidity)"
+                        }
+        df = df.rename(columns=column_names)  # Assign column names for profiler data
 
-        # Data cleaning
-        for parameter in df.columns:
-            df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
-        df.iloc[:, 1:] = df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce', downcast='float')
+    # Data cleaning
+    for parameter in df.columns:
+        df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
+    df.iloc[:, 1:] = df.iloc[:, 1:].apply(pd.to_numeric, errors='coerce', downcast='float')
 
     # Sort by the time column
     df = df.sort_values(by="Timestamp")
@@ -257,7 +304,9 @@ def filter_csv_by_date_range(start_date, end_date, reference_time, df):
     wind_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_wind})
 
     # Select specified columns
+    print('wind_df before', wind_df)
     wind_df = wind_df[col_to_wind]
+    print('wind_df after', wind_df)
 
     ###################################################################################################################
     # Repeat with met data
@@ -283,11 +332,14 @@ def gen_forcing(all_files):
     st.header("Create environmental forcing functions from Brusdalen weather station data")
 
     # Read data into a pandas DataFrame
-    input_file = "All_time.csv"
-    df = pd.read_csv(input_file, header=0, sep=';', decimal=',')
+    met_input = "All_time.csv"
+    df = pd.read_csv(met_input, header=0, sep=';', decimal=',')
     df['Time'] = pd.to_datetime(df['Time']).apply(lambda x: x.to_pydatetime())
     min_date = df['Time'].min()
     max_date = df['Time'].max()
+
+    df_profile = Dashboard.upload_hourly_csv_page()
+
     rc1, rc2, rc3, rc4 = st.columns(4, gap="small")
     with rc1:
         start_date = st.date_input("Select the simulation start date", value=min_date, min_value=min_date,
@@ -308,31 +360,62 @@ def gen_forcing(all_files):
         st.markdown(":red[The start time must be before the end time. Please revise the input.]")
     else:
         reference = datetime.datetime.combine(reference_date, reference_time)
-        dfs = filter_csv_by_date_range(start, end, reference, df)
+        dfs_met = filter_met(start, end, reference, df)
+
+        # Generate a time series dataframe for each inlet
+        nominal_discharge = {"Arsetelva.tim": 0.215,
+                             "Brusdalen.tim": 0.044,
+                             "S1.tim": 0.028,
+                             "S2.tim": 0.021,
+                             "S3.tim": 0.021,
+                             "S4.tim": 0.023,
+                             "Slettebakk.tim": 0.084,
+                             "Vasstrandelva.tim": 0.273,
+                             "Vasstrandlia Pump.tim": -0.637}
+        salinity = 0.002
+        factor = 1
+        type = 0
+
+        dfs_profile = []
+        for key, value in nominal_discharge.items():
+            dfs_profile.append(filter_profiler(start_date=start, end_date=end, reference_time=reference, df=df_profile, discharge=value, salinity=salinity,
+                                               scalefactor=factor, randomize_type=type))
 
         # Set the default directory path to the current directory
         default_directory_path = ''
+
+        # Names for the output files
+        met_filenames = ["windxy.tim", "FlowFM_meteo.tim", "rainfall.tim"]
+        inlet_filenames = [f for f in all_files if f.endswith('.tim') and f not in met_filenames]
 
         # Ask the user for a directory path with the default as the current directory
         c1, c2 = st.columns(2, gap="small")
         with c1:
             directory_path = st.text_input('Enter a directory path in which to save the forcing files (current '
                                            'directory by default)', value=default_directory_path)
-
-        # Names for the output files
-        filenames = ["windxy.tim", "FlowFM_meteo.tim", "rainfall.tim"]
-
-        if st.button("Write data to Delft3D input files (.tim)"):
-            # Write filtered wind data to a new CSV file
-            for j, frame in enumerate(dfs):
+        if st.button("Write weather data to Delft3D input files (.tim)"):
+            # Write filtered wind, heat and rainfall data to new CSV files
+            for j, frame in enumerate(dfs_met):
                 if directory_path:
-                    frame.to_csv(f"{directory_path}/{filenames[j]}", index=False, header=False, sep=' ')
+                    frame.to_csv(f"{directory_path}/{met_filenames[j]}", index=False, header=False, sep=' ')
                 else:
-                    frame.to_csv(filenames[j], index=False, header=False, sep=' ')
+                    frame.to_csv(met_filenames[j], index=False, header=False, sep=' ')
             if directory_path:
-                st.write(f"Data from selected range exported as {filenames} in {directory_path}")
+                st.write(f"Data from selected range exported as {met_filenames} in {directory_path}")
             else:
-                st.write(f"Data from selected range exported as {filenames} in the working directory")
+                st.write(f"Data from selected range exported as {met_filenames} in the working directory")
+
+        if st.button("Write inlet flow data to Delft3D input files (.tim)"):
+            # Write filtered stream data to new CSV files
+            for j, frame in enumerate(dfs_profile):
+                if directory_path:
+                    frame.to_csv(f"{directory_path}/{inlet_filenames[j]}", index=False, header=False, sep=' ')
+                else:
+                    frame.to_csv(inlet_filenames[j], index=False, header=False, sep=' ')
+            if directory_path:
+                st.write(f"Data from selected range exported as {inlet_filenames} in {directory_path}")
+            else:
+                st.write(f"Data from selected range exported as {inlet_filenames} in the working directory")
 
 
 def post_cor(all_files):
