@@ -1817,16 +1817,12 @@ def display_his(o_file):
             data_for_bokeh = ds_his[feature].sel(source_sink=locations)
         his_df = data_for_bokeh.to_dataframe()
 
-        def update_plot_p_his(p_his, df, selected_variables_p_his):
+        def update_plot_p_his(p_his, df, selected_variables_p_his, grouptype, groupvar):
 
             # Group the data by 'Depth' and create separate ColumnDataSources for each group
             df.reset_index()
-            if 'zcoordinate_c' in df.columns:
-                grouped_data = df.groupby('zcoordinate_c')
-            elif 'stations' in df.columns:
-                grouped_data = df.groupby('stations')
-            elif 'source_sink' in df.columns:
-                grouped_data = df.groupby('source_sink')
+
+            grouped_data = df.groupby(groupvar)
 
             num_colors = grouped_data.ngroups
             print('num_colors', num_colors)
@@ -1839,9 +1835,9 @@ def display_his(o_file):
 
             for i, (groupname, group) in enumerate(grouped_data):
                 groupname_source = ColumnDataSource(group)
-                renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2, line_color=viridis_subset[i], legend_label=f'{groupname}m: {selected_variables_p_his}')
+                renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2, line_color=viridis_subset[i], legend_label=f'{groupname}: {selected_variables_p_his}')
                 p_his.add_tools(HoverTool(renderers=[renderer],
-                                       tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Group", f'{groupname}'),
+                                       tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("grouptype", f'{groupname}'),
                                                  (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
                                        mode="vline"))
                 p_his.renderers.append(renderer)
@@ -1849,11 +1845,20 @@ def display_his(o_file):
         # Call the update_plot function with the selected variables for the first plot
         p_his = figure()
         df_reset = his_df.reset_index()
-        update_plot_p_his(p_his, df_reset, feature)
+        if 'zcoordinate_c' in df_reset.columns:
+            groupvar = 'zcoordinate_c'
+            grouptype = 'Depth'
+        elif 'stations' in df_reset.columns:
+            groupvar = 'stations'
+            grouptype = 'Observation Point'
+        elif 'source_sink' in df_reset.columns:
+            groupvar = 'source_sink'
+            grouptype = 'Source/Sink'
+        update_plot_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar)
 
         # Show legend for the first plot
         p_his.add_layout(p_his.legend[0], 'right')
-        p_his.legend.title = 'Depth'
+        p_his.legend.title = grouptype
         p_his.legend.location = "top_left"
         p_his.legend.label_text_font_size = '10px'
         p_his.legend.click_policy = "hide"  # Hide lines on legend click
@@ -1869,54 +1874,58 @@ def display_his(o_file):
         # Display the Bokeh chart for the first plot using Streamlit
         st.bokeh_chart(p_his, use_container_width=True)
 
-        # Deprecated function for 'heat map' of a parameter
-        # else:
-        #     # # Plot colors representing the parameter on depth vs. time axis
-        #     for i, station in enumerate(locations):
-        #         ds_his_sel = ds_his_o.isel(stations=i).isel(time=slice(0, 50))
-        #         fig_z, ax = plt.subplots(1, 1, figsize=(20, 5))
-        #         pc = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax,
-        #                               cmap='jet', vmin=vmin, vmax=vmax)  # temperature pcolormesh
-        #
-        #         # Option to add contours to break up colormap (I think this looks bad)
-        #         # CS = dfmt.plot_ztdata(ds_his_sel, varname=feature, ax=ax, only_contour=True, levels=9,
-        #         #                       colors='k', linewidths=0.8, linestyles='solid')
-        #         # ax.clabel(CS, fontsize=10)
-        #
-        #         # Add a custom color bar to define temperature ranges
-        #         colorbar = plt.colorbar(pc, orientation="vertical", fraction=0.1, pad=0.001)
-        #         colorbar.set_label(feature)
-        #         ax.set_xlabel(feature)
-        #         ax.set_ylabel("Depth")
-        #         st.markdown(f"### {feature} vs. time at {locations[i]}")
-        #         st.pyplot(fig_z)
-
     ###################################################################################################################
     # 3. Plot parameters vs. depth at selected point(s) at one time
     else:
         if 'laydim' in ds_his[feature].dims:
+            data_for_bokeh = ds_his[feature].sel(stations=locations)
+            his_df = data_for_bokeh.to_dataframe()
+            df_reset = his_df.reset_index()
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
-                realtimes = list(ds_his.coords['time'].values)
-                plottime = st.selectbox("Select times at which to plot instantaneous values vs. depth",
-                                        ds_his.coords['time'].values)
+                plottime = st.multiselect("Select times at which to plot instantaneous values vs. depth",
+                                    np.unique(df_reset['time']), default=df_reset['time'].iloc[:1])
 
-            time_list = [i for i in range(ds_his.dims['time'])]
-            # print('time list', time_list, type(time_list))
-            # print('real times', realtimes, type(realtimes))
+            p2 = figure(x_axis_label=f'{feature}', y_axis_label='Depth',
+                        title=f'Vertical Profile for {feature} at {plottime}')
+            def update_instant(feature, plottime):
+                p2.title.text = f'Vertical Profile for {feature} at {plottime}'
 
-            timeindex = time_list[realtimes.index(plottime)]
-            data_fromhis_xr = ds_his[feature].sel(stations=locations).isel(time=timeindex)
-            fig_instant_profile, ax = plt.subplots(figsize=(20, 5))
-            data_fromhis_xr.T.plot.line('-', ax=ax, y='zcoordinate_c')
-            # ax.legend(data_fromhis_xr.stations.to_series(), fontsize=9)  # optional, to reduce legend font size
-            # ax.set_aspect('equal')
-            ax.set_xlabel(feature)
-            ax.set_ylabel("Depth")
-            ax.set_title("")
-            st.markdown(f"### {feature} at {plottime}")
-            fig_instant_profile.tight_layout()
-            st.pyplot(fig_instant_profile)
+                p2.renderers = []  # Remove existing renderers
+
+                for j, date_val in enumerate(plottime):
+                    # Filter data based on selected date for the second plot
+                    filtered_data_p2 = df_reset[df_reset['time'] == date_val]
+
+                    # Sort the data by 'Depth'
+                    filtered_data_p2 = filtered_data_p2.sort_values(by='zcoordinate_c')
+
+                    # Create Bokeh ColumnDataSource for the second plot
+                    source_plot2 = ColumnDataSource(filtered_data_p2)
+
+                    for i, var in enumerate(locations):
+                        line_renderer = p2.line(x=feature, y='zcoordinate_c', source=source_plot2, line_width=1,
+                                                line_color=Category20_20[i],
+                                                legend_label=f'{var}')
+                        p2.add_tools(
+                            HoverTool(renderers=[line_renderer], tooltips=[("Depth", '@zcoordinate_c'), (var, f'@{{{var}}}')],
+                                      mode="vline"))
+                        p2.renderers.append(line_renderer)
+
+            # Call the update_plot function with the selected variables and date for the second plot
+            update_instant(feature, plottime)
+
+            # Show legend for the second plot
+            p2.legend.title = 'Parameters'
+            p2.add_layout(p2.legend[0], 'right')
+            p2.legend.location = "top_left"
+            p2.legend.label_text_font_size = '10px'
+            p2.legend.click_policy = "hide"  # Hide lines on legend click
+
+            # Display the Bokeh chart for the second plot using Streamlit
+            st.bokeh_chart(p2, use_container_width=True)
+            st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                     "Click legend entries to toggle series on/off.")
         else:
             st.write(f"Selected variable does not vary with depth.")
 
