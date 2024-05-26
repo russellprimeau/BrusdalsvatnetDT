@@ -1502,7 +1502,7 @@ def display_map(o_file):
                     layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
                     layer_depths = layer_depths.tolist()
                     # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
-                depth_selected = st.selectbox("Select depth layer to display (m)", layer_depths)
+                depth_selected = st.selectbox("Select layers to display, by depth below mean surface elevation (m)", layer_depths)
                 layer = layer_list[layer_depths.index(depth_selected)]
             else:
                 num_layers = None
@@ -1783,33 +1783,21 @@ def display_his(o_file):
                     layer_list = list(reversed(range(0, num_layers)))
                 hc1, hc2 = st.columns(2, gap="small")
                 with hc1:
-                    depth_selected = st.selectbox("Select depth at which to plot", layer_depths_his)
-                    layers = layer_list[layer_depths_his.index(depth_selected)]
+                    depth_selected = st.multiselect("Select depth at which to plot", ["All"] + layer_depths_his, default="All")
+                    if "All" in depth_selected:
+                        layers = layer_depths_his
+                    else:
+                        layers = depth_selected
+                    # layers = layer_list[layer_depths_his.index(depth_selected)]
             else:
                 num_layers = 1
+                layers = [0]
         else:
             num_layers = 1
+            layers = [0]
 
         # st.markdown(f"### {feature} vs. Time")
         fig, ax = plt.subplots(figsize=(20, 5))
-
-        # if pointtype == pointoptions[0] and num_layers is not None:
-        #     data_fromhis_xr = ds_his[feature].sel(stations=locations, laydim=layers)
-        #     data_fromhis_xr.plot.line('-', ax=ax, x='time')
-        #     ax.legend(data_fromhis_xr.stations.to_series())
-        # elif pointtype == pointoptions[0]:
-        #     data_fromhis_xr = ds_his[feature].sel(stations=locations)
-        #     data_fromhis_xr.plot.line('-', ax=ax, x='time')
-        #     ax.legend(data_fromhis_xr.stations.to_series())
-        # elif pointtype == pointoptions[1]:
-        #     data_fromhis_xr = ds_his[feature].sel(source_sink=locations)
-        #     data_fromhis_xr.plot.line('-', ax=ax, x='time')
-        #     ax.legend(data_fromhis_xr.source_sink.to_series())
-        # ax.set_xlabel('Time')
-        # ax.set_ylabel(feature)
-        # ax.set_title('')
-        # fig.tight_layout()
-        # st.pyplot(fig)
 
         if pointtype == pointoptions[0]:
             data_for_bokeh = ds_his[feature].sel(stations=locations)
@@ -1817,30 +1805,49 @@ def display_his(o_file):
             data_for_bokeh = ds_his[feature].sel(source_sink=locations)
         his_df = data_for_bokeh.to_dataframe()
 
-        def update_plot_p_his(p_his, df, selected_variables_p_his, grouptype, groupvar):
+        def update_plot_p_his(p_his, df, selected_variables_p_his, grouptype, groupvar, layers):
 
-            # Group the data by 'Depth' and create separate ColumnDataSources for each group
+            # Group the data by depth and create separate ColumnDataSources for each group
             df.reset_index()
+            if groupvar == 'zcoordinate_c':
+                df[groupvar] = df[groupvar] + interval
+                df_filtered = df[df[groupvar].isin(layers)]
+                grouped_data = df_filtered.groupby(groupvar)
+            else:
+                grouped_data = df.groupby(groupvar)
 
-            grouped_data = df.groupby(groupvar)
+            if grouped_data.ngroups != 0:
+                num_colors = grouped_data.ngroups
+                viridis_colors = Viridis256
+                step = len(viridis_colors) // num_colors
+                viridis_subset = viridis_colors[::step][:num_colors]
 
-            num_colors = grouped_data.ngroups
-            print('num_colors', num_colors)
-            viridis_colors = Viridis256
-            step = len(viridis_colors) // num_colors
-            viridis_subset = viridis_colors[::step][:num_colors]
+                p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations}'
+                p_his.renderers = []  # Remove existing renderers
 
-            p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations}'
-            p_his.renderers = []  # Remove existing renderers
-
-            for i, (groupname, group) in enumerate(grouped_data):
-                groupname_source = ColumnDataSource(group)
-                renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2, line_color=viridis_subset[i], legend_label=f'{groupname}: {selected_variables_p_his}')
-                p_his.add_tools(HoverTool(renderers=[renderer],
-                                       tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("grouptype", f'{groupname}'),
-                                                 (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
-                                       mode="vline"))
-                p_his.renderers.append(renderer)
+                for i, (groupname, group) in enumerate(grouped_data):
+                    if groupvar == 'zcoordinate_c':
+                        ingroup = group.groupby('stations')
+                        for j, (obspoint, obs) in enumerate(ingroup):
+                            groupname_source = ColumnDataSource(obs)
+                            renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2,
+                                                  line_color=viridis_subset[i],
+                                                  legend_label=f'{obspoint}: {groupname}')
+                            p_his.add_tools(HoverTool(renderers=[renderer],
+                                               tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), (grouptype, f'{groupname}'), ('Location', f'{obspoint}'),
+                                                         (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
+                                               mode="vline"))
+                            p_his.renderers.append(renderer)
+                    else:
+                        groupname_source = ColumnDataSource(group)
+                        renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2,
+                                              line_color=viridis_subset[i],
+                                              legend_label=f'{groupname}')
+                        p_his.add_tools(HoverTool(renderers=[renderer],
+                                           tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), (grouptype, f'{groupname}'),
+                                                     (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
+                                           mode="vline"))
+                        p_his.renderers.append(renderer)
 
         # Call the update_plot function with the selected variables for the first plot
         p_his = figure()
@@ -1854,7 +1861,7 @@ def display_his(o_file):
         elif 'source_sink' in df_reset.columns:
             groupvar = 'source_sink'
             grouptype = 'Source/Sink'
-        update_plot_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar)
+        update_plot_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar, layers=layers)
 
         # Show legend for the first plot
         p_his.add_layout(p_his.legend[0], 'right')
@@ -1881,6 +1888,7 @@ def display_his(o_file):
             data_for_bokeh = ds_his[feature].sel(stations=locations)
             his_df = data_for_bokeh.to_dataframe()
             df_reset = his_df.reset_index()
+            print(df_reset['time'].dtypes)
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
                 plottime = st.multiselect("Select times at which to plot instantaneous values vs. depth",
@@ -1889,27 +1897,34 @@ def display_his(o_file):
             p2 = figure(x_axis_label=f'{feature}', y_axis_label='Depth',
                         title=f'Vertical Profile for {feature} at {plottime}')
             def update_instant(feature, plottime):
-                p2.title.text = f'Vertical Profile for {feature} at {plottime}'
 
+                p2.title.text = f'Vertical Profile for {feature}'
                 p2.renderers = []  # Remove existing renderers
+                # Filter DataFrame based on selected depths
+                filtered_df_p1 = df_reset[df_reset['stations'].isin(locations)]
+
 
                 for j, date_val in enumerate(plottime):
                     # Filter data based on selected date for the second plot
-                    filtered_data_p2 = df_reset[df_reset['time'] == date_val]
+                    filtered_data_p2 = filtered_df_p1[filtered_df_p1['time'] == date_val]
+                    date_string = np.datetime_as_string(date_val, unit='m')
 
                     # Sort the data by 'Depth'
                     filtered_data_p2 = filtered_data_p2.sort_values(by='zcoordinate_c')
 
-                    # Create Bokeh ColumnDataSource for the second plot
-                    source_plot2 = ColumnDataSource(filtered_data_p2)
+                    station_groups = filtered_data_p2.groupby('stations')
 
-                    for i, var in enumerate(locations):
+                    for i, (var, group) in enumerate(station_groups):
+                        # Create Bokeh ColumnDataSource for the second plot
+
+                        source_plot2 = ColumnDataSource(group)
+
                         line_renderer = p2.line(x=feature, y='zcoordinate_c', source=source_plot2, line_width=1,
-                                                line_color=Category20_20[i],
-                                                legend_label=f'{var}')
-                        p2.add_tools(
-                            HoverTool(renderers=[line_renderer], tooltips=[("Depth", '@zcoordinate_c'), (var, f'@{{{var}}}')],
-                                      mode="vline"))
+                                                line_color=Category20_20[j + i*len(plottime)],
+                                                legend_label=f'{var} at {date_string}')
+                        p2.add_tools(HoverTool(renderers=[line_renderer], tooltips=[("Depth", '@zcoordinate_c'),
+                                                                                    ('Time', date_string),
+                                                                                    (feature, f'@{{{feature}}}')], mode="hline"))
                         p2.renderers.append(line_renderer)
 
             # Call the update_plot function with the selected variables and date for the second plot
