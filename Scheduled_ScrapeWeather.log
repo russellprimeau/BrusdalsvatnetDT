@@ -4262,3 +4262,100 @@ INFO:root:Command succeeded: git add .
 INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
 Scheduled_ScrapeHourly.log
 INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference d340fb0c-6664-4a48-9f68-191cc495650d is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-27 17:08:55
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-27 18:09:03
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference 2ed29dae-130b-49a1-a199-623026c3cf37 is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-27 19:08:57
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference eed4bc9a-1e6c-4d60-98b5-394fb1c03581 is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-27 20:09:02
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-27 21:09:02
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference 610ac737-becf-429b-8a72-1f0b5eddf93d is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-27 22:08:54
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 00:08:56
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
