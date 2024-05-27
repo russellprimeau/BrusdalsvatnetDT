@@ -1823,7 +1823,7 @@ def display_error(ds_his):
                 p_err.renderers.append(renderer)
 
         # Call the update_plot function with the selected variables for the first plot
-        p_err = figure(title=f'Error in modeled {feature} at Profiler Station at Surface (2.95m)')
+        p_err = figure(title=f'Error in modeled {feature} at 2.95m depth at Profiler Station')
         if len(error_stats) < 1 or error_stats is None:
             st.warning("Please select at least one value to plot.")
         else:
