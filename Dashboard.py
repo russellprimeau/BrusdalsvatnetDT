@@ -24,6 +24,7 @@ import contextily as ctx
 import dfm_tools as dfmt
 import plotly.express as px
 import math
+import bisect
 
 
 def main():
@@ -519,8 +520,8 @@ def vertical():
     # Import and pre-process data
 
     # Read data from a CSV file into a Pandas DataFrame, skipping metadata rows
-    csv_file2 = "Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
-    df = pd.read_csv(csv_file2)
+    depth_csv = "Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
+    df = pd.read_csv(depth_csv)
 
     # Assign column names for profiler data
     column_names = {
@@ -725,10 +726,12 @@ def vertical():
         # Group the data by 'Depth' and create separate ColumnDataSources for each group
         grouped_data = filtered_df.groupby('Depth')
 
-        num_colors = (len(selected_depths)) * (len(selected_variables_p1))
+        num_colors = (len(selected_depths))
         viridis_colors = Viridis256
         step = len(viridis_colors) // num_colors
         viridis_subset = viridis_colors[::step][:num_colors]
+        viridis_subset = viridis_subset[::-1]
+        line_styles = ['solid', 'dashed', 'dotdash', 'dotted']
 
         # Callback function for variable selection in the first plot
         def update_plot_p1(selected_variables_p1):
@@ -751,8 +754,8 @@ def vertical():
                     # Replace the 'Value' with NaN when a gap is detected
                     depth_source.data[var] = np.where(depth_source.data['Gap'], np.nan, depth_source.data[var])
                     renderer = p1.line(x='Timestamp', y=var, source=depth_source, line_width=2,
-                                       line_color=viridis_subset[num_colors - (1 + i + j * len(selected_variables_p1))],
-                                       legend_label=f'{depth}m: {var}')
+                                       line_color=viridis_subset[i],
+                                       legend_label=f'{depth}m: {var}', line_dash=line_styles[j])
                     p1.add_tools(HoverTool(renderers=[renderer],
                                            tooltips=[("Time", "@Timestamp{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
                                                      (var, f'@{{{var}}}')], formatters={"@Timestamp": "datetime", },
@@ -1625,16 +1628,567 @@ def display_map(o_file):
         st.pyplot(fig_cross)
 
 
-def display_error():
-    compatible_list = ["Salinity (ppt)", "Temperature (◦C)"]
-    errorplots = ["Surface (hourly)", "Depth contours"]
+def display_error(ds_his):
+    # Dictionary for converting parameter names as {model name : profiler name}
+    compatibility = {"Salinity (ppt)": "Salinity (parts per thousand, ppt)",
+                     "Temperature (◦C)": "Temperature (Celsius)"}
+    errorplots = ["Hourly (depth = 2.95 m)", "Depth profiles (12-hour sample rate)"]
     c1, c2 = st.columns(2, gap='small')
     with c1:
-        feature = st.selectbox("Select a variable to plot", compatible_list)
-        errorplot = st.selectbox("Select a sensor dataset for comparison", errorplots)
-    # if errorplot == errorplots[0]:
-    #
-    # elif errorplot == errorplots[1]:
+        feature = st.selectbox("Select a variable to compare", compatibility.keys())
+        column_name = compatibility.get(feature)  # 'feature' name in reference dataset
+        errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
+
+    if errorplot == errorplots[0]:
+        df = upload_hourly_csv_page()
+
+        # Check if there are at least two columns in the DataFrame
+        if len(df.columns) < 2:
+            st.warning("DataFrame must have at least two columns for X and Y variables.")
+            return None
+
+        # Define conditions for each parameter which indicate errors in the data
+        error_conditions = {
+            "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                    df['Timestamp'] > pd.to_datetime('2099-12-31')),
+            "Temperature (Celsius)": (df['Temperature (Celsius)'] < 1) | (df['Temperature (Celsius)'] > 25),
+            "Conductivity (microSiemens/centimeter)": (df['Conductivity (microSiemens/centimeter)'] < 0) |
+                                                      (df['Conductivity (microSiemens/centimeter)'] > 45),
+            "Specific Conductivity (microSiemens/centimeter)": (
+                    df['Specific Conductivity (microSiemens/centimeter)'] < 1),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "pH": (df['pH'] < 2) | (df['pH'] > 12),
+            "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
+                    df['Dissolved Oxygen (% saturation)'] > 120),
+            "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
+            "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
+            "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
+            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (
+                    df['fDOM (parts per billion QSU)'] > 300),
+            "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
+            "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
+        }
+
+        # Replace values meeting the error conditions with np.nan using boolean indexing
+        for col, condition in error_conditions.items():
+            df.loc[condition, col] = np.nan
+
+        # Define start and end timestamps for the range to drop
+        start_removal = pd.to_datetime('2022-03-24 00:00')
+        end_removal = pd.to_datetime('2022-04-22 00:00')
+
+        # Create boolean mask for rows to keep (outside the time range)
+        mask = (df['Timestamp'] < start_removal) | (df['Timestamp'] > end_removal)
+
+        # Drop rows not satisfying the mask (within the time range)
+        df = df[mask]
+
+        depths = np.unique(ds_his.coords['zcoordinate_c'].values)
+        interval = abs(depths[1] - depths[0]) / 2
+        ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2) # Use cell-center depth, not +1.25m 'interval' correction
+        data_for_bokeh = ds_his[feature].isel(stations=0)
+        his_df = data_for_bokeh.to_dataframe()
+        his_df.reset_index()
+        his_df = his_df.dropna(subset=[feature])  # Drop rows for layers with no value for selected feature
+        reference = -2.95  # Average depth at which hourly data is measured
+
+
+        # Since temperature gradients are large at the surface, interpolate the model value at the sensor's depth
+        # Set the target x value where we want to interpolate y
+
+        # Ensure that x and y columns are numeric
+        his_df['zcoordinate_c'] = pd.to_numeric(his_df['zcoordinate_c'], errors='coerce')
+        his_df[feature] = pd.to_numeric(his_df[feature], errors='coerce')
+
+        # Function to interpolate y for each group at target_x
+        def interpolate_at_target_x(group, target_x):
+            # Sort the group by x values
+            group_sorted = group.sort_values('zcoordinate_c')
+            # Interpolate the y value at target_x
+            interpolated_y = np.interp(target_x, group_sorted['zcoordinate_c'], group_sorted[feature])
+            # Create a new row with the interpolated value
+            new_row = {'time': group.name, 'zcoordinate_c': reference, feature: interpolated_y}
+            return new_row
+
+        # Apply the interpolation for each group and collect new rows
+        new_rows = his_df.groupby('time').apply(lambda group: interpolate_at_target_x(group, reference)).tolist()
+
+        # Create a new DataFrame from the new rows
+        his_df = pd.DataFrame(new_rows)
+
+        # Sort the column for efficient comparison
+        df_sorted = his_df.sort_values(by='zcoordinate_c')
+
+        # Drop all rows not from the layer most closely matching the sensor's depth
+        surface_depth = df_sorted.loc[df_sorted.index[bisect.bisect_left(df_sorted['zcoordinate_c'], reference)], 'zcoordinate_c']
+        surfacehis_df = his_df[his_df['zcoordinate_c'] == surface_depth]
+        surfacehis_df = surfacehis_df.reset_index()
+
+        # Assuming your DataFrame is named 'df' with columns 'time' and 'x'
+        df = df.set_index('Timestamp')  # Set the index for interpolation
+
+        def interpolate_times(df, target_df, target_column, column_name):
+            """
+            Interpolates the value of a specified column for every datetime in a target column of a different DataFrame.
+
+            Parameters:
+            - df (pd.DataFrame): DataFrame with a datetime index where interpolation is performed.
+            - target_df (pd.DataFrame): DataFrame containing the target datetimes.
+            - target_column (str): The column in target_df containing the target datetimes.
+            - column_name (str): The column in df for which to interpolate the values.
+
+            Returns:
+            - result_df (pd.DataFrame): DataFrame with the target datetimes and the interpolated values.
+            """
+            # Ensure the index of df is a DatetimeIndex
+            if not isinstance(df.index, pd.DatetimeIndex):
+                raise ValueError("The DataFrame df index must be a DatetimeIndex.")
+
+            # Drop duplicate indices
+            df = df[~df.index.duplicated(keep='first')]
+
+            # Ensure df is sorted by the datetime index
+            df = df.sort_index()
+
+            # Ensure target_column exists in target_df
+            if target_column not in target_df.columns:
+                raise ValueError(f"The target column {target_column} does not exist in the target DataFrame.")
+
+            # Convert target_column to Timestamps if not already
+            target_df[target_column] = pd.to_datetime(target_df[target_column])
+
+            # Ensure the target datetimes are within the range of df index
+            if (target_df[target_column] < df.index.min()).any() or (target_df[target_column] > df.index.max()).any():
+                raise ValueError("One or more target datetimes are outside the range of the DataFrame index.")
+
+            # Reindex df to include the target datetimes and interpolate
+            all_datetimes = df.index.union(target_df[target_column])
+            df_interpolated = df.reindex(all_datetimes).interpolate(method='time')
+
+            # Extract the interpolated values for the target datetimes
+            interpolated_values = df_interpolated.loc[target_df[target_column], column_name].values
+
+            # Create the result DataFrame
+            result_df = target_df.copy()
+            result_df[f'Reference {column_name}'] = interpolated_values
+            result_df[feature].rename(f'Model {feature}')
+            result_df = result_df.rename(columns={feature: f'Model {feature}'})
+            return result_df
+
+        result = interpolate_times(df, surfacehis_df, 'time', column_name)
+
+        # Compute some vector statistics comparing the model and reference values
+        error_signals = [f'Model {feature}', f'Reference {column_name}', 'Difference', 'Absolute Error', 'Squared Error', 'Percent Error']
+        result[error_signals[2]] = result[error_signals[1]] - result[error_signals[0]]
+        result[error_signals[3]] = abs(result[error_signals[2]])
+        result[error_signals[4]] = result[error_signals[2]]**2
+        result[error_signals[5]] = 100*result[error_signals[2]]/result[error_signals[1]]
+
+        # Compute summary (scalar) statistics
+        MM = result[error_signals[0]].mean()
+        RM = result[error_signals[1]].mean()
+        MSTDEV = result[error_signals[0]].std()
+        RSTDEV = result[error_signals[1]].std()
+        correlation = result[f'Model {feature}'].corr(result[f'Reference {column_name}'])
+        SSE = result[error_signals[2]].sum()
+        MAE = result[error_signals[3]].sum() / len(result[error_signals[3]])
+        MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
+        RMSE = math.sqrt(MSE)
+        MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
+        statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
+                                    "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                    "Root Mean Squared Error", 'Mean Percent Error'],
+                      'Model': [MM, MSTDEV,None,None,None,None,None,None],
+                      'Reference Data': [RM, RSTDEV,None,None,None,None,None,None],
+                      'Comparison': [RM-MM, RSTDEV-MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
+        stats_df = pd.DataFrame(statvalues)
+        stats_df = stats_df.reset_index(drop=True)
+
+        c1, c2 = st.columns(2, gap='small')
+        with c1:
+            error_stats = st.multiselect("Choose which error statistics to plot", error_signals,
+                                         default=error_signals[2])
+
+        def update_p_err(p_err, df, error_type, palette):
+            p_err.renderers = []  # Remove existing renderers
+            err_source = ColumnDataSource(df)
+            for i, (error) in enumerate(error_type):
+                renderer = p_err.line(x='time', y=error_type[i], source=err_source, line_width=2,
+                                      line_color=palette[i],
+                                      legend_label=error)
+                p_err.add_tools(HoverTool(renderers=[renderer],
+                                   tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
+                                             (error_type[i], f'@{{{error}}}')], formatters={"@time": "datetime", },
+                                   mode="vline"))
+                p_err.renderers.append(renderer)
+
+        # Call the update_plot function with the selected variables for the first plot
+        p_err = figure(title=f'Error in modeled {feature} at Profiler Station at Surface (2.95m)')
+        if len(error_stats) < 1 or error_stats is None:
+            st.warning("Please select at least one value to plot.")
+        else:
+            num_colors = len(error_stats)
+            viridis_colors = Viridis256
+            step = len(viridis_colors) // num_colors
+            viridis_subset = viridis_colors[::step][:num_colors]
+            update_p_err(p_err, result, error_stats, viridis_subset)
+            p_err.add_layout(p_err.legend[0], 'right')
+            p_err.legend.title = 'Series'
+            p_err.legend.location = "top_left"
+            p_err.legend.label_text_font_size = '10px'
+            p_err.legend.click_policy = "hide"  # Hide lines on legend click
+            p_err.yaxis.axis_label = f"{feature}"
+            p_err.xaxis.axis_label = "Time"
+            p_err.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+            st.bokeh_chart(p_err, use_container_width=True)  # Display the Bokeh chart using Streamlit
+        st.write(f"Time-averaged summary statistics for error in modeled {feature} at surface")
+        st.dataframe(stats_df, hide_index=True)
+    elif errorplot == errorplots[1]:
+        # Compute and plot error at all depths
+
+        # Import and pre-process vertical profile data
+        depth_csv = "Profiler_modem_PFL_Step.csv"  # Replace with the actual file path
+        df = pd.read_csv(depth_csv)
+
+        # Assign column names for profiler data
+        column_names = {
+            "TIMESTAMP": "Timestamp",
+            "RECORD": "Record Number",
+            "PFL_Counter": "Day",
+            "CntRS232": "CntRS232",
+            "RS232Dpt": "Vertical Position1 (m)",
+            "sensorParms(1)": "Temperature (Celsius)",
+            "sensorParms(2)": "Conductivity (microSiemens/centimeter)",
+            "sensorParms(3)": "Specific Conductivity (microSiemens/centimeter)",
+            "sensorParms(4)": "Salinity (parts per thousand, ppt)",
+            "sensorParms(5)": "pH",
+            "sensorParms(6)": "Dissolved Oxygen (% saturation)",
+            "sensorParms(7)": "Turbidity (NTU)",
+            "sensorParms(8)": "Turbidity (FNU)",
+            "sensorParms(9)": "Vertical Position (m)",
+            "sensorParms(10)": "fDOM (RFU)",
+            "sensorParms(11)": "fDOM (parts per billion QSU)",
+            "lat": "Latitude",
+            "lon": "Longitude",
+        }
+        df = df.rename(columns=column_names)
+
+        # Convert the time column to a datetime object
+        df['Timestamp'] = pd.to_datetime(df['Timestamp']).apply(lambda x: x.to_pydatetime())
+
+        # Drop extraneous variables
+        df = df.drop(columns=['Record Number', 'Day', 'CntRS232', 'Vertical Position1 (m)'])
+
+        # Create new columns for date and time
+        df['Date'] = df['Timestamp'].dt.date
+        df['Time'] = df['Timestamp'].dt.time
+
+        # Add rounded depth for plotting
+        df['Depth'] = df['Vertical Position (m)'].round().astype(int)
+
+        # Reorder columns so that water parameters are to the right of 'metadata' (time, location)
+        column_to_move = 'Longitude'
+        df = df[[column_to_move] + [col for col in df.columns if col != column_to_move]]
+        column_to_move = 'Latitude'
+        df = df[[column_to_move] + [col for col in df.columns if col != column_to_move]]
+        column_to_move = 'Depth'
+        df = df[[column_to_move] + [col for col in df.columns if col != column_to_move]]
+        column_to_move = 'Time'
+        df = df[[column_to_move] + [col for col in df.columns if col != column_to_move]]
+        column_to_move = 'Date'
+        df = df[[column_to_move] + [col for col in df.columns if col != column_to_move]]
+        column_to_move = 'Timestamp'
+        df = df[[column_to_move] + [col for col in df.columns if col != column_to_move]]
+
+        # Data cleaning
+        for parameter in df.columns:
+            df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
+        df.iloc[:, 4:] = df.iloc[:, 4:].apply(pd.to_numeric, errors='coerce', downcast='float')
+
+        # Convert 'Date' to datetime objects, so it can be used to sort Vertical Profiles
+        df['Date'] = pd.to_datetime(df['Date'])
+
+        # Define conditions for each parameter which indicate errors in the data
+        error_conditions = {
+            "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                    df['Timestamp'] > pd.to_datetime('2099-12-31')),
+            "Temperature (Celsius)": (df['Temperature (Celsius)'] < 1) | (df['Temperature (Celsius)'] > 25),
+            "Conductivity (microSiemens/centimeter)": (df['Conductivity (microSiemens/centimeter)'] < 0) |
+                                                      (df['Conductivity (microSiemens/centimeter)'] > 45),
+            "Specific Conductivity (microSiemens/centimeter)": (
+                    df['Specific Conductivity (microSiemens/centimeter)'] < 1),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "pH": (df['pH'] < 1) | (df['pH'] > 13),
+            "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
+                    df['Dissolved Oxygen (% saturation)'] > 120),
+            "Turbidity (NTU)": (df['Turbidity (NTU)'] < 0),
+            "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
+            "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
+            "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (
+                    df['fDOM (parts per billion QSU)'] > 300),
+            "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
+            "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
+        }
+
+        # Replace values meeting the error conditions with np.nan using boolean indexing
+        for col, condition in error_conditions.items():
+            df.loc[condition, col] = np.nan
+
+        # Define start and end timestamps for the range to drop
+        start_removal = pd.to_datetime('2022-03-24 00:00')
+        end_removal = pd.to_datetime('2022-04-22 00:00')
+
+        # Create boolean mask for rows to keep (outside the time range)
+        mask = (df['Timestamp'] < start_removal) | (df['Timestamp'] > end_removal)
+
+        # Drop rows not satisfying the mask (within the time range)
+        df = df[mask]
+
+        depths = np.unique(ds_his.coords['zcoordinate_c'].values)
+        interval = abs(depths[1] - depths[0]) / 2
+        ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)  # Use cell-center depth, not +1.25m 'interval' correction
+        data_for_bokeh = ds_his[feature].isel(stations=0)
+        his_df = data_for_bokeh.to_dataframe()
+        his_df.reset_index()
+        his_df = his_df.dropna(subset=[feature])  # Drop rows for layers with no value for selected feature
+        his_df = his_df.reset_index()
+
+        # Define a function to floor datetime to the nearest 12 hours (for grouping profiling missions)
+        def floor_to_nearest_12_hours(dt):
+            # Calculate the number of hours since the beginning of the datetime
+            hours = dt.hour
+            # Calculate the floored hour by subtracting the remainder of hours divided by 12
+            floored_hour = hours - (hours % 12)
+            # Replace the hour and minute in the original datetime with the floored hour
+            return dt.replace(hour=floored_hour, minute=0, second=0, microsecond=0)
+
+        # Apply the function to the 'datetime' column
+        df['profile_time'] = df['Timestamp'].apply(floor_to_nearest_12_hours)
+
+        # Drop all rows from model data which do not have a matching datetime in the reference (sensor) dataset
+        mask1 = his_df['time'].isin(df['profile_time'])
+        filtered_his_df = his_df[mask1]  # Filter df1 using the mask
+
+        # Drop all rows from sensor data which do not have a matching datetime in the model dataset (for size reduction)
+        mask2 = df['profile_time'].isin(filtered_his_df['time'])
+        filtered_df = df[mask2]  # Filter df1 using the mask
+
+        # Ensure that x and y columns are numeric, convert depth to model convention (negative values)
+        filtered_df['Depth'] = -1 * pd.to_numeric(filtered_df['Depth'], errors='coerce')
+        filtered_df[column_name] = pd.to_numeric(filtered_df[column_name], errors='coerce')
+        filtered_his_df[feature] = pd.to_numeric(filtered_his_df[feature], errors='coerce')
+
+        # Set indices to ensure proper interpolation
+        filtered_df = filtered_df.set_index('profile_time')
+        filtered_his_df = filtered_his_df.set_index('time')
+
+        # Drop all rows from model data which are below the lowest sensor data from that date (would be extrapolation)
+        min_reference_values = filtered_df.groupby(filtered_df.index)['Depth'].min()
+
+        def filter_rows(group, min_reference_values):
+            time = group.name
+            min_value = min_reference_values.loc[time]
+            return group[group['zcoordinate_c'] >= min_value]
+
+        # Apply the filtering to each group in df1
+        refiltered_his_df = filtered_his_df.groupby(filtered_his_df.index).apply(lambda group: filter_rows(group, min_reference_values))
+
+        # Drop the extra index level added by groupby + apply
+        filtered_his_df = refiltered_his_df.reset_index(level=0, drop=True)
+
+        # Function to interpolate y-values
+        def interpolate_depth(group, df1):
+            time = group.name
+            df1_group = df1.loc[time].sort_values('Depth')
+            return group['zcoordinate_c'].apply(lambda x: np.interp(x, df1_group['Depth'], df1_group[column_name]))
+
+        # Apply the interpolation
+        result = filtered_his_df.copy()
+        result[f'Reference {column_name}'] = filtered_his_df.groupby('time').apply(lambda group: interpolate_depth(group, filtered_df)).reset_index(level=0,
+                                                                                                      drop=True)
+        result = result.rename(columns={feature: f'Model {feature}'})
+        result['zcoordinate_c'] = result['zcoordinate_c']  # Use cell-center depth, not +1.25m 'interval' correction
+
+        # Compute some vector statistics comparing the model and reference values
+        error_signals = [f'Model {feature}', f'Reference {column_name}', 'Difference', 'Absolute Error',
+                         'Squared Error', 'Percent Error']
+        result[error_signals[2]] = result[error_signals[1]] - result[error_signals[0]]
+        result[error_signals[3]] = abs(result[error_signals[2]])
+        result[error_signals[4]] = result[error_signals[2]] ** 2
+        result[error_signals[5]] = 100 * result[error_signals[2]] / result[error_signals[1]]
+
+        c1, c2 = st.columns(2, gap='small')
+        with c1:
+            dpt_av_opts = ["Individual layers", 'Depth-averaged']
+            dpt_av = st.radio("Choose how to compare model output to the reference sensor data", dpt_av_opts,
+                              horizontal=True)
+            error_stats = st.multiselect("Choose which error statistics to plot", error_signals,
+                                         default=error_signals[2])
+
+        if dpt_av == dpt_av_opts[0]:
+            ###########################################################################################################
+            # Plot time series of feature sorted by depths in Bokeh
+
+            # Create Bokeh figure for the first plot
+            p1 = figure(x_axis_label='Date', title=f'Error statistics as depth contours vs. time for {feature}')
+
+            if not errorplot:
+                st.write("Please select at least one parameter and depth contour to plot.")
+            else:
+                # Group the data by 'Depth' and create separate ColumnDataSources for each group
+                grouped_data = result.groupby('zcoordinate_c')
+
+                def update_err_contour(selected_variables_p1, grouped_data):
+
+                    num_colors = len(grouped_data)
+                    viridis_colors = Viridis256
+                    step = len(viridis_colors) // num_colors
+                    viridis_subset = viridis_colors[::step][:num_colors]
+
+                    p1.title.text = f'{selected_variables_p1} vs. Date for Different Depths'
+                    p1.renderers = []  # Remove existing renderers
+                    line_styles = ['solid', 'dashed', 'dotdash', 'dotted']
+
+                    for i, (var) in enumerate(selected_variables_p1):
+                        for j, (depth, group) in enumerate(grouped_data):
+                            depth_source = ColumnDataSource(group)
+                            renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
+                                               line_color=viridis_subset[j],
+                                               legend_label=f'{depth}m', line_dash=line_styles[i])
+                            p1.add_tools(HoverTool(renderers=[renderer],
+                                                   tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
+                                                             (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
+                                                   mode="vline"))
+                            p1.renderers.append(renderer)
+
+                # Call the update_plot function with the selected variables for the first plot
+                update_err_contour(error_stats, grouped_data)
+
+                # Show legend for the first plot
+                p1.legend.title = 'Depth'
+                # p1.legend.location = "top_left"
+                p1.add_layout(p1.legend[0], 'right')
+                p1.legend.label_text_font_size = '10px'
+                p1.legend.click_policy = "hide"  # Hide lines on legend click
+                p1.yaxis.axis_label = feature
+                p1.xaxis.axis_label = "Time"
+                p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+
+                # Display the Bokeh chart for the first plot using Streamlit
+                st.bokeh_chart(p1, use_container_width=True)
+                st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                         "Click legend entries to toggle series on/off.")
+
+                ######################################################################################################
+                # Display scalar statistics
+                st.write(f"Time-averaged summary statistics for error in modeled {feature}")
+
+                # Compute summary (scalar) statistics
+                MM = result[error_signals[0]].mean()
+                RM = result[error_signals[1]].mean()
+                MSTDEV = result[error_signals[0]].std()
+                RSTDEV = result[error_signals[1]].std()
+                correlation = result[f'Model {feature}'].corr(result[f'Reference {column_name}'])
+                SSE = result[error_signals[2]].sum()
+                MAE = result[error_signals[3]].sum() / len(result[error_signals[3]])
+                MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
+                RMSE = math.sqrt(MSE)
+                MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
+                statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
+                                            "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                            "Root Mean Squared Error", 'Mean Percent Error'],
+                              'Model': [MM, MSTDEV, None, None, None, None, None, None],
+                              'Reference Data': [RM, RSTDEV, None, None, None, None, None, None],
+                              'Comparison': [RM - MM, RSTDEV - MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
+                stats_df = pd.DataFrame(statvalues)
+                stats_df = stats_df.reset_index(drop=True)
+
+                st.dataframe(stats_df, hide_index=True)
+
+        elif dpt_av == dpt_av_opts[1]:
+            ##########################################################################################################
+            # Plot depth-averaged error statistics
+
+            # Perform depth-averaging for all timesteps
+            result = result.reset_index()
+            columns_to_include = result.columns[6:]
+            df_filtered = result[['time'] + list(columns_to_include)]
+            depth_av_df = df_filtered.groupby('time').mean().reset_index()
+
+            # Create Bokeh figure for the first plot
+            p1 = figure(x_axis_label='Date', title=f'Error statistics as depth contours vs. time for {feature}')
+
+            if not errorplot:
+                st.write("Please select at least one parameter and depth contour to plot.")
+            else:
+
+                def update_err_contour(selected_variables_p1, result):
+
+                    num_colors = len(selected_variables_p1)
+                    viridis_colors = Viridis256
+                    step = len(viridis_colors) // num_colors
+                    viridis_subset = viridis_colors[::step][:num_colors]
+
+                    p1.title.text = f'Depth-Averaged {selected_variables_p1} vs. Time'
+                    p1.renderers = []  # Remove existing renderers
+                    line_styles = ['solid', 'dashed', 'dotdash', 'dotted']
+
+                    for i, (var) in enumerate(selected_variables_p1):
+                        depth_source = ColumnDataSource(result)
+                        renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
+                                           line_color=viridis_subset[i],
+                                           legend_label=f'{var}')
+                        p1.add_tools(HoverTool(renderers=[renderer],
+                                               tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
+                                                         (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
+                                               mode="vline"))
+                        p1.renderers.append(renderer)
+
+                # Call the update_plot function with the selected variables for the first plot
+                update_err_contour(error_stats, depth_av_df)
+
+                # Show legend for the first plot
+                p1.legend.title = 'Depth'
+                # p1.legend.location = "top_left"
+                p1.add_layout(p1.legend[0], 'right')
+                p1.legend.label_text_font_size = '10px'
+                p1.legend.click_policy = "hide"  # Hide lines on legend click
+                p1.yaxis.axis_label = feature
+                p1.xaxis.axis_label = "Time"
+                p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+
+                # Display the Bokeh chart for the first plot using Streamlit
+                st.bokeh_chart(p1, use_container_width=True)
+                st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                         "Click legend entries to toggle series on/off.")
+
+                ######################################################################################################
+                # Display scalar statistics
+                st.write(f"Time- and Depth-averaged summary statistics for error in modeled {feature}")
+
+                # Compute summary (scalar) statistics
+                MM = result[error_signals[0]].mean()
+                RM = result[error_signals[1]].mean()
+                MSTDEV = result[error_signals[0]].std()
+                RSTDEV = result[error_signals[1]].std()
+                correlation = result[f'Model {feature}'].corr(result[f'Reference {column_name}'])
+                SSE = result[error_signals[2]].sum()
+                MAE = result[error_signals[3]].sum() / len(result[error_signals[3]])
+                MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
+                RMSE = math.sqrt(MSE)
+                MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
+                statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
+                                            "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                            "Root Mean Squared Error", 'Mean Percent Error'],
+                              'Model': [MM, MSTDEV, None, None, None, None, None, None],
+                              'Reference Data': [RM, RSTDEV, None, None, None, None, None, None],
+                              'Comparison': [RM - MM, RSTDEV - MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
+                stats_df = pd.DataFrame(statvalues)
+                stats_df = stats_df.reset_index(drop=True)
+
+                st.dataframe(stats_df, hide_index=True)
+
+
 
 
 
@@ -1733,11 +2287,13 @@ def display_his(o_file):
 
     hc1, hc2 = st.columns(2, gap="small")
     with hc1:
-        hisoptions = ['Time series', 'Instantaneous (vs. depth)', 'Compare model to sensor data']
+        hisoptions = ['Time series', 'Instantaneous (vs. depth)', 'Comparison against reference data (sensor)']
         plottype = st.radio("Choose which type of data to display:", options=hisoptions, horizontal=True)
 
-        if plottype == hisoptions[0]:
-            pointoptions = ["Observation Points", "Sources/Sinks"]
+    if plottype == hisoptions[0]:
+        pointoptions = ["Observation Points", "Sources/Sinks"]
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
             pointtype = st.radio("Choose which type of location to plot:", options=pointoptions, horizontal=True)
 
             if pointtype == pointoptions[1]:
@@ -1750,13 +2306,15 @@ def display_his(o_file):
                                            ds_his.coords['stations'].values,
                                            default=ds_his.coords['stations'].values[0])
                 feature = st.selectbox("Select a variable to plot", stations_list)
-        elif plottype == hisoptions[1]:
+    elif plottype == hisoptions[1]:
+        hc1, hc2 = st.columns(2, gap="small")
+        with hc1:
             locations = st.multiselect("Select observation points at which to plot",
-                                       ds_his.coords['stations'].values,
-                                       default=ds_his.coords['stations'].values[0])
+                                   ds_his.coords['stations'].values,
+                                   default=ds_his.coords['stations'].values[0])
             feature = st.selectbox("Select a variable to plot", stations_list)
-        elif plottype == hisoptions[2]:
-            display_error()
+    elif plottype == hisoptions[2]:
+        display_error(ds_his=ds_his)
 
     ###################################################################################################################
     # 2. Plot time series data for the selected point(s), at one or several depths
@@ -1768,19 +2326,16 @@ def display_his(o_file):
                 num_layers = concise.sizes['laydim']
                 layer_list = list(reversed(range(0, num_layers)))
                 if 'zcoordinate_c' in ds_his.coords:
-                    # ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2).astype('float64')
                     ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)
                     depths = np.unique(ds_his.coords['zcoordinate_c'].values)
                     interval = abs(depths[1] - depths[0]) / 2
-                    layer_depths_his = depths + interval
+                    layer_depths_his = depths # Use actual cell-center values, without 1.25 'interval' offset
                     layer_depths_his = list(layer_depths_his[::-1])
                     layer_depths_his = [x for x in layer_depths_his if not math.isnan(x)]
                 else:
                     max_depth = -ds_his.coords['zcoordinate_c'].min().to_numpy()[()]
-                    # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth, num_layers)
                     layer_depths_his = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
                     layer_depths_his = layer_depths_his.tolist()
-                    layer_list = list(reversed(range(0, num_layers)))
                 hc1, hc2 = st.columns(2, gap="small")
                 with hc1:
                     depth_selected = st.multiselect("Select depth at which to plot", ["All"] + layer_depths_his, default="All")
@@ -1788,7 +2343,6 @@ def display_his(o_file):
                         layers = layer_depths_his
                     else:
                         layers = depth_selected
-                    # layers = layer_list[layer_depths_his.index(depth_selected)]
             else:
                 num_layers = 1
                 layers = [0]
@@ -1796,21 +2350,18 @@ def display_his(o_file):
             num_layers = 1
             layers = [0]
 
-        # st.markdown(f"### {feature} vs. Time")
-        fig, ax = plt.subplots(figsize=(20, 5))
-
         if pointtype == pointoptions[0]:
             data_for_bokeh = ds_his[feature].sel(stations=locations)
         elif pointtype == pointoptions[1]:
             data_for_bokeh = ds_his[feature].sel(source_sink=locations)
         his_df = data_for_bokeh.to_dataframe()
 
-        def update_plot_p_his(p_his, df, selected_variables_p_his, grouptype, groupvar, layers):
+        def update_p_his(p_his, df, selected_variables_p_his, grouptype, groupvar, layers):
 
             # Group the data by depth and create separate ColumnDataSources for each group
             df.reset_index()
             if groupvar == 'zcoordinate_c':
-                df[groupvar] = df[groupvar] + interval
+                df[groupvar] = df[groupvar]  # Use cell-center depth without 1.25m 'interval' correction for cell top
                 df_filtered = df[df[groupvar].isin(layers)]
                 grouped_data = df_filtered.groupby(groupvar)
             else:
@@ -1861,7 +2412,7 @@ def display_his(o_file):
         elif 'source_sink' in df_reset.columns:
             groupvar = 'source_sink'
             grouptype = 'Source/Sink'
-        update_plot_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar, layers=layers)
+        update_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar, layers=layers)
 
         # Show legend for the first plot
         p_his.add_layout(p_his.legend[0], 'right')
@@ -1883,7 +2434,7 @@ def display_his(o_file):
 
     ###################################################################################################################
     # 3. Plot parameters vs. depth at selected point(s) at one time
-    else:
+    elif plottype == hisoptions[1]:
         if 'laydim' in ds_his[feature].dims:
             data_for_bokeh = ds_his[feature].sel(stations=locations)
             his_df = data_for_bokeh.to_dataframe()
@@ -1942,7 +2493,7 @@ def display_his(o_file):
             st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                      "Click legend entries to toggle series on/off.")
         else:
-            st.write(f"Selected variable does not vary with depth.")
+            st.warning(f"Selected variable does not vary with depth.")
 
 
 def current():
