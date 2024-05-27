@@ -267,6 +267,53 @@ def filter_met(start_date, end_date, reference_time, df):
                         }
         df = df.rename(columns=column_names)  # Assign column names for profiler data
 
+        # Set negative shortwave values to 0 (this is very common and appears to represent a calibration issue)
+        df['Shortwave (solar) radiation (W/m2)'] = (
+            np.where(df['Shortwave (solar) radiation (W/m2)'] < 0, 0, df['Shortwave (solar) radiation (W/m2)']))
+
+        # Define conditions for each parameter which indicate errors in the data
+        error_conditions = {
+            "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                    df['Timestamp'] > pd.to_datetime('2099-12-31')),
+            'Hourly average wind direction (°)': (df['Hourly average wind direction (°)'] < 0) | (
+                    df['Hourly average wind direction (°)'] > 360),
+            "Average wind speed (m/s)": (df["Average wind speed (m/s)"] < 0) | (
+                    df["Average wind speed (m/s)"] > 100),
+            'Maximum sustained wind speed, 3-second span (m/s)': (df[
+                                                                      'Maximum sustained wind speed, 3-second span (m/s)'] < 0) |
+                                                                 (df[
+                                                                      'Maximum sustained wind speed, 3-second span (m/s)'] > 100),
+            'Maximum sustained wind speed, 10-minute span (m/s)': (
+                                                                          df[
+                                                                              'Maximum sustained wind speed, 10-minute span (m/s)'] < 0) |
+                                                                  (df[
+                                                                       'Maximum sustained wind speed, 10-minute span (m/s)'] > 100),
+            'Hourly average atmospheric pressure at station (mBar)': (df[
+                                                                          'Hourly average atmospheric pressure at station (mBar)'] < 860) | (
+                                                                             df[
+                                                                                 'Hourly average atmospheric pressure at station (mBar)'] > 1080),
+            'Maximum pressure differential, 3-hour span (mBar)': (df[
+                                                                      'Maximum pressure differential, 3-hour span (mBar)'] < 0) | (
+                                                                         df[
+                                                                             'Maximum pressure differential, 3-hour span (mBar)'] > 50),
+            'Longwave (IR) radiation (W/m2)': (df['Longwave (IR) radiation (W/m2)'] < 0) | (
+                    df['Longwave (IR) radiation (W/m2)'] > 750),
+            'Shortwave (solar) radiation (W/m2)': (df['Shortwave (solar) radiation (W/m2)'] < 0) | (
+                    df['Shortwave (solar) radiation (W/m2)'] > 900),
+            'Hourly precipitation (mm/hr)': (df['Hourly precipitation (mm/hr)'] < 0) | (
+                    df['Hourly precipitation (mm/hr)'] > 50),
+            'Hourly maximum temperature (°C)': (df['Hourly maximum temperature (°C)'] < -40) | (
+                    df['Hourly maximum temperature (°C)'] > 40),
+            'Hourly minimum temperature (°C)': (df['Hourly minimum temperature (°C)'] < -40) | (
+                    df['Hourly minimum temperature (°C)'] > 40),
+            'Average humidity (% relative humidity)': (df['Average humidity (% relative humidity)'] < 0) | (
+                    df['Average humidity (% relative humidity)'] > 100)
+        }
+
+        # Replace values meeting the error conditions with np.nan using boolean indexing
+        for col, condition in error_conditions.items():
+            df.loc[condition, col] = np.nan
+
     # Data cleaning
     for parameter in df.columns:
         df[parameter] = df[parameter].apply(lambda x: np.nan if x == 'NAN' else x)
@@ -422,6 +469,15 @@ def gen_forcing(all_files):
 
 def post_cor(all_files):
     st.header("Compare model outputs against real-world data for calibration")
+    filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
+    hc1, hc2 = st.columns(2, gap="small")
+    with hc1:
+        selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+    # Open hisfile with xarray and print netcdf structure
+    ds_his_o = xr.open_mfdataset(selected_file, preprocess=dfmt.preprocess_hisnc)
+    ds_his = Dashboard.rename_ds(ds_his_o)
+
+    Dashboard.display_error(ds_his)
 
 
 def post_sens(all_files):
