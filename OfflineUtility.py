@@ -240,79 +240,78 @@ def filter_met(start_date, end_date, reference_time, df):
                    "Shortwave (solar) radiation (W/m2)"]
     rain_columns = ["Hourly precipitation (mm/hr)"]
 
-    if df.columns[0] == "Time":
-        column_names = {"Time": "Timestamp",
-                        "1818_time: AA[mBar]": "Instantaneous atmospheric pressure (mBar)",
-                        "1818_time: DD Retning[°]": "Wind direction 10minRollingAvg (°)",
-                        "1818_time: DX_l[°]": "Hourly average wind direction (°)",
-                        "1818_time: FF Hastighet[m/s]": "Average wind speed (m/s)",
-                        "1818_time: FG_l[m/s]": "Maximum sustained wind speed, 3-second span (m/s)",
-                        "1818_time: FG_tid_l[N/A]": "Time of maximum 3s Gust",
-                        "1818_time: FX Kast[m/s]": "Maximum sustained wind speed, 10-minute span (m/s)",
-                        "1818_time: FX_tid_l[N/A]": "Time of maximum 10 minute gust",
-                        "1818_time: PO Trykk stasjonshøyde[mBar]": "Hourly average atmospheric pressure at station "
-                                                                   "(mBar)",
-                        "1818_time: PP[mBar]": "Maximum pressure differential, 3-hour span (mBar)",
-                        "1818_time: PR Trykk redusert til havnivå[mBar]": "Instantaneous atmospheric pressure "
-                                                                          "compensated for temperature, humidity "
-                                                                          "and station elevation (mBar)",
-                        "1818_time: QLI Langbølget[W/m2]": "Longwave (IR) radiation (W/m2)",
-                        "1818_time: QNH[mBar]": "Instantaneous sea-level atmospheric pressure (mBar)",
-                        "1818_time: QSI Kortbølget[W/m2]": "Shortwave (solar) radiation (W/m2)",
-                        "1818_time: RR_1[mm]": "Hourly precipitation (mm/hr)",
-                        "1818_time: TA Middel[°C]": "Instantaneous temperature (°C)",
-                        "1818_time: TA_a_Max[°C]": "Hourly maximum temperature (°C)",
-                        "1818_time: TA_a_Min[°C]": "Hourly minimum temperature (°C)",
-                        "1818_time: UU Luftfuktighet[%RH]": "Average humidity (% relative humidity)"
-                        }
-        df = df.rename(columns=column_names)  # Assign column names for profiler data
+    column_names = {"Time": "Timestamp",
+                    "1818_time: AA[mBar]": "Instantaneous atmospheric pressure (mBar)",
+                    "1818_time: DD Retning[°]": "Wind direction 10minRollingAvg (°)",
+                    "1818_time: DX_l[°]": "Hourly average wind direction (°)",
+                    "1818_time: FF Hastighet[m/s]": "Average wind speed (m/s)",
+                    "1818_time: FG_l[m/s]": "Maximum sustained wind speed, 3-second span (m/s)",
+                    "1818_time: FG_tid_l[N/A]": "Time of maximum 3s Gust",
+                    "1818_time: FX Kast[m/s]": "Maximum sustained wind speed, 10-minute span (m/s)",
+                    "1818_time: FX_tid_l[N/A]": "Time of maximum 10 minute gust",
+                    "1818_time: PO Trykk stasjonshøyde[mBar]": "Hourly average atmospheric pressure at station "
+                                                               "(mBar)",
+                    "1818_time: PP[mBar]": "Maximum pressure differential, 3-hour span (mBar)",
+                    "1818_time: PR Trykk redusert til havnivå[mBar]": "Instantaneous atmospheric pressure "
+                                                                      "compensated for temperature, humidity "
+                                                                      "and station elevation (mBar)",
+                    "1818_time: QLI Langbølget[W/m2]": "Longwave (IR) radiation (W/m2)",
+                    "1818_time: QNH[mBar]": "Instantaneous sea-level atmospheric pressure (mBar)",
+                    "1818_time: QSI Kortbølget[W/m2]": "Shortwave (solar) radiation (W/m2)",
+                    "1818_time: RR_1[mm]": "Hourly precipitation (mm/hr)",
+                    "1818_time: TA Middel[°C]": "Instantaneous temperature (°C)",
+                    "1818_time: TA_a_Max[°C]": "Hourly maximum temperature (°C)",
+                    "1818_time: TA_a_Min[°C]": "Hourly minimum temperature (°C)",
+                    "1818_time: UU Luftfuktighet[%RH]": "Average humidity (% relative humidity)"
+                    }
+    df = df.rename(columns=column_names)  # Assign column names for profiler data
 
-        # Set negative shortwave values to 0 (this is very common and appears to represent a calibration issue)
-        df['Shortwave (solar) radiation (W/m2)'] = (
-            np.where(df['Shortwave (solar) radiation (W/m2)'] < 0, 0, df['Shortwave (solar) radiation (W/m2)']))
+    # Set negative shortwave values to 0 (this is very common and appears to represent a calibration issue)
+    df['Shortwave (solar) radiation (W/m2)'] = (
+        np.where(df['Shortwave (solar) radiation (W/m2)'] < 0, 0, df['Shortwave (solar) radiation (W/m2)']))
 
-        # Define conditions for each parameter which indicate errors in the data
-        error_conditions = {
-            "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
-                    df['Timestamp'] > pd.to_datetime('2099-12-31')),
-            'Hourly average wind direction (°)': (df['Hourly average wind direction (°)'] < 0) | (
-                    df['Hourly average wind direction (°)'] > 360),
-            "Average wind speed (m/s)": (df["Average wind speed (m/s)"] < 0) | (
-                    df["Average wind speed (m/s)"] > 100),
-            'Maximum sustained wind speed, 3-second span (m/s)': (df[
-                                                                      'Maximum sustained wind speed, 3-second span (m/s)'] < 0) |
-                                                                 (df[
-                                                                      'Maximum sustained wind speed, 3-second span (m/s)'] > 100),
-            'Maximum sustained wind speed, 10-minute span (m/s)': (
-                                                                          df[
-                                                                              'Maximum sustained wind speed, 10-minute span (m/s)'] < 0) |
-                                                                  (df[
-                                                                       'Maximum sustained wind speed, 10-minute span (m/s)'] > 100),
-            'Hourly average atmospheric pressure at station (mBar)': (df[
-                                                                          'Hourly average atmospheric pressure at station (mBar)'] < 860) | (
-                                                                             df[
-                                                                                 'Hourly average atmospheric pressure at station (mBar)'] > 1080),
-            'Maximum pressure differential, 3-hour span (mBar)': (df[
-                                                                      'Maximum pressure differential, 3-hour span (mBar)'] < 0) | (
+    # Define conditions for each parameter which indicate errors in the data
+    error_conditions = {
+        "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                df['Timestamp'] > pd.to_datetime('2099-12-31')),
+        'Hourly average wind direction (°)': (df['Hourly average wind direction (°)'] < 0) | (
+                df['Hourly average wind direction (°)'] > 360),
+        "Average wind speed (m/s)": (df["Average wind speed (m/s)"] < 0) | (
+                df["Average wind speed (m/s)"] > 100),
+        'Maximum sustained wind speed, 3-second span (m/s)': (df[
+                                                                  'Maximum sustained wind speed, 3-second span (m/s)'] < 0) |
+                                                             (df[
+                                                                  'Maximum sustained wind speed, 3-second span (m/s)'] > 100),
+        'Maximum sustained wind speed, 10-minute span (m/s)': (
+                                                                      df[
+                                                                          'Maximum sustained wind speed, 10-minute span (m/s)'] < 0) |
+                                                              (df[
+                                                                   'Maximum sustained wind speed, 10-minute span (m/s)'] > 100),
+        'Hourly average atmospheric pressure at station (mBar)': (df[
+                                                                      'Hourly average atmospheric pressure at station (mBar)'] < 860) | (
                                                                          df[
-                                                                             'Maximum pressure differential, 3-hour span (mBar)'] > 50),
-            'Longwave (IR) radiation (W/m2)': (df['Longwave (IR) radiation (W/m2)'] < 0) | (
-                    df['Longwave (IR) radiation (W/m2)'] > 750),
-            'Shortwave (solar) radiation (W/m2)': (df['Shortwave (solar) radiation (W/m2)'] < 0) | (
-                    df['Shortwave (solar) radiation (W/m2)'] > 900),
-            'Hourly precipitation (mm/hr)': (df['Hourly precipitation (mm/hr)'] < 0) | (
-                    df['Hourly precipitation (mm/hr)'] > 50),
-            'Hourly maximum temperature (°C)': (df['Hourly maximum temperature (°C)'] < -40) | (
-                    df['Hourly maximum temperature (°C)'] > 40),
-            'Hourly minimum temperature (°C)': (df['Hourly minimum temperature (°C)'] < -40) | (
-                    df['Hourly minimum temperature (°C)'] > 40),
-            'Average humidity (% relative humidity)': (df['Average humidity (% relative humidity)'] < 0) | (
-                    df['Average humidity (% relative humidity)'] > 100)
-        }
+                                                                             'Hourly average atmospheric pressure at station (mBar)'] > 1080),
+        'Maximum pressure differential, 3-hour span (mBar)': (df[
+                                                                  'Maximum pressure differential, 3-hour span (mBar)'] < 0) | (
+                                                                     df[
+                                                                         'Maximum pressure differential, 3-hour span (mBar)'] > 50),
+        'Longwave (IR) radiation (W/m2)': (df['Longwave (IR) radiation (W/m2)'] < 0) | (
+                df['Longwave (IR) radiation (W/m2)'] > 750),
+        'Shortwave (solar) radiation (W/m2)': (df['Shortwave (solar) radiation (W/m2)'] < 0) | (
+                df['Shortwave (solar) radiation (W/m2)'] > 900),
+        'Hourly precipitation (mm/hr)': (df['Hourly precipitation (mm/hr)'] < 0) | (
+                df['Hourly precipitation (mm/hr)'] > 50),
+        'Hourly maximum temperature (°C)': (df['Hourly maximum temperature (°C)'] < -40) | (
+                df['Hourly maximum temperature (°C)'] > 40),
+        'Hourly minimum temperature (°C)': (df['Hourly minimum temperature (°C)'] < -40) | (
+                df['Hourly minimum temperature (°C)'] > 40),
+        'Average humidity (% relative humidity)': (df['Average humidity (% relative humidity)'] < 0) | (
+                df['Average humidity (% relative humidity)'] > 100)
+    }
 
-        # Replace values meeting the error conditions with np.nan using boolean indexing
-        for col, condition in error_conditions.items():
-            df.loc[condition, col] = np.nan
+    # Replace values meeting the error conditions with np.nan using boolean indexing
+    for col, condition in error_conditions.items():
+        df.loc[condition, col] = np.nan
 
     # Data cleaning
     for parameter in df.columns:
@@ -349,18 +348,21 @@ def filter_met(start_date, end_date, reference_time, df):
 
     col_to_wind = ["time_diff_minutes", *wind_columns]
     wind_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_wind})
-    wind_df = wind_df.dropna()
+    # Replace string "nan" with actual np.nan
+    wind_df.replace('nan', np.nan, inplace=True)
+    wind_df_clean = wind_df.dropna()
 
     # Select specified columns
-    wind_df = wind_df[col_to_wind]
+    wind_df_clean = wind_df_clean[col_to_wind]
 
     ###################################################################################################################
     # Repeat with met data
     col_to_met = ["time_diff_minutes", *met_columns]
     met_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_met})
     # Select specified columns
-    met_df = met_df.dropna()
-    met_df = met_df[col_to_met]
+    met_df.replace('nan', np.nan, inplace=True)
+    met_df_clean = met_df.dropna()
+    met_df_clean = met_df_clean[col_to_met]
 
     ##################################################################################################################
     # Repeat with rainfall data
@@ -371,9 +373,10 @@ def filter_met(start_date, end_date, reference_time, df):
     col_to_rain = ["time_diff_minutes", *rain_columns]
     rain_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_rain})
     # Select specified columns
-    rain_df = rain_df.dropna()
-    rain_df = rain_df[col_to_rain]
-    return wind_df, met_df, rain_df
+    rain_df.replace('nan', np.nan, inplace=True)
+    rain_df_clean = rain_df.dropna()
+    rain_df_clean = rain_df_clean[col_to_rain]
+    return wind_df_clean, met_df_clean, rain_df_clean
 
 
 def gen_forcing(all_files):
@@ -412,6 +415,7 @@ def gen_forcing(all_files):
     for col, condition in error_conditions.items():
         df_profile.loc[condition, col] = np.nan
 
+    df_profile.replace('nan', np.nan, inplace=True)
     df_profile = df_profile.dropna(subset=['Temperature (Celsius)'])
 
     rc1, rc2, rc3, rc4 = st.columns(4, gap="small")
