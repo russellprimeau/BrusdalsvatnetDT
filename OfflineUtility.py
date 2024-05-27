@@ -349,17 +349,17 @@ def filter_met(start_date, end_date, reference_time, df):
 
     col_to_wind = ["time_diff_minutes", *wind_columns]
     wind_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_wind})
+    wind_df = wind_df.dropna()
 
     # Select specified columns
-    print('wind_df before', wind_df)
     wind_df = wind_df[col_to_wind]
-    print('wind_df after', wind_df)
 
     ###################################################################################################################
     # Repeat with met data
     col_to_met = ["time_diff_minutes", *met_columns]
     met_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_met})
     # Select specified columns
+    met_df = met_df.dropna()
     met_df = met_df[col_to_met]
 
     ##################################################################################################################
@@ -371,6 +371,7 @@ def filter_met(start_date, end_date, reference_time, df):
     col_to_rain = ["time_diff_minutes", *rain_columns]
     rain_df = filtered_df.assign(**{col: filtered_df[col].apply(lambda x: f'{x:.7e}') for col in col_to_rain})
     # Select specified columns
+    rain_df = rain_df.dropna()
     rain_df = rain_df[col_to_rain]
     return wind_df, met_df, rain_df
 
@@ -386,6 +387,32 @@ def gen_forcing(all_files):
     max_date = df['Time'].max()
 
     df_profile = Dashboard.upload_hourly_csv_page()
+    error_conditions = {
+        "Timestamp": (df_profile['Timestamp'] < pd.to_datetime('2000-01-01')) | (
+                df_profile['Timestamp'] > pd.to_datetime('2099-12-31')),
+        "Temperature (Celsius)": (df_profile['Temperature (Celsius)'] < 1) | (df_profile['Temperature (Celsius)'] > 25),
+        "Conductivity (microSiemens/centimeter)": (df_profile['Conductivity (microSiemens/centimeter)'] < 0) |
+                                                  (df_profile['Conductivity (microSiemens/centimeter)'] > 45),
+        "Specific Conductivity (microSiemens/centimeter)": (
+                df_profile['Specific Conductivity (microSiemens/centimeter)'] < 1),
+        "Salinity (parts per thousand, ppt)": (df_profile['Salinity (parts per thousand, ppt)'] < 0),
+        "pH": (df_profile['pH'] < 2) | (df_profile['pH'] > 12),
+        "Dissolved Oxygen (% saturation)": (df_profile['Dissolved Oxygen (% saturation)'] < 10) | (
+                df_profile['Dissolved Oxygen (% saturation)'] > 120),
+        "Turbidity (NTU)": (df_profile['Turbidity (NTU)'] < 0),
+        "Turbidity (FNU)": (df_profile['Turbidity (FNU)'] < 0),
+        "fDOM (RFU)": (df_profile['fDOM (RFU)'] < 0) | (df_profile['fDOM (RFU)'] > 100),
+        "fDOM (parts per billion QSU)": (df_profile['fDOM (parts per billion QSU)'] < 0) | (
+                df_profile['fDOM (parts per billion QSU)'] > 300),
+        "Latitude": (df_profile['Latitude'] < -90) | (df_profile['Latitude'] > 90),
+        "Longitude": (df_profile['Longitude'] < -180) | (df_profile['Longitude'] > 180)
+    }
+
+    # Replace values meeting the error conditions with np.nan using boolean indexing
+    for col, condition in error_conditions.items():
+        df_profile.loc[condition, col] = np.nan
+
+    df_profile = df_profile.dropna(subset=['Temperature (Celsius)'])
 
     rc1, rc2, rc3, rc4 = st.columns(4, gap="small")
     with rc1:
