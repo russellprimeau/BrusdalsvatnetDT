@@ -372,7 +372,7 @@ def gen_forcing(all_files):
                              "Slettebakk.tim": 0.084,
                              "Vasstrandelva.tim": 0.273,
                              "Vasstrandlia Pump.tim": -0.637}
-        salinity = 0.002
+        salinity = 0.02
         factor = 1
         type = 0
 
