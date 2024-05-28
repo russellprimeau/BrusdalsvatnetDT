@@ -31,11 +31,14 @@ def main():
     st.set_page_config("Brusdalsvatnet WQ Dashboard", layout="wide")
     st.sidebar.title("Choose Mode")
     selected_page = st.sidebar.radio("", ["Historic", "Hydrodynamic Model", "Interactive (Path Planning)"])
+    # Get all files in the current directory
+    all_files = os.listdir()
 
     if selected_page == "Historic":
         historic()
     elif selected_page == "Hydrodynamic Model":
-        current()
+        st.title("Hydrodynamic Model")
+        current(all_files)
     elif selected_page == "Interactive (Path Planning)":
         interactive()
 
@@ -2496,16 +2499,10 @@ def display_his(o_file):
             st.warning(f"Selected variable does not vary with depth.")
 
 
-def current():
+def current(all_files):
     """
     Display and explore Delft3D output files
     """
-    st.header("Brusdalsvatnet Water Quality Dashboard")
-    st.title("Hydrodynamic Model of Current Conditions")
-
-    # Get all files in the current directory
-    all_files = os.listdir()
-
     output_options = ["Spatial distributions (map file)", "Fixed locations (history file)"]
     d3d_output = st.radio("Select which type of model outputs to display",
                           options=output_options, horizontal=True)
