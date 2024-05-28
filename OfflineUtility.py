@@ -498,12 +498,14 @@ def gen_forcing(all_files):
                 st.write(f"Data from selected range exported as {inlet_filenames} in the working directory")
 
 
-def post_cor(all_files):
+def post_cor(all_files, directory_path):
     st.header("Compare model outputs against real-world data for calibration")
     filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
     hc1, hc2 = st.columns(2, gap="small")
     with hc1:
         selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+        if directory_path is not None and selected_file is not "Upload your own":
+            selected_file = os.path.join(directory_path, selected_file)
     # Open hisfile with xarray and print netcdf structure
     ds_his_o = xr.open_mfdataset(selected_file, preprocess=dfmt.preprocess_hisnc)
     ds_his = Dashboard.rename_ds(ds_his_o)
@@ -511,7 +513,7 @@ def post_cor(all_files):
     Dashboard.display_error(ds_his)
 
 
-def post_sens(all_files):
+def post_sens(all_files, directory_path):
     st.header("Analyse sensitivity test output to determine the spatial and temporal distribution of uncertainty "
               "in the modeled parameters")
 
@@ -525,6 +527,8 @@ def post_sens(all_files):
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+            if directory_path is not None and selected_file is not "Upload your own":
+                selected_file = os.path.join(directory_path, selected_file)
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
@@ -549,6 +553,8 @@ def post_sens(all_files):
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+            if directory_path is not None and selected_file is not "Upload your own":
+                selected_file = os.path.join(directory_path, selected_file)
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
@@ -672,11 +678,11 @@ def post():
         mode = st.radio("Select activity", functions, horizontal=True)
 
     if mode == functions[1]:
-        post_cor(all_files)
+        post_cor(all_files, directory_path)
     elif mode == functions[2]:
-        post_sens(all_files)
+        post_sens(all_files, directory_path)
     elif mode == functions[0]:
-        Dashboard.current(all_files)
+        Dashboard.current(all_files, directory_path)
 
 
 
