@@ -4431,3 +4431,132 @@ INFO:root:Command succeeded: git commit -m Changes to: .idea/workspace.xml
 All_time.csv
 __pycache__/Dashboard.cpython-311.pyc
 INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 07:08:59
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 08:08:54
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 09:08:59
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 10:08:58
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 11:08:54
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 12:08:54
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 13:08:58
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference 7da470ab-2bd8-42a9-8e27-d19ec3263e30 is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 14:08:54
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 15:08:56
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 16:08:56
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference 64db7f52-9dc0-4553-8360-48dceb93b90a is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 17:08:56
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 18:08:57
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 19:08:59
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 20:08:56
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-05-28 21:09:05
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Command succeeded: git push origin main
