@@ -653,7 +653,7 @@ def pre():
 
 def post():
     st.title("Delft3D FM Post-Processing")
-    functions = ['Correlate model to data', 'Uncertainty Analysis']
+    functions = ['Display model outputs', 'Correlate model to data', 'Uncertainty analysis']
 
     # Ask the user for a directory path with the default as the current directory
     c1, c2 = st.columns(2, gap="small")
@@ -671,10 +671,13 @@ def post():
     with c1:
         mode = st.radio("Select activity", functions, horizontal=True)
 
-    if mode == functions[0]:
+    if mode == functions[1]:
         post_cor(all_files)
-    elif mode == functions[1]:
+    elif mode == functions[2]:
         post_sens(all_files)
+    elif mode == functions[0]:
+        Dashboard.current(all_files)
+
 
 
 def main():
