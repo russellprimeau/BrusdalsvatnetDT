@@ -7,9 +7,11 @@ import os
 import tempfile2 as tempfile
 import re
 import xarray as xr
+import xugrid as xu
 import matplotlib.pyplot as plt
 import contextily as ctx
 import dfm_tools as dfmt
+import plotly.express as px
 from sklearn.linear_model import LinearRegression
 from scipy.optimize import minimize
 import Dashboard
@@ -558,121 +560,194 @@ def post_cor(all_files, directory_path):
 
     Dashboard.display_error(ds_his)
 
+def spatial_unc(files):
+    """
+    Calculate 'uncertainty' as the variance (st.dev) of a selected parameter across the map
+    :param files: list of map files on which to computer variance. Must share the same grid, time span and data
+    variables
+    :return:
+    """
+    ds_list = []
+    for i, file in enumerate(files):
+        uds_map = dfmt.open_partitioned_dataset(file)
+        ds_list.append(Dashboard.rename_ds(uds_map))
 
-def post_sens(all_files, directory_path):
-    st.header("Analyse sensitivity test output to determine the spatial and temporal distribution of uncertainty "
-              "in the modeled parameters")
+    # Create lists of data variables based on their dimensionality
+    includes_coordinate = ["mesh2d_nFaces", "time"]
+    excludes_coordinates = ["mesh2d_nEdges", "mesh2d_nNodes", "mesh2d_nMax_face_nodes"]
+    mesh2d_nFaces_list = []
 
-    output_options = ["Spatial distributions (map file)", "Fixed locations (history file)"]
-    d3d_output = st.radio("Select which type of model outputs to display",
-                          options=output_options, horizontal=True)
+    uds_map1 = ds_list[0]
+    ds_results = uds_map1.copy()
+    for name, var in ds_results.data_vars.items():
+        if (all(coord in var.dims for coord in includes_coordinate) and all(coord not in var.dims for coord in
+                                                                            excludes_coordinates)):
+            mesh2d_nFaces_list.append(name)
 
-    # Filter files based on extension
-    if d3d_output == output_options[1]:
-        filtered_files = [f for f in all_files if f.endswith('his.nc')] + ["Upload your own"]
-        hc1, hc2 = st.columns(2, gap="small")
-        with hc1:
-            selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
-            if directory_path is not None and selected_file is not "Upload your own":
-                selected_file = os.path.join(directory_path, selected_file)
-        if selected_file == "Upload your own":
-            hc1, hc2 = st.columns(2, gap="small")
-            with hc1:
-                uploaded = st.file_uploader(
-                    label='Upload your own Delft3D history output file (his.nc), maximum size 200MB', type='nc')
-            # Create a temp filepath to use to access the uploaded file
-            if uploaded is not None:
-                if uploaded.name.endswith('his.nc'):
-                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                        temp_file.write(uploaded.read())
-                        file_path = temp_file.name
-                    Dashboard.display_his(file_path)
-                else:
-                    st.markdown("### File uploaded is not a valid history file")
-        else:
-            Dashboard.display_his(selected_file)
+    c1, c2 = st.columns(2, gap='small')
+    with c1:
+        variable = st.selectbox("Choose variable to display", mesh2d_nFaces_list)
+        timeindices = ['Time-averaged', 'Final']
+        timeindex = st.selectbox("Choose between time-averaged uncertainty or uncertainty at the final timestep",
+                                 options=timeindices)
 
-    else:
-        filtered_files = [f for f in all_files if f.endswith('map.nc')] + ["Upload your own"]
-        # if uploaded is not None:
-        #     filtered_files.append(uploaded.name)
-        hc1, hc2 = st.columns(2, gap="small")
-        with hc1:
-            selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
-            if directory_path is not None and selected_file is not "Upload your own":
-                selected_file = os.path.join(directory_path, selected_file)
-        if selected_file == "Upload your own":
-            hc1, hc2 = st.columns(2, gap="small")
-            with hc1:
-                uploaded = st.file_uploader(
-                    label='Upload your own Delft3D NetCDF map output file (map.nc), maximum size 200MB', type='nc')
-            # Create a temp filepath to use to access the uploaded file
-            if uploaded is not None:
-                if uploaded.name.endswith('map.nc'):
-                    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-                        temp_file.write(uploaded.read())
-                        file_path = temp_file.name
-                    Dashboard.display_map(file_path)
-                else:
-                    st.markdown("### File uploaded is not a valid map file")
-        else:
-            Dashboard.display_map(selected_file)
+    # ds_results = uds_map.assign(differential=uds_map[variable] - uds_map[variable])
 
-    diff_options = ['mesh2d_tem1', 'mesh2d_Qtot', 'differential']
-    displayer = st.selectbox("Choose variable to display", diff_options)
+    # Step 1: Combine datasets along a new dimension 'dataset'
+    combined = xu.concat(ds_list, dim='dataset')
 
-    uds_map = uds_map.assign(differential=uds_map['mesh2d_tem1'] - uds_map['mesh2d_Qtot'])
+    # Step 2: Calculate the standard deviation along the 'dataset' dimension
+    uncertainty = combined[variable].std(dim='dataset')
+    depth_avg_Uncert = uncertainty.mean(dim='mesh2d_nLayers')
+    dt_avg_Uncert = depth_avg_Uncert.mean(dim='time')
+
+    ds_results['Uncertainty'] = uncertainty
+    ds_results['Depth-averaged uncertainty'] = depth_avg_Uncert
+    ds_results['Depth- and time-averaged uncertainty'] = dt_avg_Uncert
 
     fig_diff, ax = plt.subplots(figsize=(20, 3))
-    pf = uds_map[displayer].isel(time=selected_time_index, mesh2d_nLayers=layer,
-                                 missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False)
+    crs = 'EPSG:4326'
+    if timeindex == timeindices[0]:
+        pf = ds_results['Depth- and time-averaged uncertainty'].isel(missing_dims='ignore').ugrid.plot(cmap='jet',
+                                                                                                       add_colorbar=False)
+        st.markdown(f"### Spatial distribution of depth- and time-averaged {variable}")
+    elif timeindex == timeindices[1]:
+        pf = ds_results['Depth-averaged uncertainty'].isel(time=-1, missing_dims='ignore').ugrid.plot(cmap='jet',
+                                                                                                       add_colorbar=False)
+        st.markdown(f"### Spatial distribution of uncertainty in depth-averaged {variable} at "
+                    f"{ds_results['time'].isel(time=-1)}")
     ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
     colorbar = plt.colorbar(pf, orientation="vertical", fraction=0.01, pad=0.001)
 
+    # Get extents of map from attributes, for setting plot limits
+    try:
+        xmin_abs = uds_map.attrs['geospatial_lon_min']
+    except:
+        xmin_abs = 6.387478790667275
+
+    try:
+        xmax_abs = uds_map.attrs['geospatial_lon_max']
+    except:
+        xmax_abs = 6.56781074840919
+
+    try:
+        ymin_abs = uds_map.attrs['geospatial_lat_min']
+    except:
+        ymin_abs = 62.46442857883768
+
+    try:
+        ymax_abs = uds_map.attrs['geospatial_lat_max']
+    except:
+        ymax_abs = 62.48487637586751
+
+    scaler = 1.0
+    aspect = 0.02
+    xavg = (xmax_abs + xmin_abs) / 2
+    yavg = (ymax_abs + ymin_abs) / 2
+    x_int = (xmax_abs - xmin_abs) / 2
+    y_int = (ymax_abs - ymin_abs) / 2
+    xmin = xavg - x_int * (1 + scaler * aspect)
+    xmax = xavg + x_int * (1 + scaler * aspect)
+    ymin = yavg - y_int * (1 + scaler)
+    ymax = yavg + y_int * (1 + scaler)
+
     # Set colorbar label
-    colorbar.set_label(displayer)
+    colorbar.set_label(variable)
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_title("")
-    st.markdown(f"### {displayer} at depth of {depth_selected} m at {selected_time_key}")
+
     st.pyplot(fig_diff)
 
-    some_value = 10  # Example threshold value
+    c1, c2 = st.columns(2, gap='small')
+    with c1:
+        ranked_points = st.number_input("Choose how many coordinates to display", min_value=0,
+                                 max_value=ds_results.sizes['mesh2d_nFaces'], value=10)
 
-    # Use .where() to filter the data and .dropna() to drop NaN values
-    # filtered_data = uds_map['differential'].where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
-    selected_slice = uds_map.isel(time=selected_time_index, mesh2d_nLayers=layer, missing_dims='ignore')
-    # selected_slice = ds.isel(time=selected_time_index, mesh2d_nLayers=layer, missing_dims='ignore')
-    print('selected time', selected_time_index)
-    # filtered2 = filtered_data.where(uds_map['differential'] < some_value).dropna(dim='time', how='all')
+    # Plot the selected values on the map
+    if timeindex == timeindices[0]:
+        df = ds_results[['Depth- and time-averaged uncertainty']].to_dataframe().reset_index()
+        df.rename(columns={"mesh2d_face_y": "Latitude", "mesh2d_face_x": "Longitude"}, inplace=True)
+        df_sorted = df.sort_values(by='Depth- and time-averaged uncertainty', ascending=False)
+        df_sorted.drop('mesh2d_nFaces', axis=1, inplace=True)
+        df_sorted.reset_index(drop=True, inplace=True)
+        ranked_df = df_sorted[df.index <= (ranked_points - 1)]
+        fig = px.scatter_mapbox(ranked_df, lat="Latitude", lon="Longitude", hover_name=ranked_df.index+1,
+                                hover_data=['Depth- and time-averaged uncertainty'],
+                                color='Depth- and time-averaged uncertainty',
+                                color_continuous_scale='Viridis',zoom=3, height=300)
+    elif timeindex == timeindices[1]:
+        df = ds_results[['Depth-averaged uncertainty']].to_dataframe().reset_index()
+        df.rename(columns={"mesh2d_face_y": "Latitude", "mesh2d_face_x": "Longitude"}, inplace=True)
+        df_sorted = df.sort_values(by='Depth-averaged uncertainty', ascending=False)
+        df_sorted.drop('mesh2d_nFaces', axis=1, inplace=True)
+        df_sorted.reset_index(drop=True, inplace=True)
+        ranked_df = df_sorted[df.index <= (ranked_points - 1)]
+        fig = px.scatter_mapbox(ranked_df, lat="Latitude", lon="Longitude", hover_name=ranked_df.index+1,
+                                hover_data=['Depth-averaged uncertainty'], color='Depth-averaged uncertainty',
+                                color_continuous_scale='Viridis', zoom=3, height=300)
+    center_lat = (ranked_df['Latitude'].max() + ranked_df['Latitude'].min()) / 2
+    center_lon = (ranked_df['Longitude'].max() + ranked_df['Longitude'].min()) / 2
+    fig.update_layout(mapbox_style="open-street-map", mapbox_zoom=12, mapbox_center_lat=center_lat,
+                      mapbox_center_lon=center_lon, margin={"r": 0, "t": 0, "l": 0, "b": 0}, width=1500,
+                      height=500)
+    st.plotly_chart(fig, use_container_width=True)
 
-    boolean_indexer = (selected_slice['differential'] < some_value).compute()
+    # Export the values for use in mission planning
+    if st.button("Push to export ranking of points by uncertainty to CSV:"):
+        df_sorted.to_csv('Sampling_Priority.csv', index=True)
+        st.write("Saved to file Sampling_Priority.csv")
 
-    filtered_data = selected_slice.where(boolean_indexer, drop=True)
+def error_analys(full_files):
+    """
+    Calculate error statistics for all his files; report which file has the lowest error; use regression to
+    estimate the input values which would minimize error.
+    :param full_files: list of his files on which to computer variance. Must share the same layers, time span and data
+    variables
+    :return:
+    """
+    st.write("Analyze errors")
 
-    # Get the coordinates of the items that meet the condition
-    coords_of_interest = filtered_data.coords
 
-    array1 = coords_of_interest['mesh2d_node_x'].values
-    array2 = coords_of_interest['mesh2d_node_y'].values
-    array3 = filtered_data['differential'].values
+def post_sens(all_files, directory_path):
+    st.header("Analyse sensitivity test output")
 
-    print('arraylens', len(array1), len(array2), len(array3))
+    output_options = {"Spatial distribution of uncertainty (map file)": 'map.nc',
+                      "Parameter tuning (history file)": 'his.nc'}
+    d3d_output = st.radio("Select which type of model outputs to display",
+                          options=list(output_options.keys()), horizontal=True)
 
-    # Combine arrays as columns in a DataFrame
-    df = pd.DataFrame({'Uncertainty': array3[0:len(array3)],
-                       'Lat': array2[0:len(array3)],
-                       'Lon': array1[0:len(array3)]})
+    # Filter files based on extension
+    filtered_files = [f for f in all_files if f.endswith(output_options.get(d3d_output))]
+    file_options = filtered_files + ["All"]
 
-    # Write the DataFrame to a CSV file
-    df_sorted = df.sort_values(by='Uncertainty', ascending=False)
-    st.dataframe(df_sorted)
+    hc1, hc2 = st.columns(2, gap="small")
+    with hc1:
+        selected_files = st.multiselect(label="Select which models to compare", options=file_options,
+                                       default="All")
+        if "All" in selected_files:
+            selected_files = filtered_files
+        if directory_path is not None and selected_files is not "Upload your own":
+            full_files = [os.path.join(directory_path, file) for file in selected_files]
+        else:
+            full_files = selected_files
 
-    if st.button("Push to export ranking of points by uncertainty:"):
-        df_sorted.to_csv('Sample_Priority.csv', index=True)
-        st.write("Saved to file")
+    if output_options.get(d3d_output) == 'map.nc':
+        # Calculate 'uncertainty' as the variance (st.dev) of a selected parameter
+        spatial_unc(full_files)
+    elif output_options.get(d3d_output) == 'his.nc':
+        # Calculate error statistics for all his files; report which file has the lowest error; use regression to
+        # estimate the input values which would minimize error.
+        error_analys(full_files)
+
+
+
+
+
+
+
 
 
 def pre():
@@ -705,7 +780,7 @@ def pre():
 
 def post():
     st.title("Delft3D FM Post-Processing")
-    functions = ['Display model outputs', 'Correlate model to data', 'Uncertainty analysis']
+    functions = ['Display model outputs', 'Compare model to reference data', 'Analyze sensitivity results']
 
     # Ask the user for a directory path with the default as the current directory
     c1, c2 = st.columns(2, gap="small")
