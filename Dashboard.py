@@ -1631,18 +1631,8 @@ def display_map(o_file):
         st.pyplot(fig_cross)
 
 
-def display_error(ds_his):
-    # Dictionary for converting parameter names as {model name : profiler name}
-    compatibility = {"Salinity (ppt)": "Salinity (parts per thousand, ppt)",
-                     "Temperature (◦C)": "Temperature (Celsius)"}
-    errorplots = ["Hourly (depth = 2.95 m)", "Depth profiles (12-hour sample rate)"]
-    c1, c2 = st.columns(2, gap='small')
-    with c1:
-        feature = st.selectbox("Select a variable to compare", compatibility.keys())
-        column_name = compatibility.get(feature)  # 'feature' name in reference dataset
-        errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
-
-    if errorplot == errorplots[0]:
+def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
+    if errorplot == errorplots[0] and not offline:
         df = upload_hourly_csv_page()
 
         # Check if there are at least two columns in the DataFrame
@@ -1726,8 +1716,6 @@ def display_error(ds_his):
         surface_depth = df_sorted.loc[df_sorted.index[bisect.bisect_left(df_sorted['zcoordinate_c'], reference)], 'zcoordinate_c']
         surfacehis_df = his_df[his_df['zcoordinate_c'] == surface_depth]
         surfacehis_df = surfacehis_df.reset_index()
-
-        # Assuming your DataFrame is named 'df' with columns 'time' and 'x'
         df = df.set_index('Timestamp')  # Set the index for interpolation
 
         def interpolate_times(df, target_df, target_column, column_name):
@@ -1840,7 +1828,7 @@ def display_error(ds_his):
             p_err.legend.location = "top_left"
             p_err.legend.label_text_font_size = '10px'
             p_err.legend.click_policy = "hide"  # Hide lines on legend click
-            p_err.yaxis.axis_label = f"{feature}"
+            p_err.yaxis.axis_label = "Values"
             p_err.xaxis.axis_label = "Time"
             p_err.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
             st.bokeh_chart(p_err, use_container_width=True)  # Display the Bokeh chart using Streamlit
@@ -2007,7 +1995,9 @@ def display_error(ds_his):
 
         # Apply the interpolation
         result = filtered_his_df.copy()
-        result[f'Reference {column_name}'] = filtered_his_df.groupby('time').apply(lambda group: interpolate_depth(group, filtered_df)).reset_index(level=0,
+        result[f'Reference {column_name}'] = filtered_his_df.groupby('time').apply(lambda group:
+                                                                                   interpolate_depth(group,
+                                                                                                     filtered_df)).reset_index(level=0,
                                                                                                       drop=True)
         result = result.rename(columns={feature: f'Model {feature}'})
         result['zcoordinate_c'] = result['zcoordinate_c']  # Use cell-center depth, not +1.25m 'interval' correction
@@ -2020,13 +2010,17 @@ def display_error(ds_his):
         result[error_signals[4]] = result[error_signals[2]] ** 2
         result[error_signals[5]] = 100 * result[error_signals[2]] / result[error_signals[1]]
 
-        c1, c2 = st.columns(2, gap='small')
-        with c1:
-            dpt_av_opts = ["Individual layers", 'Depth-averaged']
-            dpt_av = st.radio("Choose how to compare model output to the reference sensor data", dpt_av_opts,
-                              horizontal=True)
-            error_stats = st.multiselect("Choose which error statistics to plot", error_signals,
-                                         default=error_signals[2])
+        dpt_av_opts = ["Individual layers", 'Depth-averaged']
+        if not offline:
+            c1, c2 = st.columns(2, gap='small')
+            with c1:
+                dpt_av = st.radio("Choose how to compare model output to the reference sensor data", dpt_av_opts,
+                                  horizontal=True)
+                error_stats = st.multiselect("Choose which error statistics to plot", error_signals,
+                                             default=error_signals[2])
+        else:
+            dpt_av = dpt_av_opts[1]
+            print("got to 2021")
 
         if dpt_av == dpt_av_opts[0]:
             ###########################################################################################################
@@ -2073,7 +2067,7 @@ def display_error(ds_his):
                 p1.add_layout(p1.legend[0], 'right')
                 p1.legend.label_text_font_size = '10px'
                 p1.legend.click_policy = "hide"  # Hide lines on legend click
-                p1.yaxis.axis_label = feature
+                p1.yaxis.axis_label = "Values"
                 p1.xaxis.axis_label = "Time"
                 p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
 
@@ -2111,6 +2105,7 @@ def display_error(ds_his):
         elif dpt_av == dpt_av_opts[1]:
             ##########################################################################################################
             # Plot depth-averaged error statistics
+            print("got to 2106")
 
             # Perform depth-averaging for all timesteps
             result = result.reset_index()
@@ -2118,78 +2113,81 @@ def display_error(ds_his):
             df_filtered = result[['time'] + list(columns_to_include)]
             depth_av_df = df_filtered.groupby('time').mean().reset_index()
 
-            # Create Bokeh figure for the first plot
-            p1 = figure(x_axis_label='Date', title=f'Error statistics as depth contours vs. time for {feature}')
+            if not offline:
 
-            if not errorplot:
-                st.write("Please select at least one parameter and depth contour to plot.")
-            else:
+                # Create Bokeh figure for the first plot
+                p1 = figure(x_axis_label='Date', title=f'Error statistics as depth contours vs. time for {feature}')
 
-                def update_err_contour(selected_variables_p1, result):
+                if not errorplot:
+                    st.write("Please select at least one parameter and depth contour to plot.")
+                else:
 
-                    num_colors = len(selected_variables_p1)
-                    viridis_colors = Viridis256
-                    step = len(viridis_colors) // num_colors
-                    viridis_subset = viridis_colors[::step][:num_colors]
+                    def update_err_contour(selected_variables_p1, result):
 
-                    p1.title.text = f'Depth-Averaged {selected_variables_p1} vs. Time'
-                    p1.renderers = []  # Remove existing renderers
-                    line_styles = ['solid', 'dashed', 'dotdash', 'dotted']
+                        num_colors = len(selected_variables_p1)
+                        viridis_colors = Viridis256
+                        step = len(viridis_colors) // num_colors
+                        viridis_subset = viridis_colors[::step][:num_colors]
 
-                    for i, (var) in enumerate(selected_variables_p1):
-                        depth_source = ColumnDataSource(result)
-                        renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
-                                           line_color=viridis_subset[i],
-                                           legend_label=f'{var}')
-                        p1.add_tools(HoverTool(renderers=[renderer],
-                                               tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
-                                                         (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
-                                               mode="vline"))
-                        p1.renderers.append(renderer)
+                        p1.title.text = f'Depth-Averaged {selected_variables_p1} vs. Time'
+                        p1.renderers = []  # Remove existing renderers
+                        line_styles = ['solid', 'dashed', 'dotdash', 'dotted']
 
-                # Call the update_plot function with the selected variables for the first plot
-                update_err_contour(error_stats, depth_av_df)
+                        for i, (var) in enumerate(selected_variables_p1):
+                            depth_source = ColumnDataSource(result)
+                            renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
+                                               line_color=viridis_subset[i],
+                                               legend_label=f'{var}')
+                            p1.add_tools(HoverTool(renderers=[renderer],
+                                                   tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
+                                                             (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
+                                                   mode="vline"))
+                            p1.renderers.append(renderer)
 
-                # Show legend for the first plot
-                p1.legend.title = 'Depth'
-                # p1.legend.location = "top_left"
-                p1.add_layout(p1.legend[0], 'right')
-                p1.legend.label_text_font_size = '10px'
-                p1.legend.click_policy = "hide"  # Hide lines on legend click
-                p1.yaxis.axis_label = feature
-                p1.xaxis.axis_label = "Time"
-                p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+                    # Call the update_plot function with the selected variables for the first plot
+                    update_err_contour(error_stats, depth_av_df)
 
-                # Display the Bokeh chart for the first plot using Streamlit
-                st.bokeh_chart(p1, use_container_width=True)
-                st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
-                         "Click legend entries to toggle series on/off.")
+                    # Show legend for the first plot
+                    p1.legend.title = 'Depth'
+                    # p1.legend.location = "top_left"
+                    p1.add_layout(p1.legend[0], 'right')
+                    p1.legend.label_text_font_size = '10px'
+                    p1.legend.click_policy = "hide"  # Hide lines on legend click
+                    p1.yaxis.axis_label = feature
+                    p1.xaxis.axis_label = "Time"
+                    p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
 
-                ######################################################################################################
-                # Display scalar statistics
-                st.write(f"Time- and Depth-averaged summary statistics for error in modeled {feature}")
+                    # Display the Bokeh chart for the first plot using Streamlit
+                    st.bokeh_chart(p1, use_container_width=True)
+                    st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                             "Click legend entries to toggle series on/off.")
 
-                # Compute summary (scalar) statistics
-                MM = result[error_signals[0]].mean()
-                RM = result[error_signals[1]].mean()
-                MSTDEV = result[error_signals[0]].std()
-                RSTDEV = result[error_signals[1]].std()
-                correlation = result[f'Model {feature}'].corr(result[f'Reference {column_name}'])
-                SSE = result[error_signals[2]].sum()
-                MAE = result[error_signals[3]].sum() / len(result[error_signals[3]])
-                MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
-                RMSE = math.sqrt(MSE)
-                MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
-                statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
-                                            "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
-                                            "Root Mean Squared Error", 'Mean Percent Error'],
-                              'Model': [MM, MSTDEV, None, None, None, None, None, None],
-                              'Reference Data': [RM, RSTDEV, None, None, None, None, None, None],
-                              'Comparison': [RM - MM, RSTDEV - MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
-                stats_df = pd.DataFrame(statvalues)
-                stats_df = stats_df.reset_index(drop=True)
+            ######################################################################################################
+            # Display scalar statistics
+            st.write(f"Time- and Depth-averaged summary statistics for error in modeled {feature}")
 
-                st.dataframe(stats_df, hide_index=True)
+            # Compute summary (scalar) statistics
+            MM = result[error_signals[0]].mean()
+            RM = result[error_signals[1]].mean()
+            MSTDEV = result[error_signals[0]].std()
+            RSTDEV = result[error_signals[1]].std()
+            correlation = result[f'Model {feature}'].corr(result[f'Reference {column_name}'])
+            SSE = result[error_signals[2]].sum()
+            MAE = result[error_signals[3]].sum() / len(result[error_signals[3]])
+            MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
+            RMSE = math.sqrt(MSE)
+            MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
+            statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
+                                        "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                        "Root Mean Squared Error", 'Mean Percent Error'],
+                          'Model': [MM, MSTDEV, None, None, None, None, None, None],
+                          'Reference Data': [RM, RSTDEV, None, None, None, None, None, None],
+                          'Comparison': [RM - MM, RSTDEV - MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
+            stats_df = pd.DataFrame(statvalues)
+            stats_df = stats_df.reset_index(drop=True)
+
+            st.dataframe(stats_df, hide_index=True)
+            return stats_df
 
 
 
@@ -2317,7 +2315,17 @@ def display_his(o_file):
                                    default=ds_his.coords['stations'].values[0])
             feature = st.selectbox("Select a variable to plot", stations_list)
     elif plottype == hisoptions[2]:
-        display_error(ds_his=ds_his)
+        # Dictionary for converting parameter names as {model name : profiler name}
+        compatibility = {"Salinity (ppt)": "Salinity (parts per thousand, ppt)",
+                         "Temperature (◦C)": "Temperature (Celsius)"}
+        errorplots = ["Hourly (depth = 2.95 m)", "Depth profiles (12-hour sample rate)"]
+        c1, c2 = st.columns(2, gap='small')
+        with c1:
+            feature = st.selectbox("Select a variable to compare", compatibility.keys())
+            column_name = compatibility.get(feature)  # 'feature' name in reference dataset
+            errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
+        display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
+                      errorplots=errorplots, offline=False)
 
     ###################################################################################################################
     # 2. Plot time series data for the selected point(s), at one or several depths
