@@ -38,7 +38,7 @@ def main():
         historic()
     elif selected_page == "Hydrodynamic Model":
         st.title("Hydrodynamic Model")
-        current(all_files)
+        current(all_files, directory_path=None)
     elif selected_page == "Interactive (Path Planning)":
         interactive()
 
@@ -2499,10 +2499,11 @@ def display_his(o_file):
             st.warning(f"Selected variable does not vary with depth.")
 
 
-def current(all_files):
+def current(all_files, directory_path):
     """
     Display and explore Delft3D output files
     """
+
     output_options = ["Spatial distributions (map file)", "Fixed locations (history file)"]
     d3d_output = st.radio("Select which type of model outputs to display",
                           options=output_options, horizontal=True)
@@ -2513,6 +2514,8 @@ def current(all_files):
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             selected_file = st.selectbox(label="Select which output to display", options=filtered_files)
+            if directory_path is not None and selected_file is not "Upload your own":
+                selected_file = os.path.join(directory_path, selected_file)
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
@@ -2536,6 +2539,8 @@ def current(all_files):
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
+            if directory_path is not None and selected_file is not "Upload your own":
+                selected_file = os.path.join(directory_path, selected_file)
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
