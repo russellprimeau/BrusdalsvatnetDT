@@ -552,7 +552,7 @@ def post_cor(all_files, directory_path):
     hc1, hc2 = st.columns(2, gap="small")
     with hc1:
         selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
-        if directory_path is not None and selected_file is not "Upload your own":
+        if directory_path is not None and selected_file != "Upload your own":
             selected_file = os.path.join(directory_path, selected_file)
     # Open hisfile with xarray and print netcdf structure
     ds_his_o = xr.open_mfdataset(selected_file, preprocess=dfmt.preprocess_hisnc)
@@ -695,9 +695,9 @@ def spatial_unc(files):
     st.plotly_chart(fig, use_container_width=True)
 
     # Export the values for use in mission planning
-    if st.button("Push to export ranking of points by uncertainty to CSV:"):
+    if st.button("Export ranking of points by uncertainty to CSV"):
         df_sorted.to_csv('Sampling_Priority.csv', index=True)
-        st.write("Saved to file Sampling_Priority.csv")
+        st.write(f"{ranked_points} points with greatest uncertainty written to file \'Sampling_Priority.csv\'")
 
 def error_analys(full_files):
     """
@@ -707,7 +707,21 @@ def error_analys(full_files):
     variables
     :return:
     """
-    st.write("Analyze errors")
+    compatibility = {"Salinity (ppt)": "Salinity (parts per thousand, ppt)",
+                     "Temperature (◦C)": "Temperature (Celsius)"}
+    errorplots = ["Hourly (depth = 2.95 m)", "Depth profiles (12-hour sample rate)"]
+    c1, c2 = st.columns(2, gap='small')
+    with c1:
+        feature = st.selectbox("Select a variable to compare", compatibility.keys())
+        column_name = compatibility.get(feature)  # 'feature' name in reference dataset
+    analysis = []
+    for i, file in enumerate(full_files):
+        ds_his_o = xr.open_mfdataset(file, preprocess=dfmt.preprocess_hisnc)
+        ds_his = Dashboard.rename_ds(ds_his_o)
+        df = Dashboard.display_error(ds_his, feature, column_name, errorplot=errorplots[1], errorplots=errorplots,
+                                      offline=True)
+        analysis.append(df)
+    st.write(analysis)
 
 
 def post_sens(all_files, directory_path):
@@ -728,7 +742,7 @@ def post_sens(all_files, directory_path):
                                        default="All")
         if "All" in selected_files:
             selected_files = filtered_files
-        if directory_path is not None and selected_files is not "Upload your own":
+        if directory_path is not None and selected_files != "Upload your own":
             full_files = [os.path.join(directory_path, file) for file in selected_files]
         else:
             full_files = selected_files
