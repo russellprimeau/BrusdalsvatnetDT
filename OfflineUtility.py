@@ -610,12 +610,11 @@ def spatial_unc(files):
     if timeindex == timeindices[0]:
         pf = ds_results['Depth- and time-averaged uncertainty'].isel(missing_dims='ignore').ugrid.plot(cmap='jet',
                                                                                                        add_colorbar=False)
-        st.markdown(f"### Spatial distribution of depth- and time-averaged {variable}")
+        st.markdown(f"### Spatial distribution of uncertainty in depth- and time-averaged {variable}")
     elif timeindex == timeindices[1]:
         pf = ds_results['Depth-averaged uncertainty'].isel(time=-1, missing_dims='ignore').ugrid.plot(cmap='jet',
                                                                                                        add_colorbar=False)
-        st.markdown(f"### Spatial distribution of uncertainty in depth-averaged {variable} at "
-                    f"{ds_results['time'].isel(time=-1)}")
+        st.markdown(f"### Spatial distribution of uncertainty in depth-averaged {variable}")
     ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
     colorbar = plt.colorbar(pf, orientation="vertical", fraction=0.01, pad=0.001)
 
@@ -679,7 +678,7 @@ def spatial_unc(files):
                                 color='Depth- and time-averaged uncertainty',
                                 color_continuous_scale='Viridis',zoom=3, height=300)
     elif timeindex == timeindices[1]:
-        df = ds_results[['Depth-averaged uncertainty']].to_dataframe().reset_index()
+        df = ds_results[['Depth-averaged uncertainty']].isel(time=-1).to_dataframe().reset_index()
         df.rename(columns={"mesh2d_face_y": "Latitude", "mesh2d_face_x": "Longitude"}, inplace=True)
         df_sorted = df.sort_values(by='Depth-averaged uncertainty', ascending=False)
         df_sorted.drop('mesh2d_nFaces', axis=1, inplace=True)
