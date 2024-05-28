@@ -2057,7 +2057,7 @@ def display_error(ds_his):
                             depth_source = ColumnDataSource(group)
                             renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
                                                line_color=viridis_subset[j],
-                                               legend_label=f'{depth}m', line_dash=line_styles[i])
+                                               legend_label=f'{depth}m {var}', line_dash=line_styles[i])
                             p1.add_tools(HoverTool(renderers=[renderer],
                                                    tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
                                                              (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
