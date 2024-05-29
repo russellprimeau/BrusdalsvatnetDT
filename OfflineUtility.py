@@ -558,7 +558,17 @@ def post_cor(all_files, directory_path):
     ds_his_o = xr.open_mfdataset(selected_file, preprocess=dfmt.preprocess_hisnc)
     ds_his = Dashboard.rename_ds(ds_his_o)
 
-    Dashboard.display_error(ds_his)
+    compatibility = {"Salinity (ppt)": "Salinity (parts per thousand, ppt)",
+                     "Temperature (◦C)": "Temperature (Celsius)"}
+    errorplots = ["Hourly (depth = 2.95 m)", "Depth profiles (12-hour sample rate)"]
+    c1, c2 = st.columns(2, gap='small')
+    with c1:
+        feature = st.selectbox("Select a variable to compare", compatibility.keys())
+        column_name = compatibility.get(feature)  # 'feature' name in reference dataset
+        errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
+    display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
+                  errorplots=errorplots, offline=False)
+
 
 def spatial_unc(files):
     """
@@ -714,11 +724,16 @@ def error_analys(full_files):
     with c1:
         feature = st.selectbox("Select a variable to compare", compatibility.keys())
         column_name = compatibility.get(feature)  # 'feature' name in reference dataset
-    analysis = []
+    compar_stats = {'Statistic': ['Correlation',
+                                 "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                 "Root Mean Squared Error", 'Mean Percent Error']}
+
+    compar_stats = pd.DataFrame(statvalues1)
     for i, file in enumerate(full_files):
         ds_his_o = xr.open_mfdataset(file, preprocess=dfmt.preprocess_hisnc)
         ds_his = Dashboard.rename_ds(ds_his_o)
-        df = Dashboard.display_error(ds_his, feature, column_name, errorplot=errorplots[1], errorplots=errorplots,
+        individual, compar = Dashboard.display_error(ds_his, feature, column_name, errorplot=errorplots[1],
+                                            errorplots=errorplots,
                                       offline=True)
         analysis.append(df)
     st.write(analysis)
