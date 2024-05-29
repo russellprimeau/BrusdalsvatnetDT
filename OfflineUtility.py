@@ -566,7 +566,7 @@ def post_cor(all_files, directory_path):
         feature = st.selectbox("Select a variable to compare", compatibility.keys())
         column_name = compatibility.get(feature)  # 'feature' name in reference dataset
         errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
-    display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
+    Dashboard.display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
                   errorplots=errorplots, offline=False)
 
 
