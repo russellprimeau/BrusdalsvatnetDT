@@ -14,7 +14,9 @@ import dfm_tools as dfmt
 import plotly.express as px
 from sklearn.linear_model import LinearRegression
 from scipy.optimize import minimize
+import plotly.express as px
 import Dashboard
+
 
 
 def est_his_size(start=None, end=None, h_step=None, h1=1, h2=5, h3=2, h4=None):
@@ -724,19 +726,58 @@ def error_analys(full_files):
     with c1:
         feature = st.selectbox("Select a variable to compare", compatibility.keys())
         column_name = compatibility.get(feature)  # 'feature' name in reference dataset
-    compar_stats = {'Statistic': ['Correlation',
+    statvalues1 = {'Statistic': ['Correlation',
                                  "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
                                  "Root Mean Squared Error", 'Mean Percent Error']}
-
     compar_stats = pd.DataFrame(statvalues1)
+
+    statvalues2 = {'Statistic': ['Mean', 'Standard Deviation']}
+    ind_stats = pd.DataFrame(statvalues2)
     for i, file in enumerate(full_files):
         ds_his_o = xr.open_mfdataset(file, preprocess=dfmt.preprocess_hisnc)
         ds_his = Dashboard.rename_ds(ds_his_o)
         individual, compar = Dashboard.display_error(ds_his, feature, column_name, errorplot=errorplots[1],
-                                            errorplots=errorplots,
-                                      offline=True)
-        analysis.append(df)
-    st.write(analysis)
+                                            errorplots=errorplots, offline=True)
+        compar.index = compar_stats.index
+        individual.index = ind_stats.index
+
+        # Append the 'data' column to the existing DataFrame as a new column
+        compar_stats[f'Model {i+1}'] = compar['Comparison']
+        if i == 0:
+            ind_stats[f'Reference Data'] = individual['Reference Data']
+        ind_stats[f'Model {i+1}'] = individual['Model']
+    c1, c2, c3, c4 = st.columns(4, gap='small')
+    with c1:
+        st.markdown("##### Per-Series Statistics")
+        st.dataframe(ind_stats, hide_index=True)
+    with c2:
+        st.markdown("##### Comparative Statistics")
+        st.dataframe(compar_stats, hide_index=True)
+
+    ##################################################################################################################
+    # Add a grouped bar chart compare error values visually
+
+    compar_stats.set_index('Statistic', inplace=True)
+    compar_stats = compar_stats.transpose()
+    compar_stats.index.names = ['Model']
+    compar_stats.reset_index(inplace=True)
+
+    st.write(f"Correlation {compar_stats['min_col']}")
+
+    hc1, hc2 = st.columns(2, gap="small")
+    with hc1:
+        plotstats = st.multiselect("Select which comparative statistics to plot",
+                                   compar_stats.columns[~(compar_stats.columns == 'Model')])
+    compar_stats = compar_stats[[col for col in compar_stats.columns if col in ['Model'] + plotstats]]
+
+    # Melt the DataFrame to long format
+    df_melted = compar_stats.melt(id_vars=['Model'], var_name='Subcategory', value_name='Value')
+    # Create a grouped bar chart
+    fig = px.bar(df_melted, x='Model', y='Value', color='Subcategory', barmode='group')
+
+    # Show the plot
+    if len(plotstats) > 0:
+        st.plotly_chart(fig)
 
 
 def post_sens(all_files, directory_path):
@@ -769,13 +810,6 @@ def post_sens(all_files, directory_path):
         # Calculate error statistics for all his files; report which file has the lowest error; use regression to
         # estimate the input values which would minimize error.
         error_analys(full_files)
-
-
-
-
-
-
-
 
 
 def pre():
