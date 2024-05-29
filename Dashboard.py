@@ -2177,17 +2177,30 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
             RMSE = math.sqrt(MSE)
             MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
-            statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
+
+            statvalues1 = {'Statistic': ['Mean', 'Standard Deviation'],
+                          'Model': [MM, MSTDEV],
+                          'Reference Data': [RM, RSTDEV]}
+
+            statvalues2 = {'Statistic': ['Correlation',
                                         "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
                                         "Root Mean Squared Error", 'Mean Percent Error'],
-                          'Model': [MM, MSTDEV, None, None, None, None, None, None],
-                          'Reference Data': [RM, RSTDEV, None, None, None, None, None, None],
-                          'Comparison': [RM - MM, RSTDEV - MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
-            stats_df = pd.DataFrame(statvalues)
-            stats_df = stats_df.reset_index(drop=True)
+                          'Comparison': [correlation, SSE, MAE, MSE, RMSE, MPE]}
 
-            st.dataframe(stats_df, hide_index=True)
-            return stats_df
+            stats_df1 = pd.DataFrame(statvalues1)
+            stats_df1 = stats_df1.reset_index(drop=True)
+
+            stats_df2 = pd.DataFrame(statvalues2)
+            stats_df2 = stats_df2.reset_index(drop=True)
+
+            c1, c2, c3, c4 = st.columns(4, gap='small')
+            with c1:
+                st.markdown("##### Series Statistics")
+                st.dataframe(stats_df1, hide_index=True)
+            with c2:
+                st.markdown("##### Comparative Statistics")
+                st.dataframe(stats_df2, hide_index=True)
+            return stats_df1, stats_df2
 
 
 
