@@ -1632,6 +1632,16 @@ def display_map(o_file):
 
 
 def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
+    depths = np.unique(ds_his.coords['zcoordinate_c'].values)
+    # interval = abs(depths[1] - depths[0]) / 2
+    ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(
+        2)  # Use cell-center depth, not +1.25m 'interval' correction
+    data_for_bokeh = ds_his[feature].isel(stations=0)
+    his_df = data_for_bokeh.to_dataframe()
+    his_df.reset_index()
+    his_df = his_df.dropna(subset=[feature])  # Drop rows for layers with no value for selected feature
+    his_df = his_df.reset_index()
+
     if errorplot == errorplots[0] and not offline:
         df = upload_hourly_csv_page()
 
@@ -1676,16 +1686,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
         # Drop rows not satisfying the mask (within the time range)
         df = df[mask]
 
-        depths = np.unique(ds_his.coords['zcoordinate_c'].values)
-        interval = abs(depths[1] - depths[0]) / 2
-        ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2) # Use cell-center depth, not +1.25m 'interval' correction
-        data_for_bokeh = ds_his[feature].isel(stations=0)
-        his_df = data_for_bokeh.to_dataframe()
-        his_df.reset_index()
-        his_df = his_df.dropna(subset=[feature])  # Drop rows for layers with no value for selected feature
-        reference = -2.95  # Average depth at which hourly data is measured
-
-
         # Since temperature gradients are large at the surface, interpolate the model value at the sensor's depth
         # Set the target x value where we want to interpolate y
 
@@ -1704,6 +1704,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             return new_row
 
         # Apply the interpolation for each group and collect new rows
+        reference = -2.95  # Average depth at which hourly data is measured
         new_rows = his_df.groupby('time').apply(lambda group: interpolate_at_target_x(group, reference)).tolist()
 
         # Create a new DataFrame from the new rows
@@ -1786,14 +1787,20 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
         MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
         RMSE = math.sqrt(MSE)
         MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
-        statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
-                                    "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
-                                    "Root Mean Squared Error", 'Mean Percent Error'],
-                      'Model': [MM, MSTDEV,None,None,None,None,None,None],
-                      'Reference Data': [RM, RSTDEV,None,None,None,None,None,None],
-                      'Comparison': [RM-MM, RSTDEV-MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
-        stats_df = pd.DataFrame(statvalues)
-        stats_df = stats_df.reset_index(drop=True)
+        statvalues1 = {'Statistic': ['Mean', 'Standard Deviation'],
+                       'Model': [MM, MSTDEV],
+                       'Reference Data': [RM, RSTDEV]}
+
+        statvalues2 = {'Statistic': ['Correlation',
+                                     "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                     "Root Mean Squared Error", 'Mean Percent Error'],
+                       'Comparison': [correlation, SSE, MAE, MSE, RMSE, MPE]}
+
+        stats_df1 = pd.DataFrame(statvalues1)
+        stats_df1 = stats_df1.reset_index(drop=True)
+
+        stats_df2 = pd.DataFrame(statvalues2)
+        stats_df2 = stats_df2.reset_index(drop=True)
 
         c1, c2 = st.columns(2, gap='small')
         with c1:
@@ -1833,7 +1840,14 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             p_err.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
             st.bokeh_chart(p_err, use_container_width=True)  # Display the Bokeh chart using Streamlit
         st.write(f"Time-averaged summary statistics for error in modeled {feature} at surface")
-        st.dataframe(stats_df, hide_index=True)
+        c1, c2, c3, c4 = st.columns(4, gap='small')
+        if not offline:
+            with c1:
+                st.markdown("##### Series Statistics")
+                st.dataframe(stats_df1, hide_index=True)
+            with c2:
+                st.markdown("##### Comparative Statistics")
+                st.dataframe(stats_df2, hide_index=True)
     elif errorplot == errorplots[1]:
         # Compute and plot error at all depths
 
@@ -1934,15 +1948,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
 
         # Drop rows not satisfying the mask (within the time range)
         df = df[mask]
-
-        depths = np.unique(ds_his.coords['zcoordinate_c'].values)
-        interval = abs(depths[1] - depths[0]) / 2
-        ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)  # Use cell-center depth, not +1.25m 'interval' correction
-        data_for_bokeh = ds_his[feature].isel(stations=0)
-        his_df = data_for_bokeh.to_dataframe()
-        his_df.reset_index()
-        his_df = his_df.dropna(subset=[feature])  # Drop rows for layers with no value for selected feature
-        his_df = his_df.reset_index()
 
         # Define a function to floor datetime to the nearest 12 hours (for grouping profiling missions)
         def floor_to_nearest_12_hours(dt):
@@ -2091,16 +2096,30 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
                 MSE = result[error_signals[4]].sum() / len(result[error_signals[4]])
                 RMSE = math.sqrt(MSE)
                 MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
-                statvalues = {'Statistic': ['Mean', 'Standard Deviation', 'Correlation',
-                                            "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
-                                            "Root Mean Squared Error", 'Mean Percent Error'],
-                              'Model': [MM, MSTDEV, None, None, None, None, None, None],
-                              'Reference Data': [RM, RSTDEV, None, None, None, None, None, None],
-                              'Comparison': [RM - MM, RSTDEV - MSTDEV, correlation, SSE, MAE, MSE, RMSE, MPE]}
-                stats_df = pd.DataFrame(statvalues)
-                stats_df = stats_df.reset_index(drop=True)
+                statvalues1 = {'Statistic': ['Mean', 'Standard Deviation'],
+                               'Model': [MM, MSTDEV],
+                               'Reference Data': [RM, RSTDEV]}
 
-                st.dataframe(stats_df, hide_index=True)
+                statvalues2 = {'Statistic': ['Correlation',
+                                             "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                             "Root Mean Squared Error", 'Mean Percent Error'],
+                               'Comparison': [correlation, SSE, MAE, MSE, RMSE, MPE]}
+
+                stats_df1 = pd.DataFrame(statvalues1)
+                stats_df1 = stats_df1.reset_index(drop=True)
+
+                stats_df2 = pd.DataFrame(statvalues2)
+                stats_df2 = stats_df2.reset_index(drop=True)
+
+                c1, c2, c3, c4 = st.columns(4, gap='small')
+                if not offline:
+                    with c1:
+                        st.markdown("##### Series Statistics")
+                        st.dataframe(stats_df1, hide_index=True)
+                    with c2:
+                        st.markdown("##### Comparative Statistics")
+                        st.dataframe(stats_df2, hide_index=True)
+                return stats_df1, stats_df2
 
         elif dpt_av == dpt_av_opts[1]:
             ##########################################################################################################
@@ -2164,7 +2183,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
 
             ######################################################################################################
             # Display scalar statistics
-            st.write(f"Time- and Depth-averaged summary statistics for error in modeled {feature}")
 
             # Compute summary (scalar) statistics
             MM = result[error_signals[0]].mean()
@@ -2194,12 +2212,13 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             stats_df2 = stats_df2.reset_index(drop=True)
 
             c1, c2, c3, c4 = st.columns(4, gap='small')
-            with c1:
-                st.markdown("##### Series Statistics")
-                st.dataframe(stats_df1, hide_index=True)
-            with c2:
-                st.markdown("##### Comparative Statistics")
-                st.dataframe(stats_df2, hide_index=True)
+            if not offline:
+                with c1:
+                    st.markdown("##### Series Statistics")
+                    st.dataframe(stats_df1, hide_index=True)
+                with c2:
+                    st.markdown("##### Comparative Statistics")
+                    st.dataframe(stats_df2, hide_index=True)
             return stats_df1, stats_df2
 
 
@@ -2535,7 +2554,7 @@ def current(all_files, directory_path):
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             selected_file = st.selectbox(label="Select which output to display", options=filtered_files)
-            if directory_path is not None and selected_file is not "Upload your own":
+            if directory_path is not None and selected_file != "Upload your own":
                 selected_file = os.path.join(directory_path, selected_file)
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
@@ -2560,7 +2579,7 @@ def current(all_files, directory_path):
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             selected_file = st.selectbox(label="Select which model output to display", options=filtered_files)
-            if directory_path is not None and selected_file is not "Upload your own":
+            if directory_path is not None and selected_file != "Upload your own":
                 selected_file = os.path.join(directory_path, selected_file)
         if selected_file == "Upload your own":
             hc1, hc2 = st.columns(2, gap="small")
