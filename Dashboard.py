@@ -166,7 +166,7 @@ def weather():
             "Timestamp": (df['Timestamp'] < pd.to_datetime('2000-01-01')) | (
                     df['Timestamp'] > pd.to_datetime('2099-12-31')),
             'Hourly average wind direction (°)': (df['Hourly average wind direction (°)'] < 0) | (
-                        df['Hourly average wind direction (°)'] > 360),
+                    df['Hourly average wind direction (°)'] > 360),
             "Average wind speed (m/s)": (df["Average wind speed (m/s)"] < 0) | (
                     df["Average wind speed (m/s)"] > 100),
             'Maximum sustained wind speed, 3-second span (m/s)': (df[
@@ -180,12 +180,12 @@ def weather():
                                                                        'Maximum sustained wind speed, 10-minute span (m/s)'] > 100),
             'Hourly average atmospheric pressure at station (mBar)': (df[
                                                                           'Hourly average atmospheric pressure at station (mBar)'] < 860) | (
-                                                                                 df[
-                                                                                     'Hourly average atmospheric pressure at station (mBar)'] > 1080),
+                                                                             df[
+                                                                                 'Hourly average atmospheric pressure at station (mBar)'] > 1080),
             'Maximum pressure differential, 3-hour span (mBar)': (df[
                                                                       'Maximum pressure differential, 3-hour span (mBar)'] < 0) | (
-                                                                             df[
-                                                                                 'Maximum pressure differential, 3-hour span (mBar)'] > 50),
+                                                                         df[
+                                                                             'Maximum pressure differential, 3-hour span (mBar)'] > 50),
             'Longwave (IR) radiation (W/m2)': (df['Longwave (IR) radiation (W/m2)'] < 0) | (
                     df['Longwave (IR) radiation (W/m2)'] > 750),
             'Shortwave (solar) radiation (W/m2)': (df['Shortwave (solar) radiation (W/m2)'] < 0) | (
@@ -193,11 +193,11 @@ def weather():
             'Hourly precipitation (mm/hr)': (df['Hourly precipitation (mm/hr)'] < 0) | (
                     df['Hourly precipitation (mm/hr)'] > 50),
             'Hourly maximum temperature (°C)': (df['Hourly maximum temperature (°C)'] < -40) | (
-                        df['Hourly maximum temperature (°C)'] > 40),
+                    df['Hourly maximum temperature (°C)'] > 40),
             'Hourly minimum temperature (°C)': (df['Hourly minimum temperature (°C)'] < -40) | (
-                        df['Hourly minimum temperature (°C)'] > 40),
+                    df['Hourly minimum temperature (°C)'] > 40),
             'Average humidity (% relative humidity)': (df['Average humidity (% relative humidity)'] < 0) | (
-                        df['Average humidity (% relative humidity)'] > 100)
+                    df['Average humidity (% relative humidity)'] > 100)
         }
 
         # Replace values meeting the error conditions with np.nan using boolean indexing
@@ -400,7 +400,8 @@ def hourly():
                                                       (df['Conductivity (microSiemens/centimeter)'] > 45),
             "Specific Conductivity (microSiemens/centimeter)": (
                     df['Specific Conductivity (microSiemens/centimeter)'] < 1),
-            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0) |
+                                                      (df['Salinity (parts per thousand, ppt)'] > .03),
             "pH": (df['pH'] < 2) | (df['pH'] > 12),
             "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
                     df['Dissolved Oxygen (% saturation)'] > 120),
@@ -408,7 +409,7 @@ def hourly():
             "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
             "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
             "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (
-                        df['fDOM (parts per billion QSU)'] > 300),
+                    df['fDOM (parts per billion QSU)'] > 300),
             "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
             "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
         }
@@ -642,7 +643,9 @@ def vertical():
                                                       (df['Conductivity (microSiemens/centimeter)'] > 45),
             "Specific Conductivity (microSiemens/centimeter)": (
                     df['Specific Conductivity (microSiemens/centimeter)'] < 1),
-            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0) |
+                                                      (df['Salinity (parts per thousand, ppt)'] > .03),
+
             "pH": (df['pH'] < 1) | (df['pH'] > 13),
             "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
                     df['Dissolved Oxygen (% saturation)'] > 120),
@@ -650,7 +653,7 @@ def vertical():
             "Turbidity (FNU)": (df['Turbidity (FNU)'] < 0),
             "fDOM (RFU)": (df['fDOM (RFU)'] < 0) | (df['fDOM (RFU)'] > 100),
             "fDOM (parts per billion QSU)": (df['fDOM (parts per billion QSU)'] < 0) | (
-                        df['fDOM (parts per billion QSU)'] > 300),
+                    df['fDOM (parts per billion QSU)'] > 300),
             "Latitude": (df['Latitude'] < -90) | (df['Latitude'] > 90),
             "Longitude": (df['Longitude'] < -180) | (df['Longitude'] > 180)
         }
@@ -880,7 +883,7 @@ def usv_plot():
         h1, h2 = st.columns(2, gap='small')
         with h1:
             hover_labels = st.multiselect(label="Choose log parameters to display",
-                                      options=["Select All"] + included_cols)
+                                          options=["Select All"] + included_cols)
 
         if "Select All" in hover_labels:
             hover_labels = included_cols
@@ -916,6 +919,7 @@ def usv_plot():
             display_mis(file_path)
     else:
         display_mis(selected_file)
+
 
 def rename_ds(ds):
     # Dictionary of more descriptive names for known Delft3D output variables, with duplicate keys
@@ -1508,7 +1512,8 @@ def display_map(o_file):
                     layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
                     layer_depths = layer_depths.tolist()
                     # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
-                depth_selected = st.selectbox("Select layers to display, by depth below mean surface elevation (m)", layer_depths)
+                depth_selected = st.selectbox("Select layers to display, by depth below mean surface elevation (m)",
+                                              layer_depths)
                 layer = layer_list[layer_depths.index(depth_selected)]
             else:
                 num_layers = None
@@ -1659,7 +1664,8 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
                                                       (df['Conductivity (microSiemens/centimeter)'] > 45),
             "Specific Conductivity (microSiemens/centimeter)": (
                     df['Specific Conductivity (microSiemens/centimeter)'] < 1),
-            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0) |
+                                                  (df['Salinity (parts per thousand, ppt)'] > .03),
             "pH": (df['pH'] < 2) | (df['pH'] > 12),
             "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
                     df['Dissolved Oxygen (% saturation)'] > 120),
@@ -1714,7 +1720,8 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
         df_sorted = his_df.sort_values(by='zcoordinate_c')
 
         # Drop all rows not from the layer most closely matching the sensor's depth
-        surface_depth = df_sorted.loc[df_sorted.index[bisect.bisect_left(df_sorted['zcoordinate_c'], reference)], 'zcoordinate_c']
+        surface_depth = df_sorted.loc[
+            df_sorted.index[bisect.bisect_left(df_sorted['zcoordinate_c'], reference)], 'zcoordinate_c']
         surfacehis_df = his_df[his_df['zcoordinate_c'] == surface_depth]
         surfacehis_df = surfacehis_df.reset_index()
         df = df.set_index('Timestamp')  # Set the index for interpolation
@@ -1770,11 +1777,12 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
         result = interpolate_times(df, surfacehis_df, 'time', column_name)
 
         # Compute some vector statistics comparing the model and reference values
-        error_signals = [f'Model {feature}', f'Reference {column_name}', 'Difference', 'Absolute Error', 'Squared Error', 'Percent Error']
+        error_signals = [f'Model {feature}', f'Reference {column_name}', 'Difference', 'Absolute Error',
+                         'Squared Error', 'Percent Error']
         result[error_signals[2]] = result[error_signals[1]] - result[error_signals[0]]
         result[error_signals[3]] = abs(result[error_signals[2]])
-        result[error_signals[4]] = result[error_signals[2]]**2
-        result[error_signals[5]] = 100*result[error_signals[2]]/result[error_signals[1]]
+        result[error_signals[4]] = result[error_signals[2]] ** 2
+        result[error_signals[5]] = 100 * result[error_signals[2]] / result[error_signals[1]]
 
         # Compute summary (scalar) statistics
         MM = result[error_signals[0]].mean()
@@ -1815,9 +1823,10 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
                                       line_color=palette[i],
                                       legend_label=error)
                 p_err.add_tools(HoverTool(renderers=[renderer],
-                                   tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
-                                             (error_type[i], f'@{{{error}}}')], formatters={"@time": "datetime", },
-                                   mode="vline"))
+                                          tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
+                                                    (error_type[i], f'@{{{error}}}')],
+                                          formatters={"@time": "datetime", },
+                                          mode="vline"))
                 p_err.renderers.append(renderer)
 
         # Call the update_plot function with the selected variables for the first plot
@@ -1922,7 +1931,8 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
                                                       (df['Conductivity (microSiemens/centimeter)'] > 45),
             "Specific Conductivity (microSiemens/centimeter)": (
                     df['Specific Conductivity (microSiemens/centimeter)'] < 1),
-            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0),
+            "Salinity (parts per thousand, ppt)": (df['Salinity (parts per thousand, ppt)'] < 0) |
+                                                  (df['Salinity (parts per thousand, ppt)'] > .03),
             "pH": (df['pH'] < 1) | (df['pH'] > 13),
             "Dissolved Oxygen (% saturation)": (df['Dissolved Oxygen (% saturation)'] < 10) | (
                     df['Dissolved Oxygen (% saturation)'] > 120),
@@ -1987,7 +1997,8 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             return group[group['zcoordinate_c'] >= min_value]
 
         # Apply the filtering to each group in df1
-        refiltered_his_df = filtered_his_df.groupby(filtered_his_df.index).apply(lambda group: filter_rows(group, min_reference_values))
+        refiltered_his_df = filtered_his_df.groupby(filtered_his_df.index).apply(
+            lambda group: filter_rows(group, min_reference_values))
 
         # Drop the extra index level added by groupby + apply
         filtered_his_df = refiltered_his_df.reset_index(level=0, drop=True)
@@ -2002,8 +2013,9 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
         result = filtered_his_df.copy()
         result[f'Reference {column_name}'] = filtered_his_df.groupby('time').apply(lambda group:
                                                                                    interpolate_depth(group,
-                                                                                                     filtered_df)).reset_index(level=0,
-                                                                                                      drop=True)
+                                                                                                     filtered_df)).reset_index(
+            level=0,
+            drop=True)
         result = result.rename(columns={feature: f'Model {feature}'})
         result['zcoordinate_c'] = result['zcoordinate_c']  # Use cell-center depth, not +1.25m 'interval' correction
 
@@ -2178,8 +2190,9 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
 
                     # Display the Bokeh chart for the first plot using Streamlit
                     st.bokeh_chart(p1, use_container_width=True)
-                    st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
-                             "Click legend entries to toggle series on/off.")
+                    st.write(
+                        "Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                        "Click legend entries to toggle series on/off.")
 
             ######################################################################################################
             # Display scalar statistics
@@ -2197,13 +2210,13 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             MPE = result[error_signals[5]].sum() / len(result[error_signals[5]])
 
             statvalues1 = {'Statistic': ['Mean', 'Standard Deviation'],
-                          'Model': [MM, MSTDEV],
-                          'Reference Data': [RM, RSTDEV]}
+                           'Model': [MM, MSTDEV],
+                           'Reference Data': [RM, RSTDEV]}
 
             statvalues2 = {'Statistic': ['Correlation',
-                                        "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
-                                        "Root Mean Squared Error", 'Mean Percent Error'],
-                          'Comparison': [correlation, SSE, MAE, MSE, RMSE, MPE]}
+                                         "Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                         "Root Mean Squared Error", 'Mean Percent Error'],
+                           'Comparison': [correlation, SSE, MAE, MSE, RMSE, MPE]}
 
             stats_df1 = pd.DataFrame(statvalues1)
             stats_df1 = stats_df1.reset_index(drop=True)
@@ -2222,9 +2235,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             return stats_df1, stats_df2
 
 
-
-
-
 def display_his(o_file):
     # Open hisfile with xarray and print netcdf structure
     ds_his_o = xr.open_mfdataset(o_file, preprocess=dfmt.preprocess_hisnc)
@@ -2237,9 +2247,6 @@ def display_his(o_file):
     # print('station coordx, coordy', ds_his['station_geom_node_coordx'].values, ds_his['station_geom_node_coordy'].values)
     # print('source_sink coordx, coordy', ds_his['source_sink_geom_node_coordx'].values,
     #       ds_his['source_sink_geom_node_coordy'].values)
-
-
-
 
     # Handle the possibility that some dimensions or coordinates are not present in the dataset
     if 'stations' in ds_his.dims:
@@ -2270,7 +2277,8 @@ def display_his(o_file):
 
     # Create lists of data variables based on their dimensionality (must exist at location and times)
     includes_coordinate = ["stations", "time"]
-    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts", "cross_section_geom_nNodes"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts",
+                            "cross_section_geom_nNodes"]
     stations_list = []
     for name, var in ds_his.data_vars.items():
         if (all(coord in var.dims for coord in includes_coordinate) and
@@ -2278,7 +2286,8 @@ def display_his(o_file):
             stations_list.append(name)
 
     includes_coordinate = ["source_sink", "time"]
-    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts", "cross_section_geom_nNodes"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts",
+                            "cross_section_geom_nNodes"]
     source_sink_list = []
     for name, var in ds_his.data_vars.items():
         if (all(coord in var.dims for coord in includes_coordinate) and
@@ -2286,7 +2295,8 @@ def display_his(o_file):
             source_sink_list.append(name)
 
     includes_coordinate = ["cross_section", "time"]
-    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts", "cross_section_geom_nNodes"]
+    excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts",
+                            "cross_section_geom_nNodes"]
     cross_section_list = []
     for name, var in ds_his.data_vars.items():
         if (all(coord in var.dims for coord in includes_coordinate) and
@@ -2343,8 +2353,8 @@ def display_his(o_file):
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             locations = st.multiselect("Select observation points at which to plot",
-                                   ds_his.coords['stations'].values,
-                                   default=ds_his.coords['stations'].values[0])
+                                       ds_his.coords['stations'].values,
+                                       default=ds_his.coords['stations'].values[0])
             feature = st.selectbox("Select a variable to plot", stations_list)
     elif plottype == hisoptions[2]:
         # Dictionary for converting parameter names as {model name : profiler name}
@@ -2372,7 +2382,7 @@ def display_his(o_file):
                     ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)
                     depths = np.unique(ds_his.coords['zcoordinate_c'].values)
                     interval = abs(depths[1] - depths[0]) / 2
-                    layer_depths_his = depths # Use actual cell-center values, without 1.25 'interval' offset
+                    layer_depths_his = depths  # Use actual cell-center values, without 1.25 'interval' offset
                     layer_depths_his = list(layer_depths_his[::-1])
                     layer_depths_his = [x for x in layer_depths_his if not math.isnan(x)]
                 else:
@@ -2381,7 +2391,8 @@ def display_his(o_file):
                     layer_depths_his = layer_depths_his.tolist()
                 hc1, hc2 = st.columns(2, gap="small")
                 with hc1:
-                    depth_selected = st.multiselect("Select depth at which to plot", ["All"] + layer_depths_his, default="All")
+                    depth_selected = st.multiselect("Select depth at which to plot", ["All"] + layer_depths_his,
+                                                    default="All")
                     if "All" in depth_selected:
                         layers = layer_depths_his
                     else:
@@ -2424,23 +2435,32 @@ def display_his(o_file):
                         ingroup = group.groupby('stations')
                         for j, (obspoint, obs) in enumerate(ingroup):
                             groupname_source = ColumnDataSource(obs)
-                            renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2,
+                            renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source,
+                                                  line_width=2,
                                                   line_color=viridis_subset[i],
                                                   legend_label=f'{obspoint}: {groupname}')
                             p_his.add_tools(HoverTool(renderers=[renderer],
-                                               tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), (grouptype, f'{groupname}'), ('Location', f'{obspoint}'),
-                                                         (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
-                                               mode="vline"))
+                                                      tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
+                                                                (grouptype, f'{groupname}'),
+                                                                ('Location', f'{obspoint}'),
+                                                                (selected_variables_p_his,
+                                                                 f'@{{{selected_variables_p_his}}}')],
+                                                      formatters={"@time": "datetime", },
+                                                      mode="vline"))
                             p_his.renderers.append(renderer)
                     else:
                         groupname_source = ColumnDataSource(group)
-                        renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source, line_width=2,
+                        renderer = p_his.line(x='time', y=selected_variables_p_his, source=groupname_source,
+                                              line_width=2,
                                               line_color=viridis_subset[i],
                                               legend_label=f'{groupname}')
                         p_his.add_tools(HoverTool(renderers=[renderer],
-                                           tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), (grouptype, f'{groupname}'),
-                                                     (selected_variables_p_his, f'@{{{selected_variables_p_his}}}')], formatters={"@time": "datetime", },
-                                           mode="vline"))
+                                                  tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"),
+                                                            (grouptype, f'{groupname}'),
+                                                            (selected_variables_p_his,
+                                                             f'@{{{selected_variables_p_his}}}')],
+                                                  formatters={"@time": "datetime", },
+                                                  mode="vline"))
                         p_his.renderers.append(renderer)
 
         # Call the update_plot function with the selected variables for the first plot
@@ -2486,17 +2506,17 @@ def display_his(o_file):
             hc1, hc2 = st.columns(2, gap="small")
             with hc1:
                 plottime = st.multiselect("Select times at which to plot instantaneous values vs. depth",
-                                    np.unique(df_reset['time']), default=df_reset['time'].iloc[:1])
+                                          np.unique(df_reset['time']), default=df_reset['time'].iloc[:1])
 
             p2 = figure(x_axis_label=f'{feature}', y_axis_label='Depth',
                         title=f'Vertical Profile for {feature} at {plottime}')
+
             def update_instant(feature, plottime):
 
                 p2.title.text = f'Vertical Profile for {feature}'
                 p2.renderers = []  # Remove existing renderers
                 # Filter DataFrame based on selected depths
                 filtered_df_p1 = df_reset[df_reset['stations'].isin(locations)]
-
 
                 for j, date_val in enumerate(plottime):
                     # Filter data based on selected date for the second plot
@@ -2514,11 +2534,12 @@ def display_his(o_file):
                         source_plot2 = ColumnDataSource(group)
 
                         line_renderer = p2.line(x=feature, y='zcoordinate_c', source=source_plot2, line_width=1,
-                                                line_color=Category20_20[j + i*len(plottime)],
+                                                line_color=Category20_20[j + i * len(plottime)],
                                                 legend_label=f'{var} at {date_string}')
                         p2.add_tools(HoverTool(renderers=[line_renderer], tooltips=[("Depth", '@zcoordinate_c'),
                                                                                     ('Time', date_string),
-                                                                                    (feature, f'@{{{feature}}}')], mode="hline"))
+                                                                                    (feature, f'@{{{feature}}}')],
+                                               mode="hline"))
                         p2.renderers.append(line_renderer)
 
             # Call the update_plot function with the selected variables and date for the second plot
