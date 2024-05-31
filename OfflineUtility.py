@@ -663,7 +663,7 @@ def spatial_unc(files):
     ymax = yavg + y_int * (1 + scaler)
 
     # Set colorbar label
-    colorbar.set_label(variable)
+    colorbar.set_label('Sensitivity')
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
     ax.set_xlim(xmin, xmax)
@@ -762,7 +762,12 @@ def error_analys(full_files):
     compar_stats.index.names = ['Model']
     compar_stats.reset_index(inplace=True)
 
-    st.write(f"Correlation {compar_stats['min_col']}")
+    columns_to_normalize = ["Sum of Squares Error", "Mean Absolute Error", "Mean Squared Error",
+                                 "Root Mean Squared Error"]
+
+    # Normalize by dividing by the mean
+    for column in columns_to_normalize:
+        compar_stats[column] = (compar_stats[column] - compar_stats[column].mean())
 
     hc1, hc2 = st.columns(2, gap="small")
     with hc1:
@@ -771,9 +776,9 @@ def error_analys(full_files):
     compar_stats = compar_stats[[col for col in compar_stats.columns if col in ['Model'] + plotstats]]
 
     # Melt the DataFrame to long format
-    df_melted = compar_stats.melt(id_vars=['Model'], var_name='Subcategory', value_name='Value')
+    df_melted = compar_stats.melt(id_vars=['Model'], var_name='Difference from mean', value_name='Value')
     # Create a grouped bar chart
-    fig = px.bar(df_melted, x='Model', y='Value', color='Subcategory', barmode='group')
+    fig = px.bar(df_melted, x='Model', y='Value', color='Difference from mean', barmode='group')
 
     # Show the plot
     if len(plotstats) > 0:
