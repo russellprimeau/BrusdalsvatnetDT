@@ -21425,3 +21425,9 @@ INFO:root:Command succeeded: git push origin main
 INFO:root:Command succeeded: git pull origin main
 INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
 INFO:root:Successfully appended records to All_Time.csv at 2024-08-05 10:03:40
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeStep.log
+Scheduled_ScrapeWeather.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
