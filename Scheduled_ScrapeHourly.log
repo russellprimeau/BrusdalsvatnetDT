@@ -11405,3 +11405,12 @@ INFO:root:Command succeeded: git add .
 INFO:root:Command succeeded: git commit -m Changes to: Profiler_modem_SondeHourly.csv
 Scheduled_ScrapeWeather.log
 INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to Profiler_modem_SondeHourly.csv at 2024-08-05 10:03:42
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: Profiler_modem_SondeHourly.csv
+Scheduled_ScrapeWeather.log
+ERROR:root:Command failed: git push origin main. Error message: To https://github.com/russellprimeau/BrusdalsvatnetDT.git
+ ! [remote rejected] main -> main (cannot lock ref 'refs/heads/main': is at c80c1adcf61ada203bb725476fc0d75234474bb5 but expected b64f34530b9870e26d8e016b2c7d99db98627da8)
+error: failed to push some refs to 'https://github.com/russellprimeau/BrusdalsvatnetDT.git'
+
