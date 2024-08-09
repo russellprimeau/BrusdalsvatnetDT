@@ -229,6 +229,9 @@ def convert_to_minutes_relative(df_convo, datetime_col, ref_time):
 
 def filter_profiler(start_date, end_date, reference_time, df, discharge, salinity, scalefactor, randomize_type):
     """
+    Creates a dataframe corresponding to the table of time-series input data for a source-sink object in Delft3D FM
+    (i.e. a stream flowing into the lake), which can be written to a .tim file. Uses the surface temperatures from
+    the vertical profiler station as a proxy for the temperature of the streams.
 
     :param start_date:
     :param end_date:
@@ -254,7 +257,7 @@ def filter_profiler(start_date, end_date, reference_time, df, discharge, salinit
     df['Timestamp'] = df['Timestamp'].dt.ceil('H')
     filtered_df = df[(df['Timestamp'] >= start_date) & (df['Timestamp'] <= end_date)]
 
-    # Add columns for data which is not driver by profiler data
+    # Add columns for data which is not driven by profiler data
     filtered_df["Discharge (m^3/s)"] = discharge
     filtered_df["Salinity (ppt)"] = salinity
 
@@ -517,7 +520,9 @@ def gen_forcing(all_files):
 
         # Names for the output files
         met_filenames = ["windxy.tim", "FlowFM_meteo.tim", "rainfall.tim"]
-        inlet_filenames = [f for f in all_files if f.endswith('.tim') and f not in met_filenames]
+        # inlet_filenames = [f for f in all_files if f.endswith('.tim') and f not in met_filenames]
+        inlet_filenames = ["Arsetelva.tim", "Brusdalen.tim", "S1.tim", "S2.tim", "S3.tim", "S4.tim", "Slettebakk.tim",
+                           "Vasstrandelva.tim", "VasstrandliaPump.tim"]
 
         # Ask the user for a directory path with the default as the current directory
         c1, c2 = st.columns(2, gap="small")
