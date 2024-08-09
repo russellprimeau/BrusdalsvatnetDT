@@ -11749,3 +11749,14 @@ bash: line 1: /dev/tty: No such device or address
 error: failed to execute prompt script (exit code 1)
 fatal: could not read Username for 'https://github.com': No such file or directory
 
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Successfully appended records to Profiler_modem_SondeHourly.csv at 2024-08-09 03:01:06
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: Profiler_modem_SondeHourly.csv
+Scheduled_ScrapeStep.log
+ERROR:root:Command failed: git push origin main. Error message: fatal: Unable to persist credentials with the 'wincredman' credential store.
+See https://aka.ms/gcm/credstores for more information.
+bash: line 1: /dev/tty: No such device or address
+error: failed to execute prompt script (exit code 1)
+fatal: could not read Username for 'https://github.com': No such file or directory
+
