@@ -22542,3 +22542,21 @@ INFO:root:Command succeeded: git add .
 INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
 Scheduled_ScrapeHourly.log
 INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+INFO:root:Successfully appended records to All_Time.csv at 2024-08-12 16:09:10
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+INFO:root:Successfully appended records to All_Time.csv at 2024-08-12 16:09:11
+INFO:root:Command succeeded: git add .
+ERROR:root:Command failed: git commit -m No changes detected. Error message: 
+INFO:root:Command succeeded: git push origin main
+ERROR:root:Command failed: git push origin main. Error message: To https://github.com/russellprimeau/BrusdalsvatnetDT.git
+ ! [remote rejected]   main -> main (cannot lock ref 'refs/heads/main': is at d5ed6aa3443185b2a46a527a3ce48183a8610257 but expected 03137a35482b1152400c8634a7d016ff907378ae)
+error: failed to push some refs to 'https://github.com/russellprimeau/BrusdalsvatnetDT.git'
+
