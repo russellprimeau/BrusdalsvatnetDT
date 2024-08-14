@@ -8749,3 +8749,13 @@ INFO:root:Command succeeded: git add .
 INFO:root:Command succeeded: git commit -m Changes to: Profiler_modem_PFL_Step.csv
 Scheduled_ScrapeStep.log
 INFO:root:Command succeeded: git push origin main
+ERROR:root:Command failed: git pull origin main. Error message: remote: Internal Server Error
+fatal: unable to access 'https://github.com/russellprimeau/BrusdalsvatnetDT.git/': The requested URL returned error: 500
+
+INFO:root:Successfully appended records to Profiler_modem_PFL_Step.csv at 2024-08-15 01:12:14
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: Profiler_modem_PFL_Step.csv
+Scheduled_ScrapeWeather.log
+ERROR:root:Command failed: git push origin main. Error message: remote: Internal Server Error
+fatal: unable to access 'https://github.com/russellprimeau/BrusdalsvatnetDT.git/': The requested URL returned error: 500
+
