@@ -23655,3 +23655,22 @@ INFO:root:Command succeeded: git add .
 INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
 Scheduled_ScrapeHourly.log
 INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Couldn't find button: /html/body/div[1]/div[2]/ul/li[10]/a, with error Message: 
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+NoSuchElementError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:511:5
+dom.find/</<@chrome://remote/content/shared/DOM.sys.mjs:136:16
+
+ERROR:root:Couldn't find button: /html/body/div[1]/div[3]/ul/li[2]/a, with error Message: 
+
+ERROR:root:Attempt to scrape table ended with Error: Message: 
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+NoSuchElementError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:511:5
+dom.find/</<@chrome://remote/content/shared/DOM.sys.mjs:136:16
+
