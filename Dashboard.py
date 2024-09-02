@@ -1505,7 +1505,7 @@ def display_map(o_file):
                     layer_depths = layer_depths[::-1].tolist()
                 else:
                     # Handle sigma or mixed layers by creating an approximation of the depths
-                    max_depth = uds_map['mesh2d_waterdepth'].max().to_numpy()[()]
+                    max_depth = uds_map['z-coordinate of mesh nodes (m)'].max().to_numpy()[()]
                     # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
                     layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
                     layer_depths = layer_depths.tolist()
