@@ -2332,21 +2332,26 @@ def display_his(o_file):
         plottype = st.radio("Choose which type of data to display:", options=hisoptions, horizontal=True)
 
     if plottype == hisoptions[0]:
-        pointoptions = ["Observation Points", "Sources/Sinks"]
+        pointoptions = ["Observation Points", "Observation Cross-Sections", "Sources/Sinks"]
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             pointtype = st.radio("Choose which type of location to plot:", options=pointoptions, horizontal=True)
 
-            if pointtype == pointoptions[1]:
+            if pointtype == pointoptions[0]:
+                locations = st.multiselect("Select observation points at which to plot",
+                                           ds_his.coords['stations'].values,
+                                           default=ds_his.coords['stations'].values[0])
+                feature = st.selectbox("Select a variable to plot", stations_list)
+            elif pointtype == pointoptions[2]:
                 locations = st.multiselect("Select sources/sinks at which to plot", ds_his.coords['source_sink'].values,
                                            default=ds_his.coords['source_sink'].values[0])
                 feature = st.selectbox("Select a variable to plot", source_sink_list)
                 num_layers = None
             else:
-                locations = st.multiselect("Select observation points at which to plot",
-                                           ds_his.coords['stations'].values,
-                                           default=ds_his.coords['stations'].values[0])
-                feature = st.selectbox("Select a variable to plot", stations_list)
+                locations = st.multiselect("Select observation cross-section at which to plot",
+                                           ds_his.coords['cross_section'].values,
+                                           default=ds_his.coords['cross_section'].values[0])
+                feature = st.selectbox("Select a variable to plot", cross_section_list)
     elif plottype == hisoptions[1]:
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
@@ -2405,6 +2410,8 @@ def display_his(o_file):
         if pointtype == pointoptions[0]:
             data_for_bokeh = ds_his[feature].sel(stations=locations)
         elif pointtype == pointoptions[1]:
+            data_for_bokeh = ds_his[feature].sel(cross_section=locations)
+        elif pointtype == pointoptions[2]:
             data_for_bokeh = ds_his[feature].sel(source_sink=locations)
         his_df = data_for_bokeh.to_dataframe()
 
@@ -2467,12 +2474,18 @@ def display_his(o_file):
         if 'zcoordinate_c' in df_reset.columns:
             groupvar = 'zcoordinate_c'
             grouptype = 'Depth'
+        if 'mesh2d_bldepth' in df_reset.columns:
+            groupvar = 'mesh2d_bldepth'
+            grouptype = 'Sigma Layer'
         elif 'stations' in df_reset.columns:
             groupvar = 'stations'
             grouptype = 'Observation Point'
         elif 'source_sink' in df_reset.columns:
             groupvar = 'source_sink'
             grouptype = 'Source/Sink'
+        elif 'cross_section' in df_reset.columns:
+            groupvar = 'cross_section'
+            grouptype = 'Observation Cross Section'
         update_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar, layers=layers)
 
         # Show legend for the first plot
