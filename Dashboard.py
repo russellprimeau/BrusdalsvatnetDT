@@ -2369,8 +2369,11 @@ def display_his(o_file):
             feature = st.selectbox("Select a variable to compare", compatibility.keys())
             column_name = compatibility.get(feature)  # 'feature' name in reference dataset
             errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
+            location = st.multiselect("Select observation points at which to plot",
+                                       ds_his.coords['stations'].values,
+                                       default=ds_his.coords['stations'].values[0])
         display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
-                      errorplots=errorplots, offline=False)
+                      errorplots=errorplots, location = location, offline=False)
 
     ###################################################################################################################
     # 2. Plot time series data for the selected point(s), at one or several depths
