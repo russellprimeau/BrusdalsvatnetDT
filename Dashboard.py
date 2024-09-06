@@ -1634,12 +1634,11 @@ def display_map(o_file):
         st.pyplot(fig_cross)
 
 
-def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
+def display_error(ds_his, feature, column_name, errorplot, errorplots, location, offline):
     depths = np.unique(ds_his.coords['zcoordinate_c'].values)
     # interval = abs(depths[1] - depths[0]) / 2
-    ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(
-        2)  # Use cell-center depth, not +1.25m 'interval' correction
-    data_for_bokeh = ds_his[feature].isel(stations=0)
+    ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)  # Use cell-center depth, not 1.25m 'interval' correction
+    data_for_bokeh = ds_his[feature].sel(stations=location)
     his_df = data_for_bokeh.to_dataframe()
     his_df.reset_index()
     his_df = his_df.dropna(subset=[feature])  # Drop rows for layers with no value for selected feature
@@ -1846,6 +1845,9 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
             p_err.xaxis.axis_label = "Time"
             p_err.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
             st.bokeh_chart(p_err, use_container_width=True)  # Display the Bokeh chart using Streamlit
+            st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
+                     "Click legend entries to toggle series on/off.")
+
         st.write(f"Time-averaged summary statistics for error in modeled {feature} at surface")
         c1, c2, c3, c4 = st.columns(4, gap='small')
         if not offline:
@@ -2035,7 +2037,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, offline):
                                              default=error_signals[2])
         else:
             dpt_av = dpt_av_opts[1]
-            print("got to 2021")
 
         if dpt_av == dpt_av_opts[0]:
             ###########################################################################################################
@@ -2338,24 +2339,24 @@ def display_his(o_file):
             pointtype = st.radio("Choose which type of location to plot:", options=pointoptions, horizontal=True)
 
             if pointtype == pointoptions[0]:
-                locations = st.multiselect("Select observation points at which to plot",
+                locations = st.multiselect("Select observation points to plot",
                                            ds_his.coords['stations'].values,
                                            default=ds_his.coords['stations'].values[0])
                 feature = st.selectbox("Select a variable to plot", stations_list)
             elif pointtype == pointoptions[2]:
-                locations = st.multiselect("Select sources/sinks at which to plot", ds_his.coords['source_sink'].values,
+                locations = st.multiselect("Select sources/sinks to plot", ds_his.coords['source_sink'].values,
                                            default=ds_his.coords['source_sink'].values[0])
                 feature = st.selectbox("Select a variable to plot", source_sink_list)
                 num_layers = None
             else:
-                locations = st.multiselect("Select observation cross-section at which to plot",
+                locations = st.multiselect("Select observation cross-section to plot",
                                            ds_his.coords['cross_section'].values,
                                            default=ds_his.coords['cross_section'].values[0])
                 feature = st.selectbox("Select a variable to plot", cross_section_list)
     elif plottype == hisoptions[1]:
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
-            locations = st.multiselect("Select observation points at which to plot",
+            locations = st.multiselect("Select observation points to plot",
                                        ds_his.coords['stations'].values,
                                        default=ds_his.coords['stations'].values[0])
             feature = st.selectbox("Select a variable to plot", stations_list)
@@ -2369,11 +2370,10 @@ def display_his(o_file):
             feature = st.selectbox("Select a variable to compare", compatibility.keys())
             column_name = compatibility.get(feature)  # 'feature' name in reference dataset
             errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
-            location = st.multiselect("Select observation points at which to plot",
-                                       ds_his.coords['stations'].values,
-                                       default=ds_his.coords['stations'].values[0])
+            location = st.selectbox("Select observation points to plot against the profiler data",
+                                       ds_his.coords['stations'].values)
         display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
-                      errorplots=errorplots, location = location, offline=False)
+                      errorplots=errorplots, location=location, offline=False)
 
     ###################################################################################################################
     # 2. Plot time series data for the selected point(s), at one or several depths
