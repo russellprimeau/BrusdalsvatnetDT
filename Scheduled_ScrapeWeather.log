@@ -43460,3 +43460,6 @@ WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34
 ERROR:root:Command failed: git pull origin main. Error message: fatal: unable to access 'https://github.com/russellprimeau/BrusdalsvatnetDT.git/': Failed to connect to github.com port 443 after 21119 ms: Couldn't connect to server
 
 WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+ERROR:root:Command failed: git pull origin main. Error message: fatal: unable to access 'https://github.com/russellprimeau/BrusdalsvatnetDT.git/': Failed to connect to github.com port 443 after 21100 ms: Couldn't connect to server
+
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
