@@ -45217,3 +45217,43 @@ INFO:root:Command succeeded: git pull origin main
 WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
 INFO:root:Command succeeded: git pull origin main
 WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Successfully opened http://89.9.0.217/tables.html using GeckoDriver
+ERROR:root:Stale element in header: Message: The element with the reference bc554761-76ab-4645-9f73-17d565479282 is stale; either its node document is not the active document, or it is no longer connected to the DOM; For documentation on this error, please visit: https://www.selenium.dev/documentation/webdriver/troubleshooting/errors#stale-element-reference-exception
+Stacktrace:
+RemoteError@chrome://remote/content/shared/RemoteError.sys.mjs:8:8
+WebDriverError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:193:5
+StaleElementReferenceError@chrome://remote/content/shared/webdriver/Errors.sys.mjs:725:5
+getKnownElement@chrome://remote/content/marionette/json.sys.mjs:401:11
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:259:20
+cloneObject@chrome://remote/content/marionette/json.sys.mjs:59:24
+deserializeJSON@chrome://remote/content/marionette/json.sys.mjs:289:16
+json.deserialize@chrome://remote/content/marionette/json.sys.mjs:293:10
+receiveMessage@chrome://remote/content/marionette/actors/MarionetteCommandsChild.sys.mjs:72:30
+
+INFO:root:Successfully appended records to All_Time.csv at 2024-12-02 21:08:56
+INFO:root:Command succeeded: git add .
+INFO:root:Command succeeded: git commit -m Changes to: All_time.csv
+Scheduled_ScrapeHourly.log
+Scheduled_ScrapeStep.log
+Scheduled_ScrapeWeather.log
+INFO:root:Command succeeded: git push origin main
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
+INFO:root:Command succeeded: git pull origin main
+WARNING:selenium.webdriver.common.selenium_manager:The geckodriver version (0.34.0) detected in PATH at C:\Users\russelbp\geckodriver.exe might not be compatible with the detected firefox version (125.0.3.8881); currently, geckodriver 0.35.0 is recommended for firefox 125.*, so it is advised to delete the driver in PATH and retry
