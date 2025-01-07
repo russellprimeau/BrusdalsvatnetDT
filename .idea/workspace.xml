@@ -5,7 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/Scheduled_ScrapeWeather.log" beforeDir="false" afterPath="$PROJECT_DIR$/Scheduled_ScrapeWeather.log" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,6 +69,11 @@
         <option name="myModuleName" value="BrusdalsvatnetDT" />
       </console-settings>
     </option>
+  </component>
+  <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\russelbp\GitHub\BrusdalsvatnetDT" />
+    </key>
   </component>
   <component name="SharedIndexes">
     <attachedChunks>
