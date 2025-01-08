@@ -1,5 +1,5 @@
 # BrusdalsvatnetDT
-Collects and visualizes data from several systems which monitor Brusdalsvatnet water quality.
+Collects and visualizes data from several systems which monitor water quality in the Brusdalsvatnet drinking water reservoir in Ålesund, Norway.
 
 This repository includes Python scripts and data files for completing several tasks related to creating and maintaining a digital twin of the Brusdalsvatnet drinking water reservoir, for the purpose of monitoring water quality. However, not all components of the digital twin have been created or connected. Work is ongoing on various hardware and software components.
 
@@ -11,11 +11,11 @@ The data aquisition systems which monitor the Brusdalsvatnet reservoir include a
 
 The USV systems have the capability to collect data and samples from anywhere on the surface of Brusdalsvatnet, and at any location down to the maximum depth allowed by the winch. This allows for precise targeting of data collection, to refine knowledge of lake conditions at locations and times where it is most consequential. One goal of the digital twin project is to add automatic functions based on "informative path planning" algorithms which choose the time and location for data collection to maximmize the model accuracy. The path planning capabilities in the present application are limited. Currently the app app lacks direct connectivity with the USVs, and is limited to offline path planning. A sampling mission can be planned in the app, but it must be exported as a .csv file and uploaded to one of the USVs manually via a USB or similar connection.
 
-
 <img width="554" alt="Simplified DT Dataflow" src="https://github.com/user-attachments/assets/e47f117e-2cd8-4e0c-a395-283183dd538e" />
 
+## Files in the repository include:
 
-Files in the repository include:
+### Code:
 
 "Dashboard.py": drives the online Streamlit app which contains all UI functions, such as data viewing and path planning. To run locally, it must be called from the terminal as "(directory)> streamlit run Dashboard.py".
 
@@ -35,7 +35,7 @@ Files in the repository include:
 
 "requirements.txt": a list of dependencies (Python packages, with compatibility/versioning specifications as needed) which is used by Streamlit for launching the Dashboard app.
 
-Data files:
+### Data files:
 
 "Profiler_modem_PFL_Step.csv": raw data from the vertical profiler on board the profiling platform, collected from June 2020 to September 2023. Twice a day, the profiler lowers an instrument which records various water quality parameters at intervals as well as some metadata. This data is visualized on the "Historic > Vertical Profiles" feature of the dashboard, both as time series of the values at each depth, and from each individual profiling (vs. depth).
 
