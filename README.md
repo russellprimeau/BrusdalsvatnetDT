@@ -13,9 +13,9 @@ The USV systems have the capability to collect data and samples from anywhere on
 
 <img width="554" alt="Simplified DT Dataflow" src="https://github.com/user-attachments/assets/e47f117e-2cd8-4e0c-a395-283183dd538e" />
 
-### Files in the Repository
+## Files in the Repository
 
-#### Code
+### Code
 
 **Dashboard.py** drives the online Streamlit app which contains all UI functions, such as data viewing and path planning. To run locally, it must be called from the terminal as "(directory)> streamlit run Dashboard.py".
 
@@ -35,7 +35,7 @@ The USV systems have the capability to collect data and samples from anywhere on
 
 **requirements.txt** a list of dependencies (Python packages, with compatibility/versioning specifications as needed) which is used by Streamlit for launching the Dashboard app.
 
-#### Data files
+### Data files
 
 **Profiler_modem_PFL_Step.csv** raw data from the vertical profiler on board the profiling platform, collected from June 2020 to September 2023. Twice a day, the profiler lowers an instrument which records various water quality parameters at intervals as well as some metadata. This data is visualized on the "Historic > Vertical Profiles" feature of the dashboard, both as time series of the values at each depth, and from each individual profiling (vs. depth).
 
