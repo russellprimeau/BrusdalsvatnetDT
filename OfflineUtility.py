@@ -488,7 +488,7 @@ def gen_forcing(all_files):
     with rc2:
         start_time = st.time_input("Start time", datetime.time(0, 0))
         end_time = st.time_input("End time", datetime.time(0, 0))
-        reference_time = st.time_input("Reference time", datetime.time(0, 0))             
+        reference_time = st.time_input("Reference time", datetime.time(0, 0))
         randomization = st.number_input("Randomization Factor:", value=0)
     start = datetime.datetime.combine(start_date, start_time)
     end = datetime.datetime.combine(end_date, end_time)
