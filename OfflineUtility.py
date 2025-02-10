@@ -575,9 +575,11 @@ def post_cor(all_files, directory_path):
     with c1:
         feature = st.selectbox("Select a variable to compare", compatibility.keys())
         column_name = compatibility.get(feature)  # 'feature' name in reference dataset
+        location = st.selectbox("Select observation points to plot against the profiler data",
+                                ds_his.coords['stations'].values)
         errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
     Dashboard.display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
-                            errorplots=errorplots, offline=False)
+                            errorplots=errorplots, location=location, offline=False)
 
 
 def spatial_unc(files):
@@ -874,12 +876,13 @@ def post():
     with c1:
         mode = st.radio("Select activity", functions, horizontal=True)
 
-    if mode == functions[1]:
+    if mode == functions[0]:
+        Dashboard.current(all_files, directory_path)
+    elif mode == functions[1]:
         post_cor(all_files, directory_path)
     elif mode == functions[2]:
         post_sens(all_files, directory_path)
-    elif mode == functions[0]:
-        Dashboard.current(all_files, directory_path)
+
 
 
 def main():
