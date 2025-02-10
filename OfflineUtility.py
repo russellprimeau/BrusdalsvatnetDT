@@ -482,11 +482,14 @@ def gen_forcing(all_files):
         reference_date = st.date_input("Select a reference date for the simulation", value=min_date, key=None,
                                        help='Within Delft3D and in output files, all absolute times will '
                                             'be expressed as minutes relative to this selection.', format="YYYY/MM/DD")
+        salinity = st.number_input("Salinity:", value=0.02)
+        factor = st.number_input("Adjustment Factor:", value=1)
 
     with rc2:
         start_time = st.time_input("Start time", datetime.time(0, 0))
         end_time = st.time_input("End time", datetime.time(0, 0))
-        reference_time = st.time_input("Reference time", datetime.time(0, 0))
+        reference_time = st.time_input("Reference time", datetime.time(0, 0))             
+        randomization = st.number_input("Randomization Factor:", value=0)
     start = datetime.datetime.combine(start_date, start_time)
     end = datetime.datetime.combine(end_date, end_time)
     if start >= end:
@@ -505,9 +508,7 @@ def gen_forcing(all_files):
                              "Slettebakk.tim": 0.084,
                              "Vasstrandelva.tim": 0.273,
                              "VasstrandliaPump.tim": -0.637}
-        salinity = 0.03
-        factor = 1
-        randomization = 0
+
 
         dfs_profile = []
         for key, value in nominal_discharge.items():
