@@ -1541,7 +1541,7 @@ def display_map(o_file):
             line_array = np.array([[cross_section, ymin_abs],
                                    [cross_section, ymax_abs]])
         else:
-            cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=ymin_abs,
+            cross_section = st.slider("Select the latitude of the cross section for depth view", min_value=ymin_abs,
                                       max_value=ymax_abs, value=(ymin_abs + ymax_abs) / 2, step=.001, format="%.3f")
             ax.axhline(cross_section, color='red')
             line_array = np.array([[xmin_abs, cross_section],
