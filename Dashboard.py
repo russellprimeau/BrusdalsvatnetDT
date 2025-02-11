@@ -1614,8 +1614,26 @@ def display_map(o_file):
         # dfmt functions expect the original data variable names, so use the dataset as originally imported
         uds_crs = dfmt.polyline_mapslice(uds_map_o.isel(time=selected_time_index), line_array)
         uds_crs = rename_ds(uds_crs)  # then rename once imported
+        fig_1, ax_1 = plt.subplots(figsize=(12, 5))
+        uds_crs[parameter].ugrid.plot(cmap='jet')
+        st.pyplot(fig_1)
+
+        # Experimental code to plot data from a dataframe
+        # # Initialize an empty DataFrame
+        # df_rewrite = pd.DataFrame()
+        #
+        # # Extract data along coordinates x, y, z
+        # for x in uds_crs[parameter].values:
+        #     for y in ds.coords['y'].values:
+        #         for z in ds.coords['z'].values:
+        #             row = {'x': x, 'y': y, 'z': z, 'data': ds.sel(x=x, y=y, z=z).data.item()}
+        #             df_rewrite = df_rewrite.append(row, ignore_index=True)
+
+
         fig_cross, ax = plt.subplots(figsize=(20, 5))
-        st.write('uds_crs[parameter]', uds_crs[parameter])
+        st.write('uds_crs[parameter].coords', uds_crs[parameter].coords)
+        st.write('uds_crs[parameter].values', uds_crs[parameter].values)
+
         st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z]', uds_crs[parameter].coords['mesh2d_layer_sigma_z'])
         st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z].values',
                  uds_crs[parameter].coords['mesh2d_layer_sigma_z'].values)
@@ -1625,7 +1643,6 @@ def display_map(o_file):
         # Calculate the range for x and y data
         x_range = max(x_coords) - min(x_coords)
         # y_range = max(y_coords) - min(y_coords)
-
 
 
         # Calculate the 1% extra for the limits
