@@ -1501,6 +1501,7 @@ def display_map(o_file):
                 layer_list = list(reversed(range(0, num_layers)))
                 if 'mesh2d_layer_z' in uds_map.coords:
                     depths = uds_map.coords['mesh2d_layer_z'].values
+                    print('depths', depths)
                     layer_depths = depths + abs(depths[1] - depths[0])
                     layer_depths = layer_depths[::-1].tolist()
                 else:
