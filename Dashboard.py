@@ -1614,8 +1614,12 @@ def display_map(o_file):
         # dfmt functions expect the original data variable names, so use the dataset as originally imported
         uds_crs = dfmt.polyline_mapslice(uds_map_o.isel(time=selected_time_index), line_array)
         uds_crs = rename_ds(uds_crs)  # then rename once imported
+        uda = uds_crs[parameter]
         fig_1, ax_1 = plt.subplots(figsize=(12, 5))
-        uds_crs[parameter].ugrid.plot(cmap='jet')
+        st.write(uda.coords)
+        st.write(uda.dims)
+        st.write(uda['mesh2d_layer_sigma_z'].values)
+        uda.ugrid.plot(cmap='jet')
         st.pyplot(fig_1)
 
         # Experimental code to plot data from a dataframe
@@ -1631,12 +1635,12 @@ def display_map(o_file):
 
 
         fig_cross, ax = plt.subplots(figsize=(20, 5))
-        st.write('uds_crs[parameter].coords', uds_crs[parameter].coords)
-        st.write('uds_crs[parameter].values', uds_crs[parameter].values)
-
-        st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z]', uds_crs[parameter].coords['mesh2d_layer_sigma_z'])
-        st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z].values',
-                 uds_crs[parameter].coords['mesh2d_layer_sigma_z'].values)
+        # st.write('uds_crs[parameter].coords', uds_crs[parameter].coords)
+        # st.write('uds_crs[parameter].values', uds_crs[parameter].values)
+        #
+        # st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z]', uds_crs[parameter].coords['mesh2d_layer_sigma_z'])
+        # st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z].values',
+        #          uds_crs[parameter].coords['mesh2d_layer_sigma_z'].values)
         cross = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False, vmin=vmin, vmax=vmax)
         x_coords = uds_crs[parameter].coords['mesh2d_face_x'].values
         y_coords = uds_crs[parameter].coords['mesh2d_face_y'].values
@@ -1650,7 +1654,8 @@ def display_map(o_file):
         # y_limit = y_range * 0.01
 
         # Set the limits for x and y axis on the 'ax' object
-        # ax.set_xlim(min(x_coords) - x_limit, max(x_coords) + x_limit)
+        st.write(min(x_coords), max(x_coords))
+        # ax.set_xlim(min(x_coords), max(x_coords))
         # ax.set_ylim(min(y_coords) - y_limit, max(y_coords) + y_limit)
 
         # Plot your data on the 'ax' object
