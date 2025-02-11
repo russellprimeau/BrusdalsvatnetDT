@@ -1496,15 +1496,21 @@ def display_map(o_file):
         # Check if the parameter is defined for multiple layers and ask for selection if so
         if num_layers is not None:
             if 'mesh2d_nLayers' in uds_map[parameter].dims:
+                st.write('mesh2d_nLayers is in uds_map[parameter].dims')
                 concise = uds_map[parameter].dropna(dim='mesh2d_nLayers', how='all')
                 num_layers = concise.sizes['mesh2d_nLayers']
                 layer_list = list(reversed(range(0, num_layers)))
-                if 'mesh2d_layer_z' in uds_map.coords:
-                    depths = uds_map.coords['mesh2d_layer_z'].values
-                    print('depths', depths)
+                st.write('uds_map.coords:', uds_map.coords)
+                if 'mesh2d_layer_z' in uds_map.coords or 'mesh2d_layer_sigma_z' in uds_map.coords:
+                    st.write('mesh2d_layer_z is in uds_map.coords')
+                    # depths = uds_map.coords['mesh2d_layer_z'].values
+                    depths = uds_map.coords['mesh2d_layer_sigma_z'].values
+                    st.write('depths from mesh2d_layer_z', depths)
+                    # st.write('depths from mesh2d_layer_sigma', otherdepths)
                     layer_depths = depths + abs(depths[1] - depths[0])
                     layer_depths = layer_depths[::-1].tolist()
                 else:
+                    st.write('mesh2d_layer_z is NOT in uds_map.coords')
                     # Handle sigma or mixed layers by creating an approximation of the depths
                     max_depth = uds_map['z-coordinate of mesh nodes (m)'].max().to_numpy()[()]
                     # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
@@ -1515,6 +1521,7 @@ def display_map(o_file):
                                               layer_depths)
                 layer = layer_list[layer_depths.index(depth_selected)]
             else:
+                st.write('mesh2d_nLayers is NOT in uds_map[parameter].dims')
                 num_layers = None
 
     # Set plot limits. Location is intended to preserve option to add slider for zoom functionality later with 'scaler'.
@@ -1607,6 +1614,8 @@ def display_map(o_file):
         # Calculate the range for x and y data
         x_range = max(x_coords) - min(x_coords)
         # y_range = max(y_coords) - min(y_coords)
+
+
 
         # Calculate the 1% extra for the limits
         x_limit = x_range * 0.01
