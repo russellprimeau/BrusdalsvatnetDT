@@ -1499,22 +1499,23 @@ def display_map(o_file):
                 concise = uds_map[parameter].dropna(dim='mesh2d_nLayers', how='all')
                 num_layers = concise.sizes['mesh2d_nLayers']
                 layer_list = list(reversed(range(0, num_layers)))
-                st.write('uds_map.coords:', uds_map.coords)
+                # st.write('uds_map.coords:', uds_map.coords)
+                # st.write('uds_map.dims:', uds_map.dims)
                 if 'mesh2d_layer_sigma_z' in uds_map.coords:
-                    depths = uds_map.coords['mesh2d_layer_sigma_z'].values
+                    # Superseded logic preserved here as example:
+                    # depths = uds_map.coords['mesh2d_layer_sigma_z'].values
+                    # layer_depths = depths + abs(depths[1] - depths[0])
+                    # layer_depths = layer_depths[::-1].tolist()
                     # st.write('depths from mixed mesh2d_layer_sigma_z', depths)
-                    layer_depths = depths + abs(depths[1] - depths[0])
-                    layer_depths = layer_depths[::-1].tolist()
+
+                    depths = uds_map.coords['mesh2d_layer_sigma_z'].values
+                    layer_depths = depths[::-1].tolist()
                 elif 'mesh2d_layer_z' in uds_map.coords or 'mesh2d_layer_sigma_z' in uds_map.coords:
                     depths = uds_map.coords['mesh2d_layer_z'].values
-                    # st.write('depths from mesh2d_layer_z', depths)
-                    layer_depths = depths + abs(depths[1] - depths[0])
-                    layer_depths = layer_depths[::-1].tolist()
+                    layer_depths = depths[::-1].tolist()
                 elif 'mesh2d_layer_sigma' in uds_map.coords:
                     depths = uds_map.coords['mesh2d_layer_sigma'].values
-                    # st.write('depths from mesh2d_layer_sigma', depths)
-                    layer_depths = depths + abs(depths[1] - depths[0])
-                    layer_depths = layer_depths[::-1].tolist()
+                    layer_depths = depths[::-1].tolist()
                 else:
                     st.write('Contingency scenario: none of mesh2d_layer_sigma_z, mesh2d_layer_sigma_, '
                              'mesh2d_layer_z in uds_map.coords')
@@ -1524,7 +1525,7 @@ def display_map(o_file):
                     layer_depths = np.round(np.linspace(0, max_depth - max_depth / num_layers, num_layers))
                     layer_depths = layer_depths.tolist()
                     # print("in depth ", max_depth, " from ", layer_depths, " selected ", depth_selected, " indicating layer ", layer+1)
-                depth_selected = st.selectbox("Select layers to display, by depth below mean surface elevation (m)",
+                depth_selected = st.selectbox("Select layer to display, by depth below mean surface elevation (m)",
                                               layer_depths)
                 layer = layer_list[layer_depths.index(depth_selected)]
             else:
@@ -1614,13 +1615,13 @@ def display_map(o_file):
         # dfmt functions expect the original data variable names, so use the dataset as originally imported
         uds_crs = dfmt.polyline_mapslice(uds_map_o.isel(time=selected_time_index), line_array)
         uds_crs = rename_ds(uds_crs)  # then rename once imported
-        uda = uds_crs[parameter]
-        fig_1, ax_1 = plt.subplots(figsize=(12, 5))
-        st.write(uda.coords)
-        st.write(uda.dims)
-        st.write(uda['mesh2d_layer_sigma_z'].values)
-        uda.ugrid.plot(cmap='jet')
-        st.pyplot(fig_1)
+        # uda = uds_crs[parameter]
+        # fig_1, ax_1 = plt.subplots(figsize=(12, 5))
+        # st.write(uda.coords)
+        # st.write(uda.dims)
+        # st.write(uda['mesh2d_layer_sigma_z'].values)
+        # uda.ugrid.plot(cmap='jet')
+        # st.pyplot(fig_1)
 
         # Experimental code to plot data from a dataframe
         # # Initialize an empty DataFrame
@@ -1654,7 +1655,7 @@ def display_map(o_file):
         # y_limit = y_range * 0.01
 
         # Set the limits for x and y axis on the 'ax' object
-        st.write(min(x_coords), max(x_coords))
+        # st.write(min(x_coords), max(x_coords))
         # ax.set_xlim(min(x_coords), max(x_coords))
         # ax.set_ylim(min(y_coords) - y_limit, max(y_coords) + y_limit)
 
