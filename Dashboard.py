@@ -1496,21 +1496,28 @@ def display_map(o_file):
         # Check if the parameter is defined for multiple layers and ask for selection if so
         if num_layers is not None:
             if 'mesh2d_nLayers' in uds_map[parameter].dims:
-                st.write('mesh2d_nLayers is in uds_map[parameter].dims')
                 concise = uds_map[parameter].dropna(dim='mesh2d_nLayers', how='all')
                 num_layers = concise.sizes['mesh2d_nLayers']
                 layer_list = list(reversed(range(0, num_layers)))
                 st.write('uds_map.coords:', uds_map.coords)
-                if 'mesh2d_layer_z' in uds_map.coords or 'mesh2d_layer_sigma_z' in uds_map.coords:
-                    st.write('mesh2d_layer_z is in uds_map.coords')
-                    # depths = uds_map.coords['mesh2d_layer_z'].values
+                if 'mesh2d_layer_sigma_z' in uds_map.coords:
                     depths = uds_map.coords['mesh2d_layer_sigma_z'].values
-                    st.write('depths from mesh2d_layer_z', depths)
-                    # st.write('depths from mesh2d_layer_sigma', otherdepths)
+                    # st.write('depths from mixed mesh2d_layer_sigma_z', depths)
+                    layer_depths = depths + abs(depths[1] - depths[0])
+                    layer_depths = layer_depths[::-1].tolist()
+                elif 'mesh2d_layer_z' in uds_map.coords or 'mesh2d_layer_sigma_z' in uds_map.coords:
+                    depths = uds_map.coords['mesh2d_layer_z'].values
+                    # st.write('depths from mesh2d_layer_z', depths)
+                    layer_depths = depths + abs(depths[1] - depths[0])
+                    layer_depths = layer_depths[::-1].tolist()
+                elif 'mesh2d_layer_sigma' in uds_map.coords:
+                    depths = uds_map.coords['mesh2d_layer_sigma'].values
+                    # st.write('depths from mesh2d_layer_sigma', depths)
                     layer_depths = depths + abs(depths[1] - depths[0])
                     layer_depths = layer_depths[::-1].tolist()
                 else:
-                    st.write('mesh2d_layer_z is NOT in uds_map.coords')
+                    st.write('Contingency scenario: none of mesh2d_layer_sigma_z, mesh2d_layer_sigma_, '
+                             'mesh2d_layer_z in uds_map.coords')
                     # Handle sigma or mixed layers by creating an approximation of the depths
                     max_depth = uds_map['z-coordinate of mesh nodes (m)'].max().to_numpy()[()]
                     # print("max_depth data: type, size, shape:", type(max_depth), max_depth.size, max_depth.shape, max_depth)
@@ -1521,7 +1528,7 @@ def display_map(o_file):
                                               layer_depths)
                 layer = layer_list[layer_depths.index(depth_selected)]
             else:
-                st.write('mesh2d_nLayers is NOT in uds_map[parameter].dims')
+                st.write('Map file is not 3D (single layer, mesh2d_nLayers is NOT in uds_map[parameter].dims)')
                 num_layers = None
 
     # Set plot limits. Location is intended to preserve option to add slider for zoom functionality later with 'scaler'.
@@ -1608,6 +1615,10 @@ def display_map(o_file):
         uds_crs = dfmt.polyline_mapslice(uds_map_o.isel(time=selected_time_index), line_array)
         uds_crs = rename_ds(uds_crs)  # then rename once imported
         fig_cross, ax = plt.subplots(figsize=(20, 5))
+        st.write('uds_crs[parameter]', uds_crs[parameter])
+        st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z]', uds_crs[parameter].coords['mesh2d_layer_sigma_z'])
+        st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z].values',
+                 uds_crs[parameter].coords['mesh2d_layer_sigma_z'].values)
         cross = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False, vmin=vmin, vmax=vmax)
         x_coords = uds_crs[parameter].coords['mesh2d_face_x'].values
         y_coords = uds_crs[parameter].coords['mesh2d_face_y'].values
