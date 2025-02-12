@@ -722,7 +722,7 @@ def vertical():
     # Filter DataFrame based on selected depths
     filtered_df = df[df['Depth'].isin(selected_depths)]
 
-    max_gap_days = 1.5
+    max_gap_days = 1.6
 
     if not selected_variables_p1 or not selected_depths:
         st.write("Please select at least one parameter and depth contour to plot.")
