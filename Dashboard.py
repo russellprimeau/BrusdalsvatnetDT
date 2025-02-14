@@ -756,7 +756,34 @@ def vertical():
                     depth_source.data['Gap'] = (date_series - date_series.shift(1)).dt.days > max_gap_days
 
                     # Replace the 'Value' with NaN when a gap is detected
-                    depth_source.data[var] = np.where(depth_source.data['Gap'], np.nan, depth_source.data[var])
+                    # depth_source.data[var] = np.where(depth_source.data['Gap'], np.nan, depth_source.data[var])
+
+                    # Iterate over the rows and check for the 'Gap' condition
+                    for k in range(len(depth_source.data['Gap'])):
+                        if depth_source.data['Gap'][k]:
+                            # Create a new row with the time one hour before the current row
+                            print("Timestamp Values:", depth_source.data['Timestamp'][k])
+                            # new_time = depth_source.data['Timestamp'][i] - pd.Timedelta(hours=1)
+                            new_time = depth_source.data['Timestamp'][k]
+                            new_row = {
+                                'Timestamp': new_time,
+                                'Gap': False  # Assuming the new row should not have a gap
+                            }
+
+                            # Add the remaining columns to the new row
+                            for key in depth_source.data:
+                                if key not in new_row:
+                                    # Use a default value that matches the column's data type
+                                    if pd.api.types.is_numeric_dtype(depth_source.data[key]):
+                                        new_row[key] = np.nan
+                                    elif pd.api.types.is_datetime64_any_dtype(depth_source.data[key]):
+                                        new_row[key] = pd.NaT
+                                    else:
+                                        new_row[key] = None
+
+                            # Append the new row to the depth_source
+                            for key in depth_source.data:
+                                depth_source.data[key] = np.append(depth_source.data[key], new_row[key])
                     renderer = p1.line(x='Timestamp', y=var, source=depth_source, line_width=2,
                                        line_color=viridis_subset[i],
                                        legend_label=f'{depth}m: {var}', line_dash=line_styles[j])
