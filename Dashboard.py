@@ -468,19 +468,46 @@ def hourly():
     source = ColumnDataSource(df)
     time_difference = timedelta(hours=2)
 
-    def update_hourly(selected_variables):
+    def update_hourly(selected_variables, source):
         p.title.text = f'Water Quality Parameters vs. Time'
 
+        # Add Nan values so line chart will include gaps where no data is available
+        # Convert the 'Timestamp' column to datetime if it's not already
+        source.data['Timestamp'] = pd.to_datetime(source.data['Timestamp'])
+
+        # Create a DataFrame from the ColumnDataSource data
+        df_gap = pd.DataFrame(source.data)
+
+        # Define the threshold for the gap (e.g., 2 hours)
+        threshold = pd.Timedelta(hours=2)
+
+        # List to store new rows
+        new_rows = []
+
+        # Iterate over the rows and check for gaps in the 'Timestamp' column
+        for i in range(1, len(df_gap)):
+            if df_gap['Timestamp'][i] - df_gap['Timestamp'][i - 1] > threshold:
+                # Calculate the average 'Timestamp'
+                avg_timestamp = df_gap['Timestamp'][i - 1] + (df_gap['Timestamp'][i] - df_gap['Timestamp'][i - 1]) / 2
+
+                # Create a new row with 'NaN' values in all columns except 'Timestamp'
+                new_row = {col: np.nan for col in df.columns}
+                new_row['Timestamp'] = avg_timestamp
+
+                # Append the new row to the list of new rows
+                new_rows.append(new_row)
+
+        # Convert the list of new rows to a DataFrame and append it to the original DataFrame
+        new_rows_df = pd.DataFrame(new_rows)
+        df_gap = pd.concat([df_gap, new_rows_df], ignore_index=True)
+
+        # Sort the DataFrame by the 'Timestamp' column to maintain order
+        df_gap = df_gap.sort_values(by='Timestamp').reset_index(drop=True)
+
+        # Convert the updated DataFrame back to a ColumnDataSource
+        source = ColumnDataSource(df_gap)
+
         for variable, color in zip(selected_variables, Category20_20):
-            # Convert 'Date' to a pandas Series to use shift operation
-            date_series = pd.Series(source.data['Timestamp'])
-
-            # Add a new column 'Gap' indicating when a gap is detected within each 'Depth' group
-            source.data['Gap'] = (date_series - date_series.shift(1)) > time_difference
-
-            # Replace the 'Value' with NaN when a gap is detected
-            source.data[variable] = np.where(source.data['Gap'], np.nan, source.data[variable])
-
             line_render = p.line(
                 x="Timestamp", y=variable, line_width=2, color=color, source=source, legend_label=variable
             )
@@ -493,7 +520,7 @@ def hourly():
     if not selected_variables:
         st.write("Please select at least one parameter to plot.")
     else:
-        update_hourly(selected_variables)
+        update_hourly(selected_variables, source)
         # Set plot properties
         p.title.text_font_size = "16pt"
         p.xaxis.axis_label = "Time"
@@ -722,8 +749,6 @@ def vertical():
     # Filter DataFrame based on selected depths
     filtered_df = df[df['Depth'].isin(selected_depths)]
 
-    max_gap_days = 1.6
-
     if not selected_variables_p1 or not selected_depths:
         st.write("Please select at least one parameter and depth contour to plot.")
     else:
@@ -748,42 +773,42 @@ def vertical():
             for i, (depth, group) in enumerate(grouped_data):
                 depth_source = ColumnDataSource(group)
 
+                # Convert the 'Timestamp' column to datetime if it's not already
+                depth_source.data['Timestamp'] = pd.to_datetime(depth_source.data['Timestamp'])
+
+                # Create a DataFrame from the ColumnDataSource data
+                df = pd.DataFrame(depth_source.data)
+
+                # Define the threshold for showing a gap between consecutive measurments
+                threshold = pd.Timedelta(hours=15)
+
+                # List to store new rows
+                new_rows = []
+
+                # Iterate over the rows and check for gaps in the 'Timestamp' column
+                for k in range(1, len(df)):
+                    if df['Timestamp'][k] - df['Timestamp'][k - 1] > threshold:
+                        # Calculate the average 'Timestamp'
+                        avg_timestamp = df['Timestamp'][k - 1] + (df['Timestamp'][k] - df['Timestamp'][k - 1]) / 2
+
+                        # Create a new row with 'NaN' values in all columns except 'Timestamp'
+                        new_row = {col: np.nan for col in df.columns}
+                        new_row['Timestamp'] = avg_timestamp
+
+                        # Append the new row to the list of new rows
+                        new_rows.append(new_row)
+
+                # Convert the list of new rows to a DataFrame and append it to the original DataFrame
+                new_rows_df = pd.DataFrame(new_rows)
+                df = pd.concat([df, new_rows_df], ignore_index=True)
+
+                # Sort the DataFrame by the 'Timestamp' column to maintain order
+                df = df.sort_values(by='Timestamp').reset_index(drop=True)
+
+                # Convert the updated DataFrame back to a ColumnDataSource
+                depth_source = ColumnDataSource(df)
+
                 for j, var in enumerate(selected_variables_p1):
-                    # Convert 'Date' to a pandas Series to use shift operation
-                    date_series = pd.Series(depth_source.data['Date'])
-
-                    # Add a new column 'Gap' indicating when a gap is detected within each 'Depth' group
-                    depth_source.data['Gap'] = (date_series - date_series.shift(1)).dt.days > max_gap_days
-
-                    # Replace the 'Value' with NaN when a gap is detected
-                    # depth_source.data[var] = np.where(depth_source.data['Gap'], np.nan, depth_source.data[var])
-
-                    # Iterate over the rows and check for the 'Gap' condition
-                    for k in range(len(depth_source.data['Gap'])):
-                        if depth_source.data['Gap'][k]:
-                            # Create a new row with the time one hour before the current row
-                            print("Timestamp Values:", depth_source.data['Timestamp'][k])
-                            # new_time = depth_source.data['Timestamp'][i] - pd.Timedelta(hours=1)
-                            new_time = depth_source.data['Timestamp'][k]
-                            new_row = {
-                                'Timestamp': new_time,
-                                'Gap': False  # Assuming the new row should not have a gap
-                            }
-
-                            # Add the remaining columns to the new row
-                            for key in depth_source.data:
-                                if key not in new_row:
-                                    # Use a default value that matches the column's data type
-                                    if pd.api.types.is_numeric_dtype(depth_source.data[key]):
-                                        new_row[key] = np.nan
-                                    elif pd.api.types.is_datetime64_any_dtype(depth_source.data[key]):
-                                        new_row[key] = pd.NaT
-                                    else:
-                                        new_row[key] = None
-
-                            # Append the new row to the depth_source
-                            for key in depth_source.data:
-                                depth_source.data[key] = np.append(depth_source.data[key], new_row[key])
                     renderer = p1.line(x='Timestamp', y=var, source=depth_source, line_width=2,
                                        line_color=viridis_subset[i],
                                        legend_label=f'{depth}m: {var}', line_dash=line_styles[j])
@@ -2207,7 +2232,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
         elif dpt_av == dpt_av_opts[1]:
             ##########################################################################################################
             # Plot depth-averaged error statistics
-            print("got to 2106")
 
             # Perform depth-averaging for all timesteps
             result = result.reset_index()
