@@ -764,9 +764,6 @@ def vertical():
 
         # Callback function for variable selection in the first plot
         def update_plot_p1(selected_variables_p1):
-            # Group the data by 'Depth' and create separate ColumnDataSources for each group
-            # grouped_data = df.groupby('Depth')
-
             p1.title.text = f'{", ".join(selected_variables_p1)} vs. Date for Different Depths'
             p1.renderers = []  # Remove existing renderers
 
@@ -1731,9 +1728,7 @@ def display_map(o_file):
 
 
 def display_error(ds_his, feature, column_name, errorplot, errorplots, location, offline):
-    depths = np.unique(ds_his.coords['zcoordinate_c'].values)
-    # interval = abs(depths[1] - depths[0]) / 2
-    ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)  # Use cell-center depth, not 1.25m 'interval' correction
+    ds_his["zcoordinate_c"] = ds_his["zcoordinate_c"].round(2)  # Use cell-center depth
     data_for_bokeh = ds_his[feature].sel(stations=location)
     his_df = data_for_bokeh.to_dataframe()
     his_df.reset_index()
@@ -1795,7 +1790,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
         # Function to interpolate y for each group at target_x
         def interpolate_at_target_x(group, target_x):
             # Sort the group by x values
-            group_sorted = group.sort_values('zcoordinate_c')
+            group_sorted = group.sort_values('laydim')
             # Interpolate the y value at target_x
             interpolated_y = np.interp(target_x, group_sorted['zcoordinate_c'], group_sorted[feature], left=np.nan, right=np.nan)
             # Create a new row with the interpolated value
@@ -2056,19 +2051,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
         # Drop rows not satisfying the mask (within the time range)
         df = df[mask]
 
-        # # Insert NaN rows into long gaps so they no values will be interpolated.
-        # err_threshold = pd.Timedelta(hours=15)
-        #
-        # # List to store new rows
-        # new_rows = []
-        #
-        # # Convert the list of new rows to a DataFrame and append it to the original DataFrame
-        # new_rows_df = pd.DataFrame(new_rows)
-        # df = pd.concat([df, new_rows_df], ignore_index=True)
-        #
-        # # Sort the DataFrame by the 'Timestamp' column to maintain order
-        # df = df.sort_values(by='Timestamp').reset_index(drop=True)
-
         # Define a function to floor datetime to the nearest 12 hours (for grouping profiling missions)
         def floor_to_nearest_12_hours(dt):
             # Calculate the number of hours since the beginning of the datetime
@@ -2080,21 +2062,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
 
         # Apply the function to the 'datetime' column
         df['profile_time'] = df['Timestamp'].apply(floor_to_nearest_12_hours)
-
-        dimensions = df.shape
-        print(f"Dimensions before (number of rows, number of columns): {dimensions}")
-
-        # Specify the column to check
-        specific_column = 'profile_time'
-
-        # Step 1: Identify rows with NaN values in any column
-        nan_rows = df[df.isna().any(axis=1)]
-
-        # Step 2: Find unique values in the specific column of these rows
-        nan_values = nan_rows[specific_column].dropna().unique()
-
-        # Step 3: Drop rows where the specific column matches these unique values
-        df = df[~df[specific_column].isin(nan_values)]
 
         # Drop all rows from model data which do not have a matching datetime in the reference (sensor) dataset
         mask1 = his_df['time'].isin(df['profile_time'])
@@ -2174,7 +2141,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 st.write("Please select at least one parameter and depth contour to plot.")
             else:
                 # Group the data by 'Depth' and create separate ColumnDataSources for each group
-                grouped_data = result.groupby('zcoordinate_c')
+                grouped_data = result.groupby('laydim')
 
                 def update_err_contour(selected_variables_p1, grouped_data):
 
