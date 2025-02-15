@@ -2092,14 +2092,9 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
 
         # Step 2: Find unique values in the specific column of these rows
         nan_values = nan_rows[specific_column].dropna().unique()
-        print('nan values', nan_values[-100:])
 
         # Step 3: Drop rows where the specific column matches these unique values
         df = df[~df[specific_column].isin(nan_values)]
-
-        dimensions = df.shape
-        print(f"Dimensions after (number of rows, number of columns): {dimensions}")
-        print(df.loc[df['profile_time'] == pd.to_datetime('2024-05-24 12:00:00')])
 
         # Drop all rows from model data which do not have a matching datetime in the reference (sensor) dataset
         mask1 = his_df['time'].isin(df['profile_time'])
@@ -2371,8 +2366,8 @@ def display_his(o_file):
 
     ###################################################################################################################
     # 1. Analyze the file contents. Create references for plotting.
-    # print('ds_his', ds_his)
-    # print('All data_vars', ds_his.data_vars)
+    print('ds_his', ds_his)
+    print('All data_vars', ds_his.data_vars)
     # print('station coordx, coordy', ds_his['station_geom_node_coordx'].values, ds_his['station_geom_node_coordy'].values)
     # print('source_sink coordx, coordy', ds_his['source_sink_geom_node_coordx'].values,
     #       ds_his['source_sink_geom_node_coordy'].values)
@@ -2432,6 +2427,15 @@ def display_his(o_file):
                 all(coord not in var.dims for coord in excludes_coordinates)):
             cross_section_list.append(name)
 
+    includes_coordinate = ["time"]
+    excludes_coordinates = ["cross_section", "stations", "station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts",
+                            "cross_section_geom_nNodes"]
+    global_list = []
+    for name, var in ds_his.data_vars.items():
+        if (all(coord in var.dims for coord in includes_coordinate) and
+                all(coord not in var.dims for coord in excludes_coordinates)):
+            global_list.append(name)
+
     # Option to display dimensionality and contents of the file
     on_off = ["Display file attributes", "Hide"]
     print_attrs = st.radio(label='', options=on_off, horizontal=True, index=1)
@@ -2447,6 +2451,7 @@ def display_his(o_file):
             st.write("Data variables per observation point", stations_list)
             st.write("Data variables per source/sink", source_sink_list)
             st.write("Data variables per cross_section", cross_section_list)
+            st.write("Global data variables", global_list)
         with a3:
             st.markdown("#### Timing")
             st.write('Start:', ds_his.attrs["time_coverage_start"])
@@ -2463,7 +2468,7 @@ def display_his(o_file):
         plottype = st.radio("Choose which type of data to display:", options=hisoptions, horizontal=True)
 
     if plottype == hisoptions[0]:
-        pointoptions = ["Observation Points", "Observation Cross-Sections", "Sources/Sinks"]
+        pointoptions = ["Observation Points", "Observation Cross-Sections", "Sources/Sinks", "Global"]
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
             pointtype = st.radio("Choose which type of location to plot:", options=pointoptions, horizontal=True)
@@ -2473,16 +2478,18 @@ def display_his(o_file):
                                            ds_his.coords['stations'].values,
                                            default=ds_his.coords['stations'].values[0])
                 feature = st.selectbox("Select a variable to plot", stations_list)
+            elif pointtype == pointoptions[1]:
+                locations = st.multiselect("Select observation cross-section to plot",
+                                           ds_his.coords['cross_section'].values,
+                                           default=ds_his.coords['cross_section'].values[0])
+                feature = st.selectbox("Select a variable to plot", cross_section_list)
             elif pointtype == pointoptions[2]:
                 locations = st.multiselect("Select sources/sinks to plot", ds_his.coords['source_sink'].values,
                                            default=ds_his.coords['source_sink'].values[0])
                 feature = st.selectbox("Select a variable to plot", source_sink_list)
                 num_layers = None
             else:
-                locations = st.multiselect("Select observation cross-section to plot",
-                                           ds_his.coords['cross_section'].values,
-                                           default=ds_his.coords['cross_section'].values[0])
-                feature = st.selectbox("Select a variable to plot", cross_section_list)
+                feature = st.selectbox("Select a variable to plot", global_list)
     elif plottype == hisoptions[1]:
         hc1, hc2 = st.columns(2, gap="small")
         with hc1:
@@ -2546,9 +2553,19 @@ def display_his(o_file):
             data_for_bokeh = ds_his[feature].sel(cross_section=locations)
         elif pointtype == pointoptions[2]:
             data_for_bokeh = ds_his[feature].sel(source_sink=locations)
+        elif pointtype == pointoptions[3]:
+            data_for_bokeh = ds_his[feature].sel()
         his_df = data_for_bokeh.to_dataframe()
 
         def update_p_his(p_his, df, selected_variables_p_his, grouptype, groupvar, layers):
+
+            def group_data(df, group_by_column=None):
+                if group_by_column:
+                    return df.groupby(group_by_column)
+                else:
+                    # Create a dummy column with a constant value to group by
+                    df['dummy_group'] = 0
+                    return df.groupby('dummy_group')
 
             # Group the data by depth and create separate ColumnDataSources for each group
             df.reset_index()
@@ -2556,6 +2573,8 @@ def display_his(o_file):
                 df[groupvar] = df[groupvar]  # Use cell-center depth without 1.25m 'interval' correction for cell top
                 df_filtered = df[df[groupvar].isin(layers)]
                 grouped_data = df_filtered.groupby(groupvar)
+            elif groupvar == 'Global':
+                grouped_data = group_data(df)
             else:
                 grouped_data = df.groupby(groupvar)
 
@@ -2565,7 +2584,10 @@ def display_his(o_file):
                 step = len(viridis_colors) // num_colors
                 viridis_subset = viridis_colors[::step][:num_colors]
 
-                p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations}'
+                if groupvar != 'Global':
+                    p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations}'
+                else:
+                    p_his.title.text = f'{selected_variables_p_his} vs. Time'
                 p_his.renderers = []  # Remove existing renderers
 
                 for i, (groupname, group) in enumerate(grouped_data):
@@ -2619,6 +2641,9 @@ def display_his(o_file):
         elif 'cross_section' in df_reset.columns:
             groupvar = 'cross_section'
             grouptype = 'Observation Cross Section'
+        else:
+            groupvar = 'Global'
+            grouptype = 'Global'
         update_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar, layers=layers)
 
         # Show legend for the first plot
