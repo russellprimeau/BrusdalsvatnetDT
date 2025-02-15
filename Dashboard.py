@@ -2536,7 +2536,7 @@ def display_his(o_file):
 
             # Group the data by depth and create separate ColumnDataSources for each group
             df.reset_index()
-            if groupvar == 'zcoordinate_c':
+            if groupvar == 'laydim':
                 df[groupvar] = df[groupvar]  # Use cell-center depth without 1.25m 'interval' correction for cell top
                 df_filtered = df[df[groupvar].isin(layers)]
                 grouped_data = df_filtered.groupby(groupvar)
@@ -2594,7 +2594,7 @@ def display_his(o_file):
         p_his = figure()
         df_reset = his_df.reset_index()
         if 'zcoordinate_c' in df_reset.columns:
-            groupvar = 'zcoordinate_c'
+            groupvar = 'laydim'
             grouptype = 'Depth'
         if 'mesh2d_bldepth' in df_reset.columns:
             groupvar = 'mesh2d_bldepth'
