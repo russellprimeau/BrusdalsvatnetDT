@@ -1797,7 +1797,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
             # Sort the group by x values
             group_sorted = group.sort_values('zcoordinate_c')
             # Interpolate the y value at target_x
-            interpolated_y = np.interp(target_x, group_sorted['zcoordinate_c'], group_sorted[feature])
+            interpolated_y = np.interp(target_x, group_sorted['zcoordinate_c'], group_sorted[feature], left=np.nan, right=np.nan)
             # Create a new row with the interpolated value
             new_row = {'time': group.name, 'zcoordinate_c': reference, feature: interpolated_y}
             return new_row
@@ -2081,6 +2081,26 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
         # Apply the function to the 'datetime' column
         df['profile_time'] = df['Timestamp'].apply(floor_to_nearest_12_hours)
 
+        dimensions = df.shape
+        print(f"Dimensions before (number of rows, number of columns): {dimensions}")
+
+        # Specify the column to check
+        specific_column = 'profile_time'
+
+        # Step 1: Identify rows with NaN values in any column
+        nan_rows = df[df.isna().any(axis=1)]
+
+        # Step 2: Find unique values in the specific column of these rows
+        nan_values = nan_rows[specific_column].dropna().unique()
+        print('nan values', nan_values[-100:])
+
+        # Step 3: Drop rows where the specific column matches these unique values
+        df = df[~df[specific_column].isin(nan_values)]
+
+        dimensions = df.shape
+        print(f"Dimensions after (number of rows, number of columns): {dimensions}")
+        print(df.loc[df['profile_time'] == pd.to_datetime('2024-05-24 12:00:00')])
+
         # Drop all rows from model data which do not have a matching datetime in the reference (sensor) dataset
         mask1 = his_df['time'].isin(df['profile_time'])
         filtered_his_df = his_df[mask1]  # Filter df1 using the mask
@@ -2117,7 +2137,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
         def interpolate_depth(group, df1):
             time = group.name
             df1_group = df1.loc[time].sort_values('Depth')
-            return group['zcoordinate_c'].apply(lambda x: np.interp(x, df1_group['Depth'], df1_group[column_name]))
+            return group['zcoordinate_c'].apply(lambda x: np.interp(x, df1_group['Depth'], df1_group[column_name], left=np.nan, right=np.nan))
 
         # Apply the interpolation
         result = filtered_his_df.copy()
