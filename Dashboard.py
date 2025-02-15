@@ -2056,6 +2056,19 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
         # Drop rows not satisfying the mask (within the time range)
         df = df[mask]
 
+        # # Insert NaN rows into long gaps so they no values will be interpolated.
+        # err_threshold = pd.Timedelta(hours=15)
+        #
+        # # List to store new rows
+        # new_rows = []
+        #
+        # # Convert the list of new rows to a DataFrame and append it to the original DataFrame
+        # new_rows_df = pd.DataFrame(new_rows)
+        # df = pd.concat([df, new_rows_df], ignore_index=True)
+        #
+        # # Sort the DataFrame by the 'Timestamp' column to maintain order
+        # df = df.sort_values(by='Timestamp').reset_index(drop=True)
+
         # Define a function to floor datetime to the nearest 12 hours (for grouping profiling missions)
         def floor_to_nearest_12_hours(dt):
             # Calculate the number of hours since the beginning of the datetime
