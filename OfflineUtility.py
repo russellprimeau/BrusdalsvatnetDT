@@ -573,10 +573,10 @@ def post_cor(all_files, directory_path):
     errorplots = ["Hourly (depth = 2.95 m)", "Depth profiles (12-hour sample rate)"]
     c1, c2 = st.columns(2, gap='small')
     with c1:
-        feature = st.selectbox("Select a variable to compare", compatibility.keys())
+        feature = st.selectbox("Select a variable to compare", compatibility.keys(),index=1)
         column_name = compatibility.get(feature)  # 'feature' name in reference dataset
         location = st.selectbox("Select observation points to plot against the profiler data",
-                                ds_his.coords['stations'].values)
+                                ds_his.coords['stations'].values, index=3)
         errorplot = st.radio("Select a sensor dataset for comparison", errorplots, horizontal=True)
     Dashboard.display_error(ds_his=ds_his, feature=feature, column_name=column_name, errorplot=errorplot,
                             errorplots=errorplots, location=location, offline=False)
