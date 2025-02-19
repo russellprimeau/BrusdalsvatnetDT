@@ -2440,22 +2440,22 @@ def display_his(o_file):
         with hc1:
             pointtype = st.radio("Choose which type of location to plot:", options=pointoptions, horizontal=True)
 
-            if pointtype == pointoptions[0]:
+            if pointtype == pointoptions[0]:  # Observation points
                 locations = st.multiselect("Select observation points to plot",
                                            ds_his.coords['stations'].values,
                                            default=ds_his.coords['stations'].values[0])
                 feature = st.selectbox("Select a variable to plot", stations_list)
-            elif pointtype == pointoptions[1]:
+            elif pointtype == pointoptions[1]:  # Observation cross-sections
                 locations = st.multiselect("Select observation cross-section to plot",
                                            ds_his.coords['cross_section'].values,
                                            default=ds_his.coords['cross_section'].values[0])
                 feature = st.selectbox("Select a variable to plot", cross_section_list)
-            elif pointtype == pointoptions[2]:
+            elif pointtype == pointoptions[2]:  # Sources/sinks
                 locations = st.multiselect("Select sources/sinks to plot", ds_his.coords['source_sink'].values,
                                            default=ds_his.coords['source_sink'].values[0])
                 feature = st.selectbox("Select a variable to plot", source_sink_list)
                 num_layers = None
-            else:
+            else:  # Global
                 feature = st.selectbox("Select a variable to plot", global_list)
     elif plottype == hisoptions[1]:
         hc1, hc2 = st.columns(2, gap="small")
@@ -2552,6 +2552,7 @@ def display_his(o_file):
                 viridis_subset = viridis_colors[::step][:num_colors]
 
                 if groupvar != 'Global':
+                    st.write('groupvar', groupvar)
                     p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations}'
                 else:
                     p_his.title.text = f'{selected_variables_p_his} vs. Time'
@@ -2593,6 +2594,7 @@ def display_his(o_file):
         # Call the update_plot function with the selected variables for the first plot
         p_his = figure()
         df_reset = his_df.reset_index()
+        st.write(df_reset.columns)
         if 'zcoordinate_c' in df_reset.columns:
             groupvar = 'laydim'
             grouptype = 'Depth'
@@ -2611,6 +2613,7 @@ def display_his(o_file):
         else:
             groupvar = 'Global'
             grouptype = 'Global'
+        st.write('before', groupvar)
         update_p_his(p_his, df_reset, feature, grouptype=grouptype, groupvar=groupvar, layers=layers)
 
         # Show legend for the first plot
