@@ -2598,7 +2598,7 @@ def display_his(o_file):
         if 'zcoordinate_c' in df_reset.columns:
             groupvar = 'laydim'
             grouptype = 'Depth'
-        if 'mesh2d_bldepth' in df_reset.columns:
+        elif 'mesh2d_bldepth' in df_reset.columns:
             groupvar = 'mesh2d_bldepth'
             grouptype = 'Sigma Layer'
         elif 'stations' in df_reset.columns:
