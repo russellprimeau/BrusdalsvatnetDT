@@ -13,7 +13,6 @@ from streamlit_folium import st_folium, folium_static
 from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, DatetimeTickFormatter, DataRange1d, HoverTool, Range1d
 from bokeh.palettes import Viridis256, Category20_20
-# from bokeh.layouts import column
 from datetime import date, time, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import xarray as xr
@@ -2552,7 +2551,6 @@ def display_his(o_file):
                 viridis_subset = viridis_colors[::step][:num_colors]
 
                 if groupvar != 'Global':
-                    st.write('groupvar', groupvar)
                     p_his.title.text = f'{selected_variables_p_his} vs. Time at {locations}'
                 else:
                     p_his.title.text = f'{selected_variables_p_his} vs. Time'
