@@ -126,6 +126,18 @@ def upload_weather_csv():
     return df
 
 
+def plot_to_csv(source, parameters, time_column, time_range):
+    x_range = np.datetime64(time_range.start), np.datetime64(time_range.end)
+    variables_to_csv = [time_column] + parameters
+
+    filtered_data = {
+        key: [value[i] for i in range(len(value)) if x_range[0] <= source.data['Timestamp'][i] <= x_range[1]]
+        for key, value in source.data.items() if key in variables_to_csv}
+    df = pd.DataFrame(filtered_data)
+    df.reset_index(drop=True, inplace=True)
+    return df.to_csv(index=False).encode("utf-8")
+
+
 def weather():
     st.title("Brusdalen Weather Station")
     st.markdown("##### 62.484778°N 6.479667°E, 69 MASL")
@@ -303,19 +315,7 @@ def weather():
 
 
         # Add button for exporting data
-        def convert_df(parameters):
-            x_range = np.datetime64(p.x_range.start), np.datetime64(p.x_range.end)
-            variables_to_csv = ['Timestamp'] + parameters
-
-            filtered_data = {
-                key: [value[i] for i in range(len(value)) if x_range[0] <= source.data['Timestamp'][i] <= x_range[1]]
-                for key, value in source.data.items() if key in variables_to_csv}
-            df = pd.DataFrame(filtered_data)
-            df.reset_index(drop=True, inplace=True)
-            return df.to_csv(index=False).encode("utf-8")
-
-        csv = convert_df(selected_variables)
-
+        csv = plot_to_csv(source, selected_variables, time_column='Timestamp', time_range=p.x_range)
         st.download_button(
             label="Export data range as .CSV",
             data=csv,
@@ -490,7 +490,6 @@ def hourly():
 
     # Create a ColumnDataSource
     source = ColumnDataSource(df)
-    time_difference = timedelta(hours=2)
 
     def update_hourly(selected_variables, source):
         p.title.text = f'Water Quality Parameters vs. Time'
@@ -566,6 +565,14 @@ def hourly():
         st.bokeh_chart(p, use_container_width=True)
         st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                  "Click legend entries to toggle series on/off.")
+        # Add button for exporting data
+        csv = plot_to_csv(source, selected_variables, time_column='Timestamp', time_range=p.x_range)
+        st.download_button(
+            label="Export data range as .CSV",
+            data=csv,
+            file_name="plot_data.csv",
+            mime="text/csv",
+        )
 
 
 def vertical():
@@ -838,6 +845,7 @@ def vertical():
                                                      (var, f'@{{{var}}}')], formatters={"@Timestamp": "datetime", },
                                            mode="vline"))
                     p1.renderers.append(renderer)
+            return depth_source
 
         # Call the update_plot function with the selected variables for the first plot
         update_plot_p1(selected_variables_p1)
@@ -861,6 +869,15 @@ def vertical():
         st.bokeh_chart(p1, use_container_width=True)
         st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                  "Click legend entries to toggle series on/off.")
+
+        # Add button for exporting data
+        csv = plot_to_csv(depth_source, selected_variables, time_column='Timestamp', time_range=p.x_range)
+        st.download_button(
+            label="Export data range as .CSV",
+            data=csv,
+            file_name="plot_data.csv",
+            mime="text/csv",
+        )
 
     ###################################################################################################################
     # Plot 2: Instantaneous Vertical Profile
