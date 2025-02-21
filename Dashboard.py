@@ -798,7 +798,10 @@ def vertical():
             p1.title.text = f'{", ".join(selected_variables_p1)} vs. Date for Different Depths'
             p1.renderers = []  # Remove existing renderers
 
+            depths = []
+            depth_sources = []
             for i, (depth, group) in enumerate(grouped_data):
+                depths.append(depth)
                 depth_source = ColumnDataSource(group)
 
                 # Convert the 'Timestamp' column to datetime if it's not already
@@ -835,6 +838,7 @@ def vertical():
 
                 # Convert the updated DataFrame back to a ColumnDataSource
                 depth_source = ColumnDataSource(df)
+                depth_sources.append(depth_source)
 
                 for j, var in enumerate(selected_variables_p1):
                     renderer = p1.line(x='Timestamp', y=var, source=depth_source, line_width=2,
@@ -845,10 +849,10 @@ def vertical():
                                                      (var, f'@{{{var}}}')], formatters={"@Timestamp": "datetime", },
                                            mode="vline"))
                     p1.renderers.append(renderer)
-            return depth_source
+            return depths, depth_sources
 
         # Call the update_plot function with the selected variables for the first plot
-        update_plot_p1(selected_variables_p1)
+        depths, depth_sources = update_plot_p1(selected_variables_p1)
 
         # Show legend for the first plot
         p1.legend.title = 'Depth'
@@ -871,13 +875,7 @@ def vertical():
                  "Click legend entries to toggle series on/off.")
 
         # Add button for exporting data
-        csv = plot_to_csv(depth_source, selected_variables, time_column='Timestamp', time_range=p.x_range)
-        st.download_button(
-            label="Export data range as .CSV",
-            data=csv,
-            file_name="plot_data.csv",
-            mime="text/csv",
-        )
+
 
     ###################################################################################################################
     # Plot 2: Instantaneous Vertical Profile
