@@ -301,6 +301,21 @@ def weather():
         st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                  "Click legend entries to toggle series on/off.")
 
+        # Function to filter data within x_range and save to CSV
+        def save_data_to_csv():
+            x_range = np.datetime64(p.x_range.start), np.datetime64(p.x_range.end)
+            # st.write(source.data.items())
+            filtered_data = {
+                key: [value[i] for i in range(len(value)) if x_range[0] <= source.data['Timestamp'][i] <= x_range[1]] for
+                key, value in source.data.items() if key in selected_variables}
+            df = pd.DataFrame(filtered_data)
+            df.to_csv('filtered_data.csv', index=False)
+            st.success("Data within x_range saved to filtered_data.csv")
+
+        # Add button to Streamlit app
+        if st.button('Save Data to CSV'):
+            save_data_to_csv()
+
 
 # Function to the upload new profiler data from CSV
 def upload_hourly_csv_page():
