@@ -288,8 +288,10 @@ def weather():
             p.x_range = Range1d(set_begin_date, set_last_date + timedelta(days=1, hours=3))
         p.yaxis.axis_label = "Parameter Value(s)"
         p.legend.title = "Weather Parameters"
-        p.add_layout(p.legend[0], 'right')
+        # p.add_layout(p.legend[0], 'right')
+        p.add_layout(p.legend[0])
         # p.legend.location = "top_left"
+        # p.legend.ncols = 2
         p.legend.click_policy = "hide"  # Hide lines on legend click
         # p.add_layout(p.legend[0], 'below')  # Option to move the legend out of the plotspace
         # Set the x-axis formatter to display dates in the desired format
