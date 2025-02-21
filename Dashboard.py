@@ -73,7 +73,7 @@ def historic():
         "Please log suggestions [here](https://github.com/russellprimeau/BrusdalsvatnetDT/issues).")
 
 
-# Function to the upload new profiler data from CSV
+# Function for uploading new weather data from CSV
 def upload_weather_csv():
     csv_file2 = "All_time.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, sep=';', decimal=',', parse_dates=['Time'], date_format='%Y-%m-%dT%H:%M:%S', header=0)
@@ -301,23 +301,30 @@ def weather():
         st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                  "Click legend entries to toggle series on/off.")
 
-        # Function to filter data within x_range and save to CSV
-        def save_data_to_csv():
+
+        # Add button for exporting data
+        def convert_df(parameters):
             x_range = np.datetime64(p.x_range.start), np.datetime64(p.x_range.end)
-            # st.write(source.data.items())
+            variables_to_csv = ['Timestamp'] + parameters
+
             filtered_data = {
-                key: [value[i] for i in range(len(value)) if x_range[0] <= source.data['Timestamp'][i] <= x_range[1]] for
-                key, value in source.data.items() if key in selected_variables}
+                key: [value[i] for i in range(len(value)) if x_range[0] <= source.data['Timestamp'][i] <= x_range[1]]
+                for key, value in source.data.items() if key in variables_to_csv}
             df = pd.DataFrame(filtered_data)
-            df.to_csv('filtered_data.csv', index=False)
-            st.success("Data within x_range saved to filtered_data.csv")
+            df.reset_index(drop=True, inplace=True)
+            return df.to_csv(index=False).encode("utf-8")
 
-        # Add button to Streamlit app
-        if st.button('Save Data to CSV'):
-            save_data_to_csv()
+        csv = convert_df(selected_variables)
+
+        st.download_button(
+            label="Export data range as .CSV",
+            data=csv,
+            file_name="plot_data.csv",
+            mime="text/csv",
+        )
 
 
-# Function to the upload new profiler data from CSV
+# Function for uploading new profiler data from CSV
 def upload_hourly_csv_page():
     csv_file2 = "Profiler_modem_SondeHourly.csv"  # Replace with the actual file path
     df = pd.read_csv(csv_file2, parse_dates=['TIMESTAMP'])
