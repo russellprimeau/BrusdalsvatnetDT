@@ -290,7 +290,7 @@ def weather():
         p.legend.title = "Weather Parameters"
         # p.add_layout(p.legend[0], 'right')
         p.add_layout(p.legend[0])
-        # p.legend.location = "top_left"
+        p.legend.location = "top_right"
         # p.legend.ncols = 2
         p.legend.click_policy = "hide"  # Hide lines on legend click
         # p.add_layout(p.legend[0], 'below')  # Option to move the legend out of the plotspace
