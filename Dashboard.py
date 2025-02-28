@@ -14,6 +14,8 @@ from bokeh.plotting import figure
 from bokeh.models import ColumnDataSource, DatetimeTickFormatter, DataRange1d, HoverTool, Range1d
 from bokeh.palettes import Viridis256, Category20_20
 # from bokeh.layouts import column
+from bokeh.models import ColorBar, LinearColorMapper
+from bokeh.transform import linear_cmap
 from datetime import date, time, datetime, timedelta
 from dateutil.relativedelta import relativedelta
 import xarray as xr
@@ -2182,7 +2184,6 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
             else:
                 # Group the data by 'Depth' and create separate ColumnDataSources for each group
                 grouped_data = result.groupby('laydim')
-                st.write(result)
 
                 def update_err_contour(selected_variables_p1, grouped_data):
 
@@ -2195,22 +2196,15 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                         # Round the values in the specified column to a single decimal place
                         rounded_values = df[column_name].round(1)
 
-                        indices = df['laydim'].unique()
+                        length = max(df['laydim'].unique())
 
                         # Get a list of unique rounded values
                         unique_values = rounded_values.unique()
 
                         # Sort the unique values in descending order
-                        sorted_values = sorted(unique_values)
-                        sort_indices = sorted(indices)
+                        sorted_values = sorted(unique_values, reverse=True)
 
-                        # Return the nth largest value (1-based index)
-                        if n <= len(sorted_values):
-                            st.write('n:',n, 'sort_indices[n-1]', sort_indices[n-1])
-                            return sorted_values[n-1]
-                        else:
-                            return None
-
+                        return sorted_values[length-n]
 
 
                     # p1.title.text = f'{selected_variables_p1} vs. Date for Different Depths'
@@ -2221,24 +2215,32 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                         for j, (depth, group) in enumerate(grouped_data):
                             depth_source = ColumnDataSource(group)
                             m_depth = return_depth(result, 'zcoordinate_c', depth)
-                            st.write('depth', depth, 'm depth', m_depth)
                             renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
                                                line_color=viridis_subset[j],
-                                               legend_label=f'Layer {depth} {var}', line_dash=line_styles[i])
+                                               legend_label=f'{var} at {m_depth}m ', line_dash=line_styles[i])
                             p1.add_tools(HoverTool(renderers=[renderer],
                                                    tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
                                                              (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
                                                    mode="vline"))
                             p1.renderers.append(renderer)
 
+
                 # Call the update_plot function with the selected variables for the first plot
                 update_err_contour(error_stats, grouped_data)
+
+                # Define color mapper
+                color_mapper = LinearColorMapper(palette="Viridis256", low=-48.6, high=-1.2)
+
+                # Create color bar
+                color_bar = ColorBar(color_mapper=color_mapper, location=(0, 0), title="Depth, m below mean surface level")
+
+                # Add the color bar to the plot
+                p1.add_layout(color_bar, 'right')
 
                 # Show legend for the first plot
                 # p1.legend.title = 'Depth'
                 # p1.legend.location = "top_left"
                 p1.add_layout(p1.legend[0], 'right')
-                p1.legend.label_text_font_size = '10px'
                 p1.legend.click_policy = "hide"  # Hide lines on legend click
                 p1.yaxis.axis_label = "Temperature, C"
                 p1.xaxis.axis_label = "Time"
@@ -2247,10 +2249,10 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 p1.xaxis.axis_label_text_font_size = "20pt"
                 p1.yaxis.axis_label_text_font_size = "20pt"
                 # Increase font size for axis values (tick labels)
-                p1.xaxis.major_label_text_font_size = "15pt"
-                p1.yaxis.major_label_text_font_size = "15pt"
+                p1.xaxis.major_label_text_font_size = "20pt"
+                p1.yaxis.major_label_text_font_size = "20pt"
                 # Increase font size for legend
-                p1.legend.label_text_font_size = "15pt"
+                p1.legend.label_text_font_size = "16pt"
 
                 # Display the Bokeh chart for the first plot using Streamlit
                 st.bokeh_chart(p1, use_container_width=True)
