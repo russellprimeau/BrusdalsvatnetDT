@@ -2215,9 +2215,11 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                         for j, (depth, group) in enumerate(grouped_data):
                             depth_source = ColumnDataSource(group)
                             m_depth = return_depth(result, 'zcoordinate_c', depth)
+                            # renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
+                            #                    line_color=viridis_subset[j],
+                            #                    legend_label=f'{var} at {m_depth}m ', line_dash=line_styles[i])
                             renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
-                                               line_color=viridis_subset[j],
-                                               legend_label=f'{var} at {m_depth}m ', line_dash=line_styles[i])
+                                               line_color=viridis_subset[j], line_dash=line_styles[i])
                             p1.add_tools(HoverTool(renderers=[renderer],
                                                    tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
                                                              (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
@@ -2232,7 +2234,10 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 color_mapper = LinearColorMapper(palette="Viridis256", low=-48.6, high=-1.2)
 
                 # Create color bar
-                color_bar = ColorBar(color_mapper=color_mapper, location=(0, 0), title="Depth, m below mean surface level")
+                color_bar = ColorBar(color_mapper=color_mapper, location=(0, 0),
+                                     title="Depth, m",
+                     title_text_font_size="20pt", title_text_font_style="bold",
+                     major_label_text_font_size="20pt", )
 
                 # Add the color bar to the plot
                 p1.add_layout(color_bar, 'right')
@@ -2240,7 +2245,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 # Show legend for the first plot
                 # p1.legend.title = 'Depth'
                 # p1.legend.location = "top_left"
-                p1.add_layout(p1.legend[0], 'right')
+                # p1.add_layout(p1.legend[0], 'right')
                 p1.legend.click_policy = "hide"  # Hide lines on legend click
                 p1.yaxis.axis_label = "Temperature, C"
                 p1.xaxis.axis_label = "Time"
@@ -2251,6 +2256,10 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 # Increase font size for axis values (tick labels)
                 p1.xaxis.major_label_text_font_size = "20pt"
                 p1.yaxis.major_label_text_font_size = "20pt"
+                p1.xaxis.axis_label_text_font_style = "bold"
+                p1.yaxis.axis_label_text_font_style = "bold"
+                p1.xaxis.major_label_text_font_style = "bold"
+                p1.yaxis.major_label_text_font_style = "bold"
                 # Increase font size for legend
                 p1.legend.label_text_font_size = "16pt"
 
