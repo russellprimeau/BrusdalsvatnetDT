@@ -2191,6 +2191,28 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                     step = len(viridis_colors) // num_colors
                     viridis_subset = viridis_colors[::step][:num_colors]
 
+                    def return_depth(df, column_name, n):
+                        # Round the values in the specified column to a single decimal place
+                        rounded_values = df[column_name].round(1)
+
+                        indices = df['laydim'].unique()
+
+                        # Get a list of unique rounded values
+                        unique_values = rounded_values.unique()
+
+                        # Sort the unique values in descending order
+                        sorted_values = sorted(unique_values)
+                        sort_indices = sorted(indices)
+
+                        # Return the nth largest value (1-based index)
+                        if n <= len(sorted_values):
+                            st.write('n:',n, 'sort_indices[n-1]', sort_indices[n-1])
+                            return sorted_values[n-1]
+                        else:
+                            return None
+
+
+
                     # p1.title.text = f'{selected_variables_p1} vs. Date for Different Depths'
                     p1.renderers = []  # Remove existing renderers
                     line_styles = ['solid', 'dashed', 'dotdash', 'dotted']
@@ -2198,6 +2220,8 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                     for i, (var) in enumerate(selected_variables_p1):
                         for j, (depth, group) in enumerate(grouped_data):
                             depth_source = ColumnDataSource(group)
+                            m_depth = return_depth(result, 'zcoordinate_c', depth)
+                            st.write('depth', depth, 'm depth', m_depth)
                             renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
                                                line_color=viridis_subset[j],
                                                legend_label=f'Layer {depth} {var}', line_dash=line_styles[i])
