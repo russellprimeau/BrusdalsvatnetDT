@@ -2174,13 +2174,15 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
             # Plot time series of feature sorted by depths in Bokeh
 
             # Create Bokeh figure for the first plot
-            p1 = figure(x_axis_label='Date', title=f'Error statistics as depth contours vs. time for {feature}')
+            # p1 = figure(x_axis_label='Date', title=f'Error statistics as depth contours vs. time for {feature}')
+            p1 = figure(x_axis_label='Date')
 
             if not errorplot:
                 st.write("Please select at least one parameter and depth contour to plot.")
             else:
                 # Group the data by 'Depth' and create separate ColumnDataSources for each group
                 grouped_data = result.groupby('laydim')
+                st.write(result)
 
                 def update_err_contour(selected_variables_p1, grouped_data):
 
@@ -2189,7 +2191,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                     step = len(viridis_colors) // num_colors
                     viridis_subset = viridis_colors[::step][:num_colors]
 
-                    p1.title.text = f'{selected_variables_p1} vs. Date for Different Depths'
+                    # p1.title.text = f'{selected_variables_p1} vs. Date for Different Depths'
                     p1.renderers = []  # Remove existing renderers
                     line_styles = ['solid', 'dashed', 'dotdash', 'dotted']
 
@@ -2198,7 +2200,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                             depth_source = ColumnDataSource(group)
                             renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
                                                line_color=viridis_subset[j],
-                                               legend_label=f'{depth}m {var}', line_dash=line_styles[i])
+                                               legend_label=f'Layer {depth} {var}', line_dash=line_styles[i])
                             p1.add_tools(HoverTool(renderers=[renderer],
                                                    tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
                                                              (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
@@ -2209,14 +2211,22 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 update_err_contour(error_stats, grouped_data)
 
                 # Show legend for the first plot
-                p1.legend.title = 'Depth'
+                # p1.legend.title = 'Depth'
                 # p1.legend.location = "top_left"
                 p1.add_layout(p1.legend[0], 'right')
                 p1.legend.label_text_font_size = '10px'
                 p1.legend.click_policy = "hide"  # Hide lines on legend click
-                p1.yaxis.axis_label = "Values"
+                p1.yaxis.axis_label = "Temperature, C"
                 p1.xaxis.axis_label = "Time"
                 p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
+                # Increase font size for axis titles
+                p1.xaxis.axis_label_text_font_size = "20pt"
+                p1.yaxis.axis_label_text_font_size = "20pt"
+                # Increase font size for axis values (tick labels)
+                p1.xaxis.major_label_text_font_size = "15pt"
+                p1.yaxis.major_label_text_font_size = "15pt"
+                # Increase font size for legend
+                p1.legend.label_text_font_size = "15pt"
 
                 # Display the Bokeh chart for the first plot using Streamlit
                 st.bokeh_chart(p1, use_container_width=True)
