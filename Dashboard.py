@@ -2221,7 +2221,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                             renderer = p1.line(x='time', y=var, source=depth_source, line_width=2,
                                                line_color=viridis_subset[j], line_dash=line_styles[i])
                             p1.add_tools(HoverTool(renderers=[renderer],
-                                                   tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{depth}'),
+                                                   tooltips=[("Time", "@time{%Y-%m-%d %H:%M}"), ("Depth", f'{m_depth}'),
                                                              (var, f'@{{{var}}}')], formatters={"@time": "datetime", },
                                                    mode="vline"))
                             p1.renderers.append(renderer)
@@ -2231,7 +2231,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 update_err_contour(error_stats, grouped_data)
 
                 # Define color mapper
-                color_mapper = LinearColorMapper(palette="Viridis256", low=-48.6, high=-1.2)
+                color_mapper = LinearColorMapper(palette="Viridis256", low=-48.6, high=0)
 
                 # Create color bar
                 color_bar = ColorBar(color_mapper=color_mapper, location=(0, 0),
