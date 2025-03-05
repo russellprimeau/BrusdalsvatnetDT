@@ -961,7 +961,7 @@ def usv_plot():
     def display_mis(filename):
         track = pd.read_csv(filename)
         column_names = ['Time, ms', 'Mode', 'Status', 'Lat', 'Lon', 'Speed, m/s', 'Heading 1', 'Heading 2', 'var3',
-                        'var4', 'var5', 'var6', 'var7', 'Battery', 'var9', 'var10', 'var11', 'Mission', 'Waypoint']
+                        'var4', 'var5', 'var6', 'var7', 'Battery', 'Concentration', 'var10', 'var11', 'Mission', 'Waypoint']
         track.columns = column_names
         track['Time, ms'] = pd.to_datetime(track['Time, ms'], unit='ms')
         track['Time'] = track['Time, ms'].dt.floor('s')
