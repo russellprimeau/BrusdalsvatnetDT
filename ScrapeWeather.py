@@ -17,6 +17,8 @@ import pandas as pd
 import subprocess
 import os
 import logging
+import psycopg2
+from io import StringIO
 import datetime
 from datetime import datetime
 from selenium import webdriver  # Probably not sufficient for login features; try selenium-wire instead
@@ -25,6 +27,68 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.common.exceptions import TimeoutException, NoSuchElementException, StaleElementReferenceException
+
+
+# Database connection parameters
+DB_USER = "*"
+DB_PASSWORD = "*"
+DB_HOST = "fjordladdatabse.postgres.database.azure.com"
+DB_PORT = "5432"
+DB_NAME = "postgres"
+schema_name = "brusdalsvatnet"
+
+
+def copy_to_database(df, table_name):
+    # Connect to PostgreSQL
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
+            )
+        cur = conn.cursor()
+    except Exception as e:
+        logging.error(f"Error connecting to {DB_NAME}: {e}")
+
+    # Ensure schema is set
+    cur.execute(f"SET search_path TO {schema_name};")
+
+    # Query for the last record in the database
+    cur.execute("SELECT * FROM brusdalsvatnet.brusdalen_weather_station_hourly ORDER BY datetime DESC LIMIT 1;")
+
+    # Fetch row
+    rows = cur.fetchone()
+
+    # Get column names
+    col_names = [desc[0] for desc in cur.description]
+    # Convert to Pandas DataFrame
+    df_ref = pd.DataFrame([rows], columns=col_names)
+
+    # Convert datetime column to datetime objects
+    df_ref['datetime'] = pd.to_datetime(df_ref['datetime'])
+
+    # Get the time of the latest record in the database
+    latest_timestamp = df_ref['datetime'].max()
+
+    # Drop rows from df with timestamp equal or less than the latest timestamp in the database
+    df_filtered = df[df['Time'] > latest_timestamp]
+
+    # Convert DataFrame to CSV format in memory
+    output = StringIO()
+    df_filtered.to_csv(output, sep="\t", index=False, header=False, na_rep="NULL")  # Use tab as delimiter
+    output.seek(0)  # Move cursor to the start
+
+    # Use copy_from to insert data
+    cur.copy_from(output, table_name, sep="\t", null="NULL")
+
+    # Commit and close
+    try:
+        conn.commit()
+        cur.close()
+        conn.close()
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Successfully wrote new lines to {table_name} at {current_time}")
+    except Exception as e:
+        logging.error(f"Error in commit to PostgreSQL database table {table_name}: {e}")
 
 
 def run_command(command):
@@ -45,17 +109,25 @@ def push():
     modified_files = subprocess.run(["git", "diff", "--cached", "--name-only"], capture_output=True,
                                     text=True).stdout.strip()
 
+    logging.info(f"modified files: {modified_files}")
+
     # Construct commit message (optional)
     if modified_files:
-        commit_message = f"Changes to: {modified_files}"  # Replace with your preferred format
+        commit_message = f"Changes to: {modified_files}"
     else:
         commit_message = "No changes detected"  # Optional for clarity
 
     # Commit the changes
-    run_command(['git', 'commit', '-m', commit_message])
+    try:
+        run_command(['git', 'commit', '-m', commit_message])
+    except Exception as e:
+        logging.error(f"Error in committing to GitHub: {e}")
 
     # Push the changes to the remote repository
-    run_command(['git', 'push', 'origin', 'main'])
+    try:
+        run_command(['git', 'push', 'origin', 'main'])
+    except Exception as e:
+        logging.error(f"Error in push to GitHub: {e}")
 
 
 def get_last_line(csv_file):
@@ -241,10 +313,9 @@ def scrape_and_clean():
                      "1818_time: UU Luftfuktighet[%RH]"]
             scraped_df = scraped_df[column_order]
             scraped_df.reset_index(drop=True, inplace=True)
-            scraped_df = scraped_df.drop(columns=["1818_time: Batt_V[V]"], axis=1)
 
             # Convert data from strings to numeric data types
-            cols_to_convert = ["1818_time: AA[mBar]", "1818_time: DD Retning[°]",
+            cols_to_convert = ["1818_time: AA[mBar]", "1818_time: Batt_V[V]", "1818_time: DD Retning[°]",
                      "1818_time: DX_l[°]", "1818_time: FF Hastighet[m/s]", "1818_time: FG_l[m/s]",
                      "1818_time: FG_tid_l[N/A]", "1818_time: FX Kast[m/s]", "1818_time: FX_tid_l[N/A]",
                      "1818_time: PO Trykk stasjonshøyde[mBar]", "1818_time: PP[mBar]",
@@ -288,7 +359,15 @@ if __name__ == '__main__':
 
     # Scrape data from online, reformat, and write to CSV file
     new_lines = scrape_and_clean()
-    write(new_lines, data_file)
+    # logging.info('\n' + new_lines.to_string())  # write df to log file
+    to_csv = new_lines.drop(columns=["1818_time: Batt_V[V]"], axis=1)
+    write(to_csv, data_file)
 
+    table_name = 'brusdalen_weather_station_hourly'
+    try:
+        # Code that may raise an exception
+        copy_to_database(new_lines, table_name)
+    except Exception as e:
+        logging.error(f"Error in push to PostgreSQL database: {e}")
     # Push changes to remote origin
     push()
