@@ -284,7 +284,7 @@ if __name__ == '__main__':
     logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
 
     # Pull changes from the remote repository
-run_command(['git', 'pull', 'origin', 'main'])
+    run_command(['git', 'pull', 'origin', 'main'])
 
     # Scrape data from online, reformat, and write to CSV file
     new_lines = scrape_and_clean()
