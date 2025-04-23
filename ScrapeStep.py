@@ -157,7 +157,7 @@ def write(df, destination):
 
 if __name__ == '__main__':
     # Change directory to project location
-    os.chdir(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT")
+    os.chdir(r"/")
 
     data_file = "Profiler_modem_PFL_Step.csv"
 

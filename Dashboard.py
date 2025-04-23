@@ -25,6 +25,7 @@ import dfm_tools as dfmt
 import plotly.express as px
 import math
 import bisect
+import io
 
 
 def main():
@@ -42,6 +43,12 @@ def main():
     elif selected_page == "Interactive (Path Planning)":
         interactive()
 
+def download_matplotlib_figure(fig, filename="figure.png", dpi=300):
+    """Saves a Matplotlib figure to a byte stream and returns it."""
+    buf = io.BytesIO()
+    fig.savefig(buf, format="png", dpi=dpi)  # Adjust DPI for resolution
+    buf.seek(0)
+    return buf.getvalue()
 
 def historic():
     st.header("Brusdalsvatnet Water Quality Dashboard")
@@ -876,8 +883,6 @@ def vertical():
         st.write("Use the buttons on the right to interact with the chart: pan, zoom, full screen, save, etc. "
                  "Click legend entries to toggle series on/off.")
 
-        # Add button for exporting data
-
 
     ###################################################################################################################
     # Plot 2: Instantaneous Vertical Profile
@@ -1561,7 +1566,7 @@ def display_map(o_file):
 
     ###################################################################################################################
     # 2. Plot the distribution of map parameters in the x,y plane using selections based on references in #1 above.
-    fig_surface, ax = plt.subplots(figsize=(20, 5))
+    fig_surface, ax = plt.subplots(figsize=(10,3), dpi=600)
 
     cc1, cc2 = st.columns(2, gap="small")
     with cc1:
@@ -1570,6 +1575,8 @@ def display_map(o_file):
         #                       [item for item in mesh2d_nFaces_list if item not in parameter_names.keys()])
 
         parameter = st.selectbox("Select parameter to display", mesh2d_nFaces_list)
+        converter = 1287  # Convert concentration values from gN/m3 to ug NH4/L
+        uds_map.data_vars[parameter].values = uds_map.data_vars[parameter].values * converter
         vmin = np.nanmin(uds_map.data_vars[parameter].values)
         vmax = np.nanmax(uds_map.data_vars[parameter].values)
 
@@ -1630,10 +1637,16 @@ def display_map(o_file):
     yavg = (ymax_abs + ymin_abs) / 2
     x_int = (xmax_abs - xmin_abs) / 2
     y_int = (ymax_abs - ymin_abs) / 2
-    xmin = xavg - x_int * (1 + scaler * aspect)
-    xmax = xavg + x_int * (1 + scaler * aspect)
-    ymin = yavg - y_int * (1 + scaler)
-    ymax = yavg + y_int * (1 + scaler)
+    # xmin = xavg - x_int * (1 + scaler * aspect)
+    # xmax = xavg + x_int * (1 + scaler * aspect)
+    # ymin = yavg - y_int * (1 + scaler)
+    # ymax = yavg + y_int * (1 + scaler)
+
+    # generic extents of Brusdalsvatnet
+    xmin = 6.384
+    xmax = 6.574
+    ymin = 62.461
+    ymax = 62.488
 
     # Add a slider for selecting where to take a cross-section of the simulated water body
     line_array = None
@@ -1673,31 +1686,97 @@ def display_map(o_file):
                                                                                                  vmax=vmax)
             st.markdown(f"### {parameter} at depth of {depth_selected} m")
         else:
+            # Quick & Dirty Fix
+            # transformed_data = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
+            #                                            missing_dims='ignore') * 1287
+            # pc = transformed_data.ugrid.plot(cmap='jet', add_colorbar=False,
+            #                                                                vmin=vmin, vmax=vmax)
+
+            # Correct way
             pc = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
                                          missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False,
                                                                            vmin=vmin, vmax=vmax)
             st.markdown(f"### {parameter} at depth of {depth_selected} m at {selected_time_key}")
 
     if crs is None:
-        ax.set_aspect('equal')
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
     else:
-        ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
+        ax.set_xlim(xmin, xmax)
+        ax.set_ylim(ymin, ymax)
+        ctx.add_basemap(ax=ax, zoom=15, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
     # fig_surface.suptitle(parameter)  # Add a title within the figure's limits
 
     # Add a colorbar to show the values of the colors
-    fraction = 0.01  # Percentage of the figure's width given to the colorbar (scale/legend)
-    colorbar = plt.colorbar(pc, orientation="vertical", fraction=fraction, pad=0.001)
+    fraction = 0.007
+    # Percentage of the figure's width given to the colorbar (scale/legend)
+    colorbar = plt.colorbar(pc, orientation="vertical", fraction=fraction, pad=0.005)
     colorbar.set_label(parameter)  # Set colorbar label
 
-    ax.set_aspect('equal')
+    ax.set_aspect('equal', 'box')  # Prevents map distortion
     ax.set_xlabel("Longitude")
     ax.set_ylabel("Latitude")
-    ax.set_xlim(xmin, xmax)
-    ax.set_ylim(ymin, ymax)
     ax.set_title("")
     ax.set_position([0, 0, 1, 1])
     plt.tight_layout()
     st.pyplot(fig_surface)
+
+    if st.button("Save figure"):
+        data = download_matplotlib_figure(fig_surface, dpi=600)  # Higher DPI for better resolution
+        st.download_button(
+            label="Click here to download",
+            data=data,
+            file_name="ContaminantSurface.png",
+            mime="image/png",
+        )
+
+    ###############################################################################################################
+    # Temporary addition: zoom in on the western edge
+
+    fig_surface2, ax2 = plt.subplots(figsize=(5, 2.5), dpi=600)
+
+    if latlon == "Longitude":
+        ax2.axvline(cross_section, color='red')
+    else:
+        ax2.axhline(cross_section, color='red')
+
+    pc2 = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
+                                 missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False,
+                                                                   vmin=vmin, vmax=vmax)
+    st.markdown(f"### {parameter} at depth of {depth_selected} m at {selected_time_key}")
+
+    # West end
+    xmin2 = 6.384
+    xmax2 = 6.41
+    ymin2 = 62.463
+    ymax2 = 62.475
+
+    ax2.set_xlim(xmin2, xmax2)
+    ax2.set_ylim(ymin2, ymax2)
+    ctx.add_basemap(ax=ax2, zoom=15, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
+    # fig_surface.suptitle(parameter)  # Add a title within the figure's limits
+
+    # Add a colorbar to show the values of the colors
+    fraction = 0.022
+    # Percentage of the figure's width given to the colorbar (scale/legend)
+    colorbar = plt.colorbar(pc2, orientation="vertical", fraction=fraction, pad=0.02)
+    colorbar.set_label(parameter)  # Set colorbar label
+
+    ax2.set_aspect('equal', 'box')  # Prevents map distortion
+    ax2.set_xlabel("Longitude")
+    ax2.set_ylabel("Latitude")
+    ax2.set_title("")
+    ax2.set_position([0, 0, 1, 1])
+    plt.tight_layout()
+    st.pyplot(fig_surface2)
+    if st.button("Save 2nd figure"):
+        data = download_matplotlib_figure(fig_surface2, dpi=600)  # Higher DPI for better resolution
+        st.download_button(
+            label="Click here to download",
+            data=data,
+            file_name="ContaminantSurface-625.png",
+            mime="image/png",
+        )
 
     ###################################################################################################################
     # 3. Plot x- or y- vs. z cross-section of the selections in #2 above
@@ -1725,14 +1804,16 @@ def display_map(o_file):
         #             df_rewrite = df_rewrite.append(row, ignore_index=True)
 
 
-        fig_cross, ax = plt.subplots(figsize=(20, 5))
+        fig_cross, ax = plt.subplots(figsize=(5, 2.5), dpi=600)
         # st.write('uds_crs[parameter].coords', uds_crs[parameter].coords)
         # st.write('uds_crs[parameter].values', uds_crs[parameter].values)
         #
         # st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z]', uds_crs[parameter].coords['mesh2d_layer_sigma_z'])
         # st.write('uds_crs[parameter].coords[mesh2d_layer_sigma_z].values',
         #          uds_crs[parameter].coords['mesh2d_layer_sigma_z'].values)
-        cross = uds_crs[parameter].ugrid.plot(cmap='jet', add_colorbar=False, vmin=vmin, vmax=vmax)
+        transformed_data = uds_crs[parameter] * converter
+        cross = transformed_data.ugrid.plot(cmap='jet', add_colorbar=False, vmin=vmin, vmax=vmax)
+
         x_coords = uds_crs[parameter].coords['mesh2d_face_x'].values
         y_coords = uds_crs[parameter].coords['mesh2d_face_y'].values
         # Calculate the range for x and y data
@@ -1752,20 +1833,31 @@ def display_map(o_file):
         # Plot your data on the 'ax' object
         # ax.plot(data_x, data_y)
         if latlon == "Longitude":
-            ax.set_xlabel(f"Position, m north of latitude {ymin_abs}")
+            ax.set_xlabel(f"Position, m north of latitude {round(ymin_abs, 5)}")
         else:
-            ax.set_xlabel(f"Position, m east of longitude {xmin_abs}")
+            ax.set_xlabel(f"Position, m east of longitude {round(xmin_abs, 5)}")
         ax.set_ylabel("Depth, m")
         ax.set_title("")
         # fig_surface.suptitle(parameter)
-        colorbar = plt.colorbar(cross, orientation="vertical", fraction=fraction, pad=0.001)
+        fraction_slice = 0.022
+        colorbar = plt.colorbar(cross, orientation="vertical", fraction=fraction_slice, pad=0.04)
         # Set colorbar label
         colorbar.set_label(parameter)
 
         st.markdown(f"### Cross-section of {parameter} at {latlon} = {cross_section}, {selected_time_key}")
         ax.set_position([0, 0, 1, 1])
+        # ax.set_aspect('equal', 'box')  # Sets x,y to equal scales to prevent distortion
         plt.tight_layout()
         st.pyplot(fig_cross)
+
+        if st.button("Save 3rd figure"):
+            data = download_matplotlib_figure(fig_cross, dpi=600)  # Higher DPI for better resolution
+            st.download_button(
+                label="Click here to download",
+                data=data,
+                file_name="ContaminantXsection.png",
+                mime="image/png",
+            )
 
 
 def display_error(ds_his, feature, column_name, errorplot, errorplots, location, offline):
@@ -2247,7 +2339,7 @@ def display_error(ds_his, feature, column_name, errorplot, errorplots, location,
                 # p1.legend.location = "top_left"
                 # p1.add_layout(p1.legend[0], 'right')
                 p1.legend.click_policy = "hide"  # Hide lines on legend click
-                p1.yaxis.axis_label = "Temperature, C"
+                p1.yaxis.axis_label = "Temperature, °C"
                 p1.xaxis.axis_label = "Time"
                 p1.xaxis.formatter = DatetimeTickFormatter(days="%Y/%m/%d", hours="%y/%m/%d %H:%M")
                 # Increase font size for axis titles

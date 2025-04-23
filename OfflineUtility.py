@@ -620,14 +620,14 @@ def spatial_unc(files):
 
     # Step 2: Calculate the standard deviation along the 'dataset' dimension
     uncertainty = combined[variable].std(dim='dataset')
-    depth_avg_Uncert = uncertainty.mean(dim='mesh2d_nLayers')
-    dt_avg_Uncert = depth_avg_Uncert.mean(dim='time')
+    depth_avg_Uncert = uncertainty.mean(dim='mesh2d_nLayers')*1E10
+    dt_avg_Uncert = depth_avg_Uncert.mean(dim='time')*1E10
 
     ds_results['Uncertainty'] = uncertainty
     ds_results['Depth-averaged uncertainty'] = depth_avg_Uncert
     ds_results['Depth- and time-averaged uncertainty'] = dt_avg_Uncert
 
-    fig_diff, ax = plt.subplots(figsize=(20, 3))
+    fig_diff, ax = plt.subplots(figsize=(10,3), dpi=600)
     crs = 'EPSG:4326'
     if timeindex == timeindices[0]:
         pf = ds_results['Depth- and time-averaged uncertainty'].isel(missing_dims='ignore').ugrid.plot(cmap='jet',
@@ -637,40 +637,44 @@ def spatial_unc(files):
         pf = ds_results['Depth-averaged uncertainty'].isel(time=-1, missing_dims='ignore').ugrid.plot(cmap='jet',
                                                                                                       add_colorbar=False)
         st.markdown(f"### Spatial distribution of uncertainty in depth-averaged {variable}")
-    ctx.add_basemap(ax=ax, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
-    colorbar = plt.colorbar(pf, orientation="vertical", fraction=0.01, pad=0.001)
+    colorbar = plt.colorbar(pf, orientation="vertical", fraction=0.007, pad=0.005)
 
-    # Get extents of map from attributes, for setting plot limits
-    try:
-        xmin_abs = uds_map.attrs['geospatial_lon_min']
-    except:
-        xmin_abs = 6.387478790667275
+    # # Get extents of map from attributes, for setting plot limits
+    # try:
+    #     xmin_abs = uds_map.attrs['geospatial_lon_min']
+    # except:
+    #     xmin_abs = 6.387478790667275
+    #
+    # try:
+    #     xmax_abs = uds_map.attrs['geospatial_lon_max']
+    # except:
+    #     xmax_abs = 6.56781074840919
+    #
+    # try:
+    #     ymin_abs = uds_map.attrs['geospatial_lat_min']
+    # except:
+    #     ymin_abs = 62.46442857883768
+    #
+    # try:
+    #     ymax_abs = uds_map.attrs['geospatial_lat_max']
+    # except:
+    #     ymax_abs = 62.48487637586751
 
-    try:
-        xmax_abs = uds_map.attrs['geospatial_lon_max']
-    except:
-        xmax_abs = 6.56781074840919
+    # scaler = 1.0
+    # aspect = 0.02
+    # xavg = (xmax_abs + xmin_abs) / 2
+    # yavg = (ymax_abs + ymin_abs) / 2
+    # x_int = (xmax_abs - xmin_abs) / 2
+    # y_int = (ymax_abs - ymin_abs) / 2
+    # xmin = xavg - x_int * (1 + scaler * aspect)
+    # xmax = xavg + x_int * (1 + scaler * aspect)
+    # ymin = yavg - y_int * (1 + scaler)
+    # ymax = yavg + y_int * (1 + scaler)
 
-    try:
-        ymin_abs = uds_map.attrs['geospatial_lat_min']
-    except:
-        ymin_abs = 62.46442857883768
-
-    try:
-        ymax_abs = uds_map.attrs['geospatial_lat_max']
-    except:
-        ymax_abs = 62.48487637586751
-
-    scaler = 1.0
-    aspect = 0.02
-    xavg = (xmax_abs + xmin_abs) / 2
-    yavg = (ymax_abs + ymin_abs) / 2
-    x_int = (xmax_abs - xmin_abs) / 2
-    y_int = (ymax_abs - ymin_abs) / 2
-    xmin = xavg - x_int * (1 + scaler * aspect)
-    xmax = xavg + x_int * (1 + scaler * aspect)
-    ymin = yavg - y_int * (1 + scaler)
-    ymax = yavg + y_int * (1 + scaler)
+    xmin = 6.384
+    xmax = 6.574
+    ymin = 62.461
+    ymax = 62.488
 
     # Set colorbar label
     colorbar.set_label('Sensitivity')
@@ -679,8 +683,18 @@ def spatial_unc(files):
     ax.set_xlim(xmin, xmax)
     ax.set_ylim(ymin, ymax)
     ax.set_title("")
+    ctx.add_basemap(ax=ax, zoom=15, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
 
     st.pyplot(fig_diff)
+
+    if st.button("Save figure 1"):
+        data = Dashboard.download_matplotlib_figure(fig_diff, dpi=600)  # Higher DPI for better resolution
+        st.download_button(
+            label="Click here to download",
+            data=data,
+            file_name="Sensitivity.png",
+            mime="image/png",
+        )
 
     c1, c2 = st.columns(2, gap='small')
     with c1:
