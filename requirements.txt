@@ -6,12 +6,12 @@ streamlit_folium
 geopandas
 bokeh<=2.4.3
 datetime
-dfm_tools
+dfm_tools<=0.24.0
 tempfile2
 plotly
 scikit-learn
 scipy
 xarray
-xugrid
+xugrid<=0.11.0
 matplotlib
 contextily
