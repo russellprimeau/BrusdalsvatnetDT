@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Specified all package versions using 'pip freeze' to try to correct Streamlit cloud compatibility issues.">
+    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Removed pywinty from requirements.txt">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/requirements.txt" beforeDir="false" afterPath="$PROJECT_DIR$/requirements.txt" afterDir="false" />
     </list>
@@ -120,7 +120,21 @@
       <option name="presentableId" value="LOCAL−00004" />
       <updated>1745403171702</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL−00005" summary="Removed some extraneous packages from requirements.txt">
+      <option name="closed" value="true" />
+      <created>1745403796160</created>
+      <option name="number" value="LOCAL−00005" />
+      <option name="presentableId" value="LOCAL−00005" />
+      <updated>1745403796160</updated>
+    </task>
+    <task id="LOCAL−00006" summary="Removed pywinty from requirements.txt">
+      <option name="closed" value="true" />
+      <created>1745406774228</created>
+      <option name="number" value="LOCAL−00006" />
+      <option name="presentableId" value="LOCAL−00006" />
+      <updated>1745406774228</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="TerminalProjectNonSharedOptionsProvider">
@@ -145,6 +159,8 @@
     <MESSAGE value="Added some missing data" />
     <MESSAGE value="Attempt to resolve errors in online version which may be related to package updates." />
     <MESSAGE value="Specified all package versions using 'pip freeze' to try to correct Streamlit cloud compatibility issues." />
-    <option name="LAST_COMMIT_MESSAGE" value="Specified all package versions using 'pip freeze' to try to correct Streamlit cloud compatibility issues." />
+    <MESSAGE value="Removed some extraneous packages from requirements.txt" />
+    <MESSAGE value="Removed pywinty from requirements.txt" />
+    <option name="LAST_COMMIT_MESSAGE" value="Removed pywinty from requirements.txt" />
   </component>
 </project>
