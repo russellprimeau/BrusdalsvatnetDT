@@ -45,10 +45,13 @@ def copy_to_database(df, table_name):
 
     # Convert datetime column to datetime objects
     df_ref['datetime'] = pd.to_datetime(df_ref['datetime'])
+    print('df_ref', df_ref)
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%dT%H:%M:%S')
 
     # Get the time of the latest record in the database
     latest_timestamp = df_ref['datetime'].max()
+    print('latest_timestamp', latest_timestamp)
+
 
     # Drop rows from df with timestamp equal or less than the latest timestamp in the database
     print('df', df)
