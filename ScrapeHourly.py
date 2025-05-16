@@ -45,16 +45,15 @@ def copy_to_database(df, table_name):
 
     # Convert datetime column to datetime objects
     df_ref['datetime'] = pd.to_datetime(df_ref['datetime'])
-    print('df', df.head)
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%dT%H:%M:%S')
-    print('Timestamp:', df['Timestamp'])
 
     # Get the time of the latest record in the database
     latest_timestamp = df_ref['datetime'].max()
-    print('Latest timestamp:', latest_timestamp)
 
     # Drop rows from df with timestamp equal or less than the latest timestamp in the database
     df_filtered = df[df['Timestamp'] > latest_timestamp]
+
+    print(df_filtered)
 
     # Convert DataFrame to CSV format in memory
     output = StringIO()
