@@ -37,7 +37,7 @@ def copy_to_database(df, table_name):
     cur.execute(f"SET search_path TO {schema_name};")
 
     # Query for the last record in the database
-    cur.execute("SELECT * FROM brusdalsvatnet.brusdalen_weather_station_hourly ORDER BY datetime DESC LIMIT 1;")
+    cur.execute("SELECT * FROM brusdalsvatnet.brusdalsvatnet_profiler_profiles ORDER BY datetime DESC LIMIT 1;")
 
     # Fetch row
     rows = cur.fetchone()

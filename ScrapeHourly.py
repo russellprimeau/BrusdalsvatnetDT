@@ -33,7 +33,7 @@ def copy_to_database(df, table_name):
     cur.execute(f"SET search_path TO {schema_name};")
 
     # Query for the last record in the database
-    cur.execute("SELECT * FROM brusdalsvatnet.brusdalen_weather_station_hourly ORDER BY datetime DESC LIMIT 1;")
+    cur.execute("SELECT * FROM brusdalsvatnet.brusdalsvatnet_profiler_hourly ORDER BY datetime DESC LIMIT 1;")
 
     # Fetch row
     rows = cur.fetchone()
@@ -45,19 +45,13 @@ def copy_to_database(df, table_name):
 
     # Convert datetime column to datetime objects
     df_ref['datetime'] = pd.to_datetime(df_ref['datetime'])
-    print('df_ref', df_ref)
     df['Timestamp'] = pd.to_datetime(df['Timestamp'], format='%Y-%m-%dT%H:%M:%S')
 
     # Get the time of the latest record in the database
     latest_timestamp = df_ref['datetime'].max()
-    print('latest_timestamp', latest_timestamp)
-
 
     # Drop rows from df with timestamp equal or less than the latest timestamp in the database
-    print('df', df)
     df_filtered = df[df['Timestamp'] > latest_timestamp]
-
-    print('df_filtered', df_filtered)
 
     # Convert DataFrame to CSV format in memory
     output = StringIO()
