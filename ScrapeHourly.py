@@ -51,9 +51,10 @@ def copy_to_database(df, table_name):
     latest_timestamp = df_ref['datetime'].max()
 
     # Drop rows from df with timestamp equal or less than the latest timestamp in the database
+    print('df', df)
     df_filtered = df[df['Timestamp'] > latest_timestamp]
 
-    print(df_filtered)
+    print('df_filtered', df_filtered)
 
     # Convert DataFrame to CSV format in memory
     output = StringIO()
