@@ -50,7 +50,7 @@ def copy_to_database(df, table_name):
     latest_timestamp = df_ref['datetime'].max()
 
     # Drop rows from df with timestamp equal or less than the latest timestamp in the database
-    df_filtered = df[df['Time'] > latest_timestamp]
+    df_filtered = df[df['Timestamp'] > latest_timestamp]
 
     # Convert DataFrame to CSV format in memory
     output = StringIO()
@@ -222,7 +222,6 @@ if __name__ == '__main__':
     logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
 
     # Pull changes from the remote repository
-    print("Current working directory:", os.getcwd())
     run_command(['git', 'pull', 'origin', 'main'])
 
     new_lines = scrape_and_clean()
