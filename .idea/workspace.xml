@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Reviving scraping from profiler." />
+    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Reviving scraping from profiler steps." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -26,6 +26,9 @@
     &quot;assignee&quot;: &quot;russellprimeau&quot;
   }
 }</component>
+  <component name="GithubDefaultAccount">
+    <option name="defaultAccountId" value="c5cf8469-47de-48c5-b347-c67631f3853d" />
+  </component>
   <component name="GithubPullRequestsUISettings">{
   &quot;selectedUrlAndAccountId&quot;: {
     &quot;url&quot;: &quot;https://github.com/russellprimeau/BrusdalsvatnetDT.git&quot;,
@@ -61,7 +64,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
     "last_opened_file_path": "C:/Users/russelbp/GitHub/MiscDelft3D",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+    "settings.editor.selected.configurable": "org.jetbrains.plugins.github.ui.GithubSettingsConfigurable"
   }
 }]]></component>
   <component name="PyConsoleOptionsProvider">
@@ -163,6 +166,7 @@
     <MESSAGE value="Removed some extraneous packages from requirements.txt" />
     <MESSAGE value="Removed pywinty from requirements.txt" />
     <MESSAGE value="Reviving scraping from profiler." />
-    <option name="LAST_COMMIT_MESSAGE" value="Reviving scraping from profiler." />
+    <MESSAGE value="Reviving scraping from profiler steps." />
+    <option name="LAST_COMMIT_MESSAGE" value="Reviving scraping from profiler steps." />
   </component>
 </project>
