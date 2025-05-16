@@ -230,6 +230,8 @@ if __name__ == '__main__':
 
     new_lines = scrape_and_clean()
     write(new_lines, data_file)
+    
+    pg_lines = new_lines.drop(['Latitude', 'Longitude'], axis=1)
 
     table_name = 'brusdalsvatnet_profiler_hourly'
     try:
