@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Remove a few rows to test automatic updating." />
+    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Restore logging for hourly scraper." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -152,7 +152,14 @@
       <option name="presentableId" value="LOCAL−00008" />
       <updated>1747401906601</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL−00009" summary="Restore logging for hourly scraper.">
+      <option name="closed" value="true" />
+      <created>1747402169760</created>
+      <option name="number" value="LOCAL−00009" />
+      <option name="presentableId" value="LOCAL−00009" />
+      <updated>1747402169760</updated>
+    </task>
+    <option name="localTasksCounter" value="10" />
     <servers />
   </component>
   <component name="TerminalProjectNonSharedOptionsProvider">
@@ -183,6 +190,7 @@
     <MESSAGE value="Reviving scraping from profiler steps." />
     <MESSAGE value="3pm" />
     <MESSAGE value="Remove a few rows to test automatic updating." />
-    <option name="LAST_COMMIT_MESSAGE" value="Remove a few rows to test automatic updating." />
+    <MESSAGE value="Restore logging for hourly scraper." />
+    <option name="LAST_COMMIT_MESSAGE" value="Restore logging for hourly scraper." />
   </component>
 </project>
