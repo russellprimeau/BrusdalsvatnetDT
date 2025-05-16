@@ -154,7 +154,7 @@ if __name__ == '__main__':
 
     # Create log for debugging automation
     log_file = "Scheduled_ScrapeHourly.log"  # Define the log file path (optional, change filename if needed)
-    # logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
+    logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
 
     # Pull changes from the remote repository
     print("Current working directory:", os.getcwd())
