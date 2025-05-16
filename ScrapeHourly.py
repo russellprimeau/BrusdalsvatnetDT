@@ -45,6 +45,7 @@ def copy_to_database(df, table_name):
 
     # Convert datetime column to datetime objects
     df_ref['datetime'] = pd.to_datetime(df_ref['datetime'])
+    df['Timestamp'] = pd.to_datetime(df_ref['Timestamp'])
 
     # Get the time of the latest record in the database
     latest_timestamp = df_ref['datetime'].max()
