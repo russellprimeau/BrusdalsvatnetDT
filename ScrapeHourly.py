@@ -4,7 +4,72 @@ import pandas as pd
 import subprocess
 import os
 import logging
+import psycopg2
+from io import StringIO
+import datetime
 from datetime import datetime
+
+
+# Database connection parameters
+DB_USER = "razak"
+DB_PASSWORD = "razak_seidu"
+DB_HOST = "fjordladdatabse.postgres.database.azure.com"
+DB_PORT = "5432"
+DB_NAME = "postgres"
+schema_name = "brusdalsvatnet"
+
+
+def copy_to_database(df, table_name):
+    # Connect to PostgreSQL
+    try:
+        conn = psycopg2.connect(
+            dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT
+            )
+        cur = conn.cursor()
+    except Exception as e:
+        logging.error(f"Error connecting to {DB_NAME}: {e}")
+
+    # Ensure schema is set
+    cur.execute(f"SET search_path TO {schema_name};")
+
+    # Query for the last record in the database
+    cur.execute("SELECT * FROM brusdalsvatnet.brusdalen_weather_station_hourly ORDER BY datetime DESC LIMIT 1;")
+
+    # Fetch row
+    rows = cur.fetchone()
+
+    # Get column names
+    col_names = [desc[0] for desc in cur.description]
+    # Convert to Pandas DataFrame
+    df_ref = pd.DataFrame([rows], columns=col_names)
+
+    # Convert datetime column to datetime objects
+    df_ref['datetime'] = pd.to_datetime(df_ref['datetime'])
+
+    # Get the time of the latest record in the database
+    latest_timestamp = df_ref['datetime'].max()
+
+    # Drop rows from df with timestamp equal or less than the latest timestamp in the database
+    df_filtered = df[df['Time'] > latest_timestamp]
+
+    # Convert DataFrame to CSV format in memory
+    output = StringIO()
+    df_filtered.to_csv(output, sep="\t", index=False, header=False, na_rep="NULL")  # Use tab as delimiter
+    output.seek(0)  # Move cursor to the start
+
+    # Use copy_from to insert data
+    cur.copy_from(output, table_name, sep="\t", null="NULL")
+
+    # Commit and close
+    try:
+        conn.commit()
+        cur.close()
+        conn.close()
+        now = datetime.now()
+        current_time = now.strftime("%Y-%m-%d %H:%M:%S")  # Format: YYYY-MM-DD HH:MM:SS
+        logging.info(f"Successfully wrote new lines to {table_name} at {current_time}")
+    except Exception as e:
+        logging.error(f"Error in commit to PostgreSQL database table {table_name}: {e}")
 
 
 def run_command(command):
@@ -162,5 +227,12 @@ if __name__ == '__main__':
 
     new_lines = scrape_and_clean()
     write(new_lines, data_file)
+
+    table_name = 'brusdalsvatnet_profiler_hourly'
+    try:
+        # Code that may raise an exception
+        copy_to_database(new_lines, table_name)
+    except Exception as e:
+        logging.error(f"Error in push to PostgreSQL database: {e}")
 
     push()
