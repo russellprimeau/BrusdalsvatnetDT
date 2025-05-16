@@ -157,7 +157,8 @@ def write(df, destination):
 
 if __name__ == '__main__':
     # Change directory to project location
-    os.chdir(r"/")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
 
     data_file = "Profiler_modem_PFL_Step.csv"
 

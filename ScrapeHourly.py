@@ -147,15 +147,17 @@ def write(df, destination):
 
 if __name__ == '__main__':
     # Change directory to project location
-    os.chdir(r"/")
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
 
     data_file = "Profiler_modem_SondeHourly.csv"
 
     # Create log for debugging automation
     log_file = "Scheduled_ScrapeHourly.log"  # Define the log file path (optional, change filename if needed)
-    logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
+    # logging.basicConfig(filename=log_file, level=logging.INFO)  # Configure logging
 
     # Pull changes from the remote repository
+    print("Current working directory:", os.getcwd())
     run_command(['git', 'pull', 'origin', 'main'])
 
     new_lines = scrape_and_clean()
