@@ -4,13 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Removed pywinty from requirements.txt">
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/All_time.csv" beforeDir="false" afterPath="$PROJECT_DIR$/All_time.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Profiler_modem_SondeHourly.csv" beforeDir="false" afterPath="$PROJECT_DIR$/Profiler_modem_SondeHourly.csv" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ScrapeHourly.py" beforeDir="false" afterPath="$PROJECT_DIR$/ScrapeHourly.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/ScrapeStep.py" beforeDir="false" afterPath="$PROJECT_DIR$/ScrapeStep.py" afterDir="false" />
-    </list>
+    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Reviving scraping from profiler." />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -67,7 +61,7 @@
     "RunOnceActivity.git.unshallow": "true",
     "git-widget-placeholder": "main",
     "last_opened_file_path": "C:/Users/russelbp/GitHub/MiscDelft3D",
-    "settings.editor.selected.configurable": "preferences.keymap"
+    "settings.editor.selected.configurable": "preferences.pluginManager"
   }
 }]]></component>
   <component name="PyConsoleOptionsProvider">
@@ -168,6 +162,7 @@
     <MESSAGE value="Specified all package versions using 'pip freeze' to try to correct Streamlit cloud compatibility issues." />
     <MESSAGE value="Removed some extraneous packages from requirements.txt" />
     <MESSAGE value="Removed pywinty from requirements.txt" />
-    <option name="LAST_COMMIT_MESSAGE" value="Removed pywinty from requirements.txt" />
+    <MESSAGE value="Reviving scraping from profiler." />
+    <option name="LAST_COMMIT_MESSAGE" value="Reviving scraping from profiler." />
   </component>
 </project>
