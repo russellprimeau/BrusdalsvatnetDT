@@ -45,6 +45,7 @@ def copy_to_database(df, table_name):
 
     # Convert datetime column to datetime objects
     df_ref['datetime'] = pd.to_datetime(df_ref['datetime'])
+    print('df', df.head)
     df['Timestamp'] = pd.to_datetime(df_ref['Timestamp'], format='%Y-%m-%dT%H:%M:%S')
     print('Timestamp:', df['Timestamp'])
 
