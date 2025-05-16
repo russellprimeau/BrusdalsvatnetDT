@@ -4,7 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Restore logging for hourly scraper." />
+    <list default="true" id="7db0a246-78aa-46db-954d-67d67f34a622" name="Changes" comment="Restore logging for hourly scraper.">
+      <change beforePath="$PROJECT_DIR$/ScrapeHourly.py" beforeDir="false" afterPath="$PROJECT_DIR$/ScrapeHourly.py" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
