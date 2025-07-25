@@ -834,7 +834,7 @@ def post_sens(all_files, directory_path):
             full_files = selected_files
 
     if output_options.get(d3d_output) == 'map.nc':
-        # Calculate 'uncertainty' as the variance (st.dev) of a selected parameter
+        # Calculate 'uncertainty' as the variance (std dev) of a selected parameter
         spatial_unc(full_files)
     elif output_options.get(d3d_output) == 'his.nc':
         # Calculate error statistics for all his files; report which file has the lowest error; use regression to
@@ -903,7 +903,7 @@ def main():
     st.set_page_config("Brusdalsvatnet Digital Twin Utility", layout="wide")
     st.sidebar.title("Choose Mode")
     pages = ["Pre-process", "Post-process"]
-    selected_page = st.sidebar.radio("", pages)
+    selected_page = st.sidebar.radio("Pre/Post Selection", pages, label_visibility="collapsed")
 
     if selected_page == pages[0]:
         pre()
