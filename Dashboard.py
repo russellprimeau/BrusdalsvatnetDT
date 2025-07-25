@@ -31,7 +31,7 @@ import io
 def main():
     st.set_page_config("Brusdalsvatnet WQ Dashboard", layout="wide")
     st.sidebar.title("Choose Mode")
-    selected_page = st.sidebar.radio("", ["Historic", "Hydrodynamic Model", "Interactive (Path Planning)"])
+    selected_page = st.sidebar.radio("Mode selection", ["Historic", "Hydrodynamic Model", "Interactive (Path Planning)"],label_visibility="collapsed")
     # Get all files in the current directory
     all_files = os.listdir()
 
@@ -1434,6 +1434,8 @@ def display_map(o_file):
     uds_map_o = dfmt.open_partitioned_dataset(o_file)
     uds_map = rename_ds(uds_map_o)
     print("uds_map.attrs", uds_map.attrs)
+    print("uds_map.dims", uds_map.dims)
+    print("uds_map.data_vars", uds_map.data_vars)
 
     ###################################################################################################################
     # 1. Analyze the file contents. Create references for plotting.
@@ -1651,7 +1653,7 @@ def display_map(o_file):
     # Add a slider for selecting where to take a cross-section of the simulated water body
     line_array = None
     if num_layers is not None:
-        latlon = st.radio("Choose the orientation of the cross section", options=("Longitude", "Latitude"),
+        latlon = st.radio("Choose the orientation of the cross section", options=("Longitude", "Latitude"), index=0,
                           horizontal=True)
         if latlon == "Longitude":
             cross_section = st.slider("Select the longitude of the cross section for depth view", min_value=xmin_abs,
@@ -1734,49 +1736,49 @@ def display_map(o_file):
     # Temporary addition: zoom in on the western edge
 
     fig_surface2, ax2 = plt.subplots(figsize=(5, 2.5), dpi=600)
+    if 'latlon' in globals():
+        if latlon == "Longitude":
+            ax2.axvline(cross_section, color='red')
+        else:
+            ax2.axhline(cross_section, color='red')
 
-    if latlon == "Longitude":
-        ax2.axvline(cross_section, color='red')
-    else:
-        ax2.axhline(cross_section, color='red')
+        pc2 = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
+                                     missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False,
+                                                                       vmin=vmin, vmax=vmax)
+        st.markdown(f"### {parameter} at depth of {depth_selected} m at {selected_time_key}")
 
-    pc2 = uds_map[parameter].isel(time=selected_time_index, mesh2d_nLayers=layer,
-                                 missing_dims='ignore').ugrid.plot(cmap='jet', add_colorbar=False,
-                                                                   vmin=vmin, vmax=vmax)
-    st.markdown(f"### {parameter} at depth of {depth_selected} m at {selected_time_key}")
+        # West end
+        xmin2 = 6.384
+        xmax2 = 6.41
+        ymin2 = 62.463
+        ymax2 = 62.475
 
-    # West end
-    xmin2 = 6.384
-    xmax2 = 6.41
-    ymin2 = 62.463
-    ymax2 = 62.475
+        ax2.set_xlim(xmin2, xmax2)
+        ax2.set_ylim(ymin2, ymax2)
+        ctx.add_basemap(ax=ax2, zoom=15, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
+        # fig_surface.suptitle(parameter)  # Add a title within the figure's limits
 
-    ax2.set_xlim(xmin2, xmax2)
-    ax2.set_ylim(ymin2, ymax2)
-    ctx.add_basemap(ax=ax2, zoom=15, source=ctx.providers.OpenTopoMap, crs=crs, attribution=False)
-    # fig_surface.suptitle(parameter)  # Add a title within the figure's limits
+        # Add a colorbar to show the values of the colors
+        fraction = 0.022
+        # Percentage of the figure's width given to the colorbar (scale/legend)
+        colorbar = plt.colorbar(pc2, orientation="vertical", fraction=fraction, pad=0.02)
+        colorbar.set_label(parameter)  # Set colorbar label
 
-    # Add a colorbar to show the values of the colors
-    fraction = 0.022
-    # Percentage of the figure's width given to the colorbar (scale/legend)
-    colorbar = plt.colorbar(pc2, orientation="vertical", fraction=fraction, pad=0.02)
-    colorbar.set_label(parameter)  # Set colorbar label
-
-    ax2.set_aspect('equal', 'box')  # Prevents map distortion
-    ax2.set_xlabel("Longitude")
-    ax2.set_ylabel("Latitude")
-    ax2.set_title("")
-    ax2.set_position([0, 0, 1, 1])
-    plt.tight_layout()
-    st.pyplot(fig_surface2)
-    if st.button("Save 2nd figure"):
-        data = download_matplotlib_figure(fig_surface2, dpi=600)  # Higher DPI for better resolution
-        st.download_button(
-            label="Click here to download",
-            data=data,
-            file_name="ContaminantSurface-625.png",
-            mime="image/png",
-        )
+        ax2.set_aspect('equal', 'box')  # Prevents map distortion
+        ax2.set_xlabel("Longitude")
+        ax2.set_ylabel("Latitude")
+        ax2.set_title("")
+        ax2.set_position([0, 0, 1, 1])
+        plt.tight_layout()
+        st.pyplot(fig_surface2)
+        if st.button("Save 2nd figure"):
+            data = download_matplotlib_figure(fig_surface2, dpi=600)  # Higher DPI for better resolution
+            st.download_button(
+                label="Click here to download",
+                data=data,
+                file_name="ContaminantSurface-625.png",
+                mime="image/png",
+            )
 
     ###################################################################################################################
     # 3. Plot x- or y- vs. z cross-section of the selections in #2 above
@@ -2534,7 +2536,7 @@ def display_his(o_file):
     else:
         num_layers = None
     if 'cross_section' in ds_his.dims:
-        num_source_sink = ds_his.sizes['cross_section']
+        num_cross_section = ds_his.sizes['cross_section']
     else:
         num_cross_section = None
     if 'source_sink' in ds_his.dims:
@@ -2570,6 +2572,18 @@ def display_his(o_file):
                 all(coord not in var.dims for coord in excludes_coordinates)):
             cross_section_list.append(name)
 
+   # Debugging section to find cross_section_geom_nNodes
+   ####################################################
+    # includes_coordinate = ["cross_section_geom_nNodes"]
+    # excludes_coordinates = ["station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts"]
+    #
+    # cross_section_dims = []
+    # for name, var in ds_his.data_vars.items():
+    #     if (all(coord in var.dims for coord in includes_coordinate) and
+    #             all(coord not in var.dims for coord in excludes_coordinates)):
+    #         cross_section_dims.append(name)
+    ############################################################################################
+
     includes_coordinate = ["time"]
     excludes_coordinates = ["cross_section", "stations", "station_geom_nNodes", "source_sink_geom_nNodes", "source_sink_pts",
                             "cross_section_geom_nNodes"]
@@ -2581,14 +2595,33 @@ def display_his(o_file):
 
     # Option to display dimensionality and contents of the file
     on_off = ["Display file attributes", "Hide"]
-    print_attrs = st.radio(label='', options=on_off, horizontal=True, index=1)
+    print_attrs = st.radio(label="Display attributes", options=on_off, horizontal=True, index=1, label_visibility="collapsed")
     if print_attrs == on_off[0]:
         a1, a2, a3 = st.columns(3, gap='small')
         with a1:
             st.markdown("#### Dimensions")
             st.write("Observation Points:", num_stations)
+            st.write("Observation Cross Sections:", num_cross_section)
+            # st.write("Obs X Section Nodes:", cross_section_dims)
             st.write("Sources/Sinks:", num_source_sink)
             st.write("Time steps:", num_times)
+            # debug
+            # st.write(ds_his['cross_section_geom'])
+            # st.write(ds_his['cross_section_geom'].size)
+            # st.write(ds_his['cross_section_geom'].values)
+            # st.write(ds_his['cross_section_geom_node_count'])
+            # st.write(ds_his['cross_section_geom_node_count'].size)
+            # st.write(ds_his['cross_section_geom_node_count'].values)
+
+            st.write(ds_his['cross_section_geom_node_coordx'])
+            st.write(ds_his['cross_section_geom_node_coordx'].size)
+            st.write("All x coords", ds_his['cross_section_geom_node_coordx'].values.shape)
+            st.write("All y coords", ds_his['cross_section_geom_node_coordy'].values)
+            st.write('all x', ds_his['cross_section_geom_node_coordx'][:].values)
+            st.write('all y', ds_his['cross_section_geom_node_coordy'][:].values)
+            st.write('first', ds_his['cross_section_geom_node_coordy'][:,0].values)
+            st.write('last', ds_his['cross_section_geom_node_coordy'][:,1].values)
+
         with a2:
             st.markdown("#### Data variables")
             st.write("Data variables per observation point", stations_list)
