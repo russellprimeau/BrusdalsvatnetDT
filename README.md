@@ -1,11 +1,11 @@
 # BrusdalsvatnetDT
 Collects and visualizes data from several systems which monitor water quality in the Brusdalsvatnet drinking water reservoir in Ålesund, Norway.
 
-This repository includes Python scripts and data files for completing several tasks related to creating and maintaining a digital twin of the Brusdalsvatnet drinking water reservoir, for the purpose of monitoring water quality. However, not all components of the digital twin have been created or connected. Work is ongoing on various hardware and software components.
+This repository includes Python scripts and data files for completing several tasks related to creating and maintaining a digital twin of the Brusdalsvatnet drinking water reservoir, for the purpose of monitoring water quality.
 
 The core function of this architecture is to aggregate data from a variety of sensing platforms and use that data to update a hydrodynamic water quality model, the 'digital twin.' The framework includes applications for visualizing the collected data as well as the modeled water quality. The modelling is performed offline in a Windows environment using the open source version of the Delft3D FM hydrodynamic simulation software developed by Deltares. Example model output files are included in the repository.
 
-The data collected by the sensing platforms is written to .csv files within the GitHub repository.
+The data collected by the sensing platforms is written to .csv files.
 
 The data aquisition systems which monitor the Brusdalsvatnet reservoir include a stationary profiling platform, with winched and stationary instruments; a mobile USV with a winch instrument with similar instruments to the profiler; a second mobile USV with sample collection capabilities; and a weather station managed by a commercial partner. At present, the profiler and weather station are the only data acquisition systems capable of providing near real-time data upload to the web, and the only systems for which a substantial library of historic data exists. The profiler station is inactive during the colder months to avoid ice damage.  Various hardware and software limitations prevent real-time datasharing from the USVs, though work is ongoing to establish these capabilities.
 
