@@ -15,3 +15,5 @@ Scheduled_ScrapeWeather.log
 ScrapeHourly.py  # Configured for use on a particular computer
 ScrapeStep.py  # Configured for use on a particular computer
 ScrapeWeather.py  # Configured for use on a particular computer
+.env
+.gitignore
