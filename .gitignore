@@ -20,3 +20,4 @@ ScrapeWeather.py  # Configured for use on a particular computer
 .env
 .gitignore
 .venv/
+.env

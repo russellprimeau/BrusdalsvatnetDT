@@ -30,7 +30,7 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException,
 from dotenv import load_dotenv
 
 
-load_dotenv()  # take environment variables
+load_dotenv(os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env'))
 
 # Database connection parameters
 DB_USER = os.getenv("DB_USER")
@@ -50,6 +50,7 @@ def copy_to_database(df, table_name):
         cur = conn.cursor()
     except Exception as e:
         logging.error(f"Error connecting to {DB_NAME}: {e}")
+        return
 
     # Ensure schema is set
     cur.execute(f"SET search_path TO {schema_name};")
