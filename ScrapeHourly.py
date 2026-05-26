@@ -230,13 +230,12 @@ if __name__ == '__main__':
     new_lines = scrape_and_clean()
     write(new_lines, data_file)
 
-    pg_lines = new_lines.drop(['Latitude', 'Longitude'], axis=1)
-
-    table_name = 'brusdalsvatnet_profiler_hourly'
-    try:
-        # Code that may raise an exception
-        copy_to_database(pg_lines, table_name)
-    except Exception as e:
-        logging.error(f"Error in push to PostgreSQL database: {e}")
+    if not new_lines.empty:
+        pg_lines = new_lines.drop(['Latitude', 'Longitude'], axis=1)
+        table_name = 'brusdalsvatnet_profiler_hourly'
+        try:
+            copy_to_database(pg_lines, table_name)
+        except Exception as e:
+            logging.error(f"Error in push to PostgreSQL database: {e}")
 
     push()

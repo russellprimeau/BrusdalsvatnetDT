@@ -347,9 +347,8 @@ def scrape_and_clean():
 
 
 if __name__ == '__main__':
-    # Change directory to project location
-    os.chdir(r"C:\Users\russelbp\GitHub\BrusdalsvatnetDT")  # Remote desktop
-    # os.chdir(r"C:\Users\Russell\Documents\GitHub\Thesis-Related\BrusdalsvatnetDT")  # Local
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    os.chdir(script_dir)
 
     data_file = "All_Time.csv"
 
