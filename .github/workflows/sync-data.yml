@@ -1,0 +1,111 @@
+name: Sync data from database
+
+# Keeps the dashboard's CSV data files in this repository current: appends new records from the project's
+# PostgreSQL database (read-only access, see db_sync.py) and commits the updated CSVs. The Streamlit app redeploys
+# from each new commit, so it always starts from fresh data.
+#
+# Required repository secrets (Settings > Secrets and variables > Actions > New repository secret):
+#   DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD, DB_SCHEMA,
+#   DB_TABLE_HOURLY, DB_TABLE_PROFILES, DB_TABLE_WEATHER
+# (DB_SCHEMA holds the value of `schema_name` from your .env.)
+#
+# Logs of a public repository are public. GitHub masks secret values in them, and db_sync.py never prints
+# connection settings; only dataset labels, row counts, timestamps and (for "describe") column names/types appear.
+
+on:
+  schedule:
+    - cron: "39 3 * * 1"  # weekly, Mondays at 03:17 UTC; GitHub may start scheduled runs some minutes late
+  workflow_dispatch:      # manual run from the Actions tab
+    inputs:
+      mode:
+        description: >-
+          sync: append new records and commit | dry-run: report what would be appended |
+          describe: show the tables' layout and time spans | rebuild: overwrite the CSVs from the database and commit
+        type: choice
+        options: [sync, dry-run, describe, rebuild]
+        default: sync
+      force:
+        description: "rebuild only: override the guard that refuses when the database holds less history than a CSV"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write  # push the updated CSVs; nothing else
+
+concurrency:
+  group: sync-data
+  cancel-in-progress: false  # never interrupt a run that may be committing
+
+jobs:
+  sync:
+    if: ${{ !github.event.repository.fork }}  # forks have no secrets
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      MODE: ${{ inputs.mode || 'sync' }}  # scheduled runs have no inputs
+      FORCE: ${{ inputs.force || false }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # history is not needed
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        # Only what db_sync.py needs (same versions as requirements.txt), not the full dashboard stack
+        run: pip install --quiet pandas==2.2.2 psycopg2-binary==2.9.10 python-dotenv==1.1.1
+
+      - name: Run db_sync.py (${{ inputs.mode || 'sync' }})
+        id: sync
+        shell: bash  # -eo pipefail: the step fails if db_sync.py does, despite the pipe to the job summary
+        env:
+          DB_HOST: ${{ secrets.DB_HOST }}
+          DB_PORT: ${{ secrets.DB_PORT }}
+          DB_NAME: ${{ secrets.DB_NAME }}
+          DB_USER: ${{ secrets.DB_USER }}
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          schema_name: ${{ secrets.DB_SCHEMA }}
+          DB_TABLE_HOURLY: ${{ secrets.DB_TABLE_HOURLY }}
+          DB_TABLE_PROFILES: ${{ secrets.DB_TABLE_PROFILES }}
+          DB_TABLE_WEATHER: ${{ secrets.DB_TABLE_WEATHER }}
+        run: |
+          case "$MODE" in
+            sync)     args="" ;;
+            dry-run)  args="--dry-run" ;;
+            describe) args="--describe" ;;
+            rebuild)  if [ "$FORCE" = "true" ]; then args="--rebuild --force"; else args="--rebuild"; fi ;;
+            *)        echo "Unknown mode: $MODE"; exit 1 ;;
+          esac
+          # Output also goes to the run's summary page, inside a code block (closed even if db_sync.py fails)
+          fence='```'
+          printf '### db_sync.py %s\n%s\n' "$args" "$fence" >> "$GITHUB_STEP_SUMMARY"
+          trap 'printf "%s\n" "$fence" >> "$GITHUB_STEP_SUMMARY"' EXIT
+          python db_sync.py $args | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Commit and push updated CSVs
+        # Also runs when the previous step failed for one dataset, so the others' new records are still committed
+        # (the job is still marked as failed). Report-only modes never commit.
+        if: ${{ !cancelled() && (env.MODE == 'sync' || env.MODE == 'rebuild') }}
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Profiler_modem_SondeHourly.csv Profiler_modem_PFL_Step.csv All_time.csv
+          if git diff --cached --quiet; then
+            echo "No new records to commit."
+            exit 0
+          fi
+          git commit --quiet -m "Sync data from database ($MODE)"
+          # Another push may have landed meanwhile: rebase onto it and retry a few times
+          for attempt in 1 2 3; do
+            if git pull --rebase --quiet origin "$GITHUB_REF_NAME" && git push --quiet origin "HEAD:$GITHUB_REF_NAME"; then
+              echo "Pushed updated CSVs."
+              exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            sleep $((attempt * 15))
+          done
+          echo "Could not push the updated CSVs (conflicting changes to the same files?)."
+          exit 1

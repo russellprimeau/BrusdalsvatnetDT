@@ -1,0 +1,47 @@
+Dataset,Parameter,Valid_Min,Valid_Max,Unit,Action_If_Invalid,QA_Stage,Applies_To
+Profiler_SondeHourly,Temperature,—,—,°C,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,Conductivity,—,—,µS/cm,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,Specific Conductivity,—,—,µS/cm,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,Salinity,—,—,ppt,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,pH,—,—,—,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,DO,—,—,mg/L or %,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,Turbidity NTU,—,—,NTU,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,Turbidity FNU,—,—,FNU,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,fDOM RFU,—,—,RFU,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,fDOM QSU,—,—,QSU,Round to 3 decimals,Scrape,All
+Profiler_SondeHourly,Any column,"NAN" string,—,—,Replace with 0,Scrape,All
+Profiler_PFLStep,Temperature,—,—,°C,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,Conductivity,—,—,µS/cm,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,Specific Conductivity,—,—,µS/cm,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,Salinity,—,—,ppt,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,pH,—,—,—,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,DO,—,—,mg/L or %,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,Turbidity NTU,—,—,NTU,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,Turbidity FNU,—,—,FNU,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,fDOM RFU,—,—,RFU,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,fDOM QSU,—,—,QSU,Round to 3 decimals,Scrape,All
+Profiler_PFLStep,Any column,"NAN" string,—,—,Replace with 0,Scrape,All
+Weather_AllTime,Timestamp,2000-01-01,2099-12-31,—,Replace with NaN,Scrape,All
+Weather_AllTime,Pressure (station height),860,1080,mBar,Replace with NaN,Scrape,All
+Weather_AllTime,Wind Direction,0,360,°,Replace with NaN,Scrape,All
+Weather_AllTime,Wind Speed (avg),0,100,m/s,Replace with NaN,Scrape,All
+Weather_AllTime,Wind Speed (3s gust),0,100,m/s,Replace with NaN,Scrape,All
+Weather_AllTime,Wind Speed (10min gust),0,100,m/s,Replace with NaN,Scrape,All
+Weather_AllTime,Pressure Differential (3hr),0,50,mBar,Replace with NaN,Scrape,All
+Weather_AllTime,Longwave Radiation,0,750,W/m²,Replace with NaN,Scrape,All
+Weather_AllTime,Shortwave Radiation,0,900,W/m²,Replace with NaN (set <0 to 0),Scrape,All
+Weather_AllTime,Precipitation,0,50,mm/hr,Replace with NaN,Scrape,All
+Weather_AllTime,Temperature (max/min),-40,40,°C,Replace with NaN,Scrape,All
+Weather_AllTime,Humidity,0,100,%RH,Replace with NaN,Scrape,All
+Weather_AllTime,Any column,"NAN" string,—,—,Replace with NaN,Scrape,All
+Profiler_Advanced,Temperature,1,25,°C,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,Conductivity,0,45,µS/cm,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,Specific Conductivity,1,∞,µS/cm,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,Salinity,0,∞,ppt,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,pH,2,12,—,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,DO,10,120,%,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,Turbidity,0,∞,NTU/FNU,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,fDOM RFU,0,100,RFU,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,fDOM QSU,0,300,QSU,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,Latitude,-90,90,°,Replace with NaN,Model Input,Delft3D Forcing
+Profiler_Advanced,Longitude,-180,180,°,Replace with NaN,Model Input,Delft3D Forcing
